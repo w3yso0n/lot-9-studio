@@ -3,12 +3,9 @@ import { products } from "@/lib/data";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
-interface ProductPageProps {
-  params: { id: string };
-}
 
-export default function ProductPage({ params }: ProductPageProps) {
-  const product = products.find((p) => p.id === parseInt(params.id));
+export default function ProductPage({ params }: any) {
+  const product = products.find((p) => p.id === parseInt(params.id, 10));
 
   if (!product) return notFound(); // Si el producto no existe, devuelve un 404
 
@@ -19,9 +16,8 @@ export default function ProductPage({ params }: ProductPageProps) {
         <Image
           src={product.image}
           alt={product.name}
-          layout="fill"
-          objectFit="cover"
-          className="rounded-lg"
+          fill
+          className="rounded-lg object-cover"
         />
       </div>
 

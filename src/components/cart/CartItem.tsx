@@ -28,6 +28,7 @@ const CartItem = ({ product }: CartItemProps) => {
         Eliminar
       </Button>
       
+      
     </div>
   );
 };
