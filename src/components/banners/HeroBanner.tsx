@@ -1,6 +1,4 @@
-import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import Link from "next/link";
 
 const HeroBanner = () => {
   return (
@@ -23,18 +21,7 @@ const HeroBanner = () => {
           Descubre nuestra nueva colección de ropa para hombres
         </p>
 
-        <div className="mt-6 flex gap-4 justify-center">
-          <Link href="/products">
-            <Button size="lg" className="bg-black text-white hover:bg-gray-800">
-              Comprar Ahora
-            </Button>
-          </Link>
-          <Link href="/about">
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-black">
-              Conócenos
-            </Button>
-          </Link>
-        </div>
+
       </div>
 
       {/* Filtro oscuro para mejorar la visibilidad del texto */}
