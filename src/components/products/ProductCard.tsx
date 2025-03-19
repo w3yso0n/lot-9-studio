@@ -17,7 +17,7 @@ interface ProductProps {
 export const ProductCard = ({ product }: ProductProps) => {
     const addToCart = useCartStore((state) => state.addToCart);
   return (
-    <Card className="w-full">
+    <Card className="w-full shadow-md rounded-md bg-white">
       <CardContent className="p-4 flex flex-col items-center">
         {/* Contenedor estándar para imágenes */}
         <div className="relative w-full h-[400px] overflow-hidden rounded-md">

@@ -9,17 +9,17 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <nav className="bg-white shadow-md fixed top-0 left-0 w-full z-50">
+    <nav className="bg-gray-200/50 backdrop-blur-sm shadow-md fixed top-0 left-0 w-full z-50"> {/* Fondo semitransparente con desenfoque */}
       <div className="container mx-auto flex justify-between items-center p-4">
-        
+        {/* Logo */}
         <Link href="/" className="text-xl font-bold">
-        <Image
-        src="/images/logo.png"
-        alt="lot 9 studio"
-        width={100}
-        height={50}
-        className="cursor-pointer"
-        />
+          <Image
+            src="/images/logo.png"
+            alt="lot 9 studio"
+            width={100}
+            height={50}
+            className="cursor-pointer"
+          />
         </Link>
 
         {/* Menú Desktop */}
@@ -30,9 +30,7 @@ const Navbar = () => {
           <Link href="/about" className="hover:text-gray-600 transition">
             Nosotros
           </Link>
-          <Link href="/contact" className="hover:text-gray-600 transition">
-            Contacto
-          </Link>
+
         </div>
 
         {/* Iconos */}
@@ -53,15 +51,12 @@ const Navbar = () => {
 
       {/* Menú Móvil */}
       {isOpen && (
-        <div className="md:hidden bg-white shadow-md absolute w-full left-0 top-16 p-4 flex flex-col space-y-4">
+        <div className="md:hidden bg-gray-200/50 backdrop-blur-sm shadow-md absolute w-full left-0 top-16 p-4 flex flex-col space-y-4"> {/* Fondo semitransparente con desenfoque */}
           <Link href="/products" className="hover:text-gray-600 transition" onClick={() => setIsOpen(false)}>
             Productos
           </Link>
           <Link href="/about" className="hover:text-gray-600 transition" onClick={() => setIsOpen(false)}>
             Nosotros
-          </Link>
-          <Link href="/contact" className="hover:text-gray-600 transition" onClick={() => setIsOpen(false)}>
-            Contacto
           </Link>
         </div>
       )}
