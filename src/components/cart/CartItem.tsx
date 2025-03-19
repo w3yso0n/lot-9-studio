@@ -27,6 +27,7 @@ const CartItem = ({ product }: CartItemProps) => {
       <Button variant="destructive" onClick={() => removeFromCart(product.id)}>
         Eliminar
       </Button>
+      
     </div>
   );
 };
