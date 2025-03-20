@@ -4,14 +4,14 @@ const HeroBanner = () => {
     <section className="relative w-full h-[500px] flex items-center justify-center bg-gray-100 overflow-hidden">
       {/* Imagen de fondo */}
       <video
-        autoPlay
-        muted
-        loop
-        className="absolute inset-0 z-0 object-cover w-full h-full"
-      >
-        <source src="/video1.mp4" type="video/mp4" />
-        Tu navegador no soporta la etiqueta de video.
-      </video>
+  autoPlay
+  muted
+  loop
+  className="absolute inset-0 z-0 object-cover w-full h-full"
+>
+  <source src="/video1.mp4" type="video/mp4" />
+  Tu navegador no soporta la etiqueta de video.
+</video>
 
       {/* Contenido del Hero */}
       <div className="relative z-10 text-center text-white px-6">
@@ -21,6 +21,7 @@ const HeroBanner = () => {
         <p className="mt-2 text-lg sm:text-xl drop-shadow-md">
           Descubre nuestra nueva colección de ropa para hombres
         </p>
+
 
       </div>
 

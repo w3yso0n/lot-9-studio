@@ -4,7 +4,9 @@ import { products } from "@/lib/data";
 
 const AllProducts = () => {
   return (
-    <section className="container mx-auto py-10 text-white" >
+    <section className="container mx-auto py-10 " >
+
+      
       {/* Sección de Nuevos Drops */}
       <NewDropsCarousel />
 

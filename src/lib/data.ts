@@ -1,59 +1,83 @@
 export const products = [
     {
       id: 1,
-      name: "Camisa Casual",
+      name: "L art Est Tout",
       price: 299.99,
       image: "/images/flores_frontal.png",
     },
     {
       id: 2,
-      name: "Pantalón de Mezclilla",
+      name: "Souls of Mischief", 
       price: 299.99,
-      image: "/images/camisa.png",
+      image: "/images/souls.png",
     },
     {
       id: 3,
-      name: "Chaqueta de Cuero",
+      name: "Make Money",
       price: 299.99,
       image: "/images/make_money_negro.png",
     },
     {
       id: 4,
-      name: "Zapatos Elegantes",
+      name: "Nine",
       price: 299.99,
       image: "/images/nine.png",
     },
     {
       id: 5,
-      name: "Santal Back Blanco",
+      name: "Santal Blanco",
       price: 299.99,
       image: "/images/santal_back_blanco.png"
     },
     {
       id: 6,
-      name: "Santal Back Blanco",
+      name: "Santal Beige",
       price: 299.99,
-      image: "/images/santal_beige.png"
+      image: "/images/santal_back_beige.png"
+    },
+    {
+      id: 7,
+      name: "Make Money Pink",
+      price: 299.99,
+      image: "/images/make_money_pink_black.png",
+    },
+    {
+      id: 8,
+      name: "Make Money Pink Gray",
+      price: 299.99,
+      image: "/images/make_money_pink_gray.png",
+    },
+    {
+      id: 9,
+      name: "Make Money Red",
+      price: 299.99,
+      image: "/images/make_money_red_gray.png",
+    },
+    {
+      id: 10,
+      name: "Make Money Red White",
+      price: 299.99,
+      image: "/images/make_money_red_white.png",
     }
   ];
 
   export const newDrops = [
     {
       id: 1,
-      name: "Sudadera Oversized",
-      price: 79.99,
-      image: "/images/camisa.png",
+      name: "Gorra Streetwear",
+      price: 299.99,
+      image: "/images/newdrop2.jpeg",
     },
     {
       id: 2,
-      name: "Gorra Streetwear",
-      price: 29.99,
-      image: "/images/newdrop2.jpeg",
+      name: "Souls of Mischief",
+      price: 299.99,
+      image: "/images/souls.png",
     },
     {
       id: 3,
       name: "Sneakers Edición Limitada",
-      price: 129.99,
+      price: 299.99,
       image: "/images/newdrop3.jpeg",
     },
   ];
