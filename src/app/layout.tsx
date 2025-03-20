@@ -4,6 +4,7 @@ import { DM_Serif_Display } from "next/font/google"; // Nueva tipografía
 
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local"; // Import localFont function
 import "./globals.css";
 
 const geistSans = Geist({
@@ -22,6 +23,15 @@ const dmSerif = DM_Serif_Display({
   weight: "400",
 });
 
+const nyghtSerif = localFont({
+  src: [
+    {
+      path: "../fonts/NyghtSerif-BoldItalic.ttf", // Ruta a la fuente
+      weight: "300",
+      style: "normal",
+    },
+  ],
+});
 
 export const metadata: Metadata = {
   title: "lot 9 studio",
@@ -34,7 +44,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
-        className={`${dmSerif.variable} antialiased`}
+        className={`${nyghtSerif.className} antialiased`}
       >
         {/* Navbar siempre visible */}
         <Navbar />

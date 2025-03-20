@@ -1,18 +1,17 @@
 
+import Image from 'next/image';
+
 const HeroBanner = () => {
   return (
     <section className="relative w-full h-[500px] flex items-center justify-center bg-gray-100 overflow-hidden">
       {/* Imagen de fondo */}
-      <video
-  autoPlay
-  muted
-  loop
-  className="absolute inset-0 z-0 object-cover w-full h-full"
->
-  <source src="/video1.mp4" type="video/mp4" />
-  Tu navegador no soporta la etiqueta de video.
-</video>
-
+      <Image
+        src="/images/background.png" // Asegúrate de colocar la imagen en /public/images/
+        alt="Moda para hombres"
+        fill
+        className="absolute inset-0 z-0"
+        priority
+      />
       {/* Contenido del Hero */}
       <div className="relative z-10 text-center text-white px-6">
         <h1 className="text-4xl sm:text-6xl font-bold drop-shadow-md">

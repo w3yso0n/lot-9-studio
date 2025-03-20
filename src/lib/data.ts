@@ -1,84 +1,187 @@
 export const products = [
-    {
-      id: 1,
-      name: "L art Est Tout",
-      price: 299.99,
-      image: "/images/flores_frontal.png",
+  {
+    id: 1,
+    name: "L art Est Tout",
+    price: 299.99,
+    image: "/images/flores_frontal.png",
+    stockBySize: {
+      S: 5,
+      M: 3,
+      L: 2,
+      XL: 0,
     },
-    {
-      id: 2,
-      name: "Souls of Mischief", 
-      price: 299.99,
-      image: "/images/souls.png",
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Red", "Blue"],
+  },
+  {
+    id: 2,
+    name: "Souls of Mischief",
+    price: 299.99,
+    image: "/images/souls.png",
+    stockBySize: {
+      S: 0,
+      M: 0,
+      L: 5,
+      XL: 0,
     },
-    {
-      id: 3,
-      name: "Make Money",
-      price: 299.99,
-      image: "/images/make_money_negro.png",
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Black", "White"],
+  },
+  {
+    id: 3,
+    name: "Make Money",
+    price: 299.99,
+    image: "/images/make_money_negro.png",
+    stockBySize: {
+      S: 7,
+      M: 13,
+      L: 0,
+      XL: 0,
     },
-    {
-      id: 4,
-      name: "Nine",
-      price: 299.99,
-      image: "/images/nine.png",
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Green", "Yellow"],
+  },
+  {
+    id: 4,
+    name: "Nine",
+    price: 299.99,
+    image: "/images/nine.png",
+    stockBySize: {
+      S: 0,
+      M: 0,
+      L: 5,
+      XL: 0,
     },
-    {
-      id: 5,
-      name: "Santal Blanco",
-      price: 299.99,
-      image: "/images/santal_back_blanco.png"
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Purple", "Orange"],
+  },
+  {
+    id: 5,
+    name: "Santal Blanco",
+    price: 299.99,
+    image: "/images/santal_back_blanco.png",
+    stockBySize: {
+      S: 2,
+      M: 2,
+      L: 2,
+      XL: 2,
     },
-    {
-      id: 6,
-      name: "Santal Beige",
-      price: 299.99,
-      image: "/images/santal_back_beige.png"
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["White"],
+  },
+  {
+    id: 6,
+    name: "Santal Beige",
+    price: 299.99,
+    image: "/images/santal_back_beige.png",
+    stockBySize: {
+      S: 0,
+      M: 0,
+      L: 0,
+      XL: 0,
     },
-    {
-      id: 7,
-      name: "Make Money Pink",
-      price: 299.99,
-      image: "/images/make_money_pink_black.png",
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Beige"],
+  },
+  {
+    id: 7,
+    name: "Make Money Pink",
+    price: 299.99,
+    image: "/images/make_money_pink_black.png",
+    stockBySize: {
+      S: 2,
+      M: 3,
+      L: 2,
+      XL: 0,
     },
-    {
-      id: 8,
-      name: "Make Money Pink Gray",
-      price: 299.99,
-      image: "/images/make_money_pink_gray.png",
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Pink", "Black"],
+  },
+  {
+    id: 8,
+    name: "Make Money Pink Gray",
+    price: 299.99,
+    image: "/images/make_money_pink_gray.png",
+    stockBySize: {
+      S: 0,
+      M: 3,
+      L: 3,
+      XL: 3,
     },
-    {
-      id: 9,
-      name: "Make Money Red",
-      price: 299.99,
-      image: "/images/make_money_red_gray.png",
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Pink", "Gray"],
+  },
+  {
+    id: 9,
+    name: "Make Money Red",
+    price: 299.99,
+    image: "/images/make_money_red_gray.png",
+    stockBySize: {
+      S: 5,
+      M: 6,
+      L: 0,
+      XL: 0,
     },
-    {
-      id: 10,
-      name: "Make Money Red White",
-      price: 299.99,
-      image: "/images/make_money_red_white.png",
-    }
-  ];
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Red", "Gray"],
+  },
+  {
+    id: 10,
+    name: "Make Money Red White",
+    price: 299.99,
+    image: "/images/make_money_red_white.png",
+    stockBySize: {
+      S: 0,
+      M: 0,
+      L: 3,
+      XL: 3,
+    },
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Red", "White"],
+  }
+];
 
-  export const newDrops = [
-    {
-      id: 1,
-      name: "Gorra Streetwear",
-      price: 299.99,
-      image: "/images/newdrop2.jpeg",
+export const newDrops = [
+  {
+    id: 1,
+    name: "Souls",
+    price: 299.99,
+    image: "/images/newdrop2.jpeg",
+    stockBySize: {
+      S: 0,
+      M: 10,
+      L: 5,
+      XL: 0,
     },
-    {
-      id: 2,
-      name: "Souls of Mischief",
-      price: 299.99,
-      image: "/images/souls.png",
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Black"],
+  },
+  {
+    id: 2,
+    name: "Souls of Mischief",
+    price: 299.99,
+    image: "/images/souls.png",
+    stockBySize: {
+      S: 0,
+      M: 10,
+      L: 5,
+      XL: 0,
     },
-    {
-      id: 3,
-      name: "Sneakers Edición Limitada",
-      price: 299.99,
-      image: "/images/newdrop3.jpeg",
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Black", "White"],
+  },
+  {
+    id: 3,
+    name: "Souls",
+    price: 299.99,
+    image: "/images/newdrop3.jpeg",
+    stockBySize: {
+      S: 0,
+      M: 0,
+      L: 5,
+      XL: 0,
     },
-  ];
-  
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Red", "Blue"],
+  },
+];
