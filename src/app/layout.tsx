@@ -2,8 +2,7 @@ import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
 import { DM_Serif_Display } from "next/font/google"; // Nueva tipografía
 
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Montserrat } from "next/font/google";
 import localFont from "next/font/local"; // Import localFont function
 import "./globals.css";
 
@@ -23,7 +22,13 @@ const dmSerif = DM_Serif_Display({
   weight: "400",
 });
 
-const nyghtSerif = localFont({
+export const montserrat = Montserrat({
+  subsets: ["latin"],
+  variable: "--font-secondary",
+  weight: "400",
+});
+
+export const nyghtSerif = localFont({
   src: [
     {
       path: "../fonts/NyghtSerif-BoldItalic.ttf", // Ruta a la fuente
@@ -33,10 +38,7 @@ const nyghtSerif = localFont({
   ],
 });
 
-export const metadata: Metadata = {
-  title: "lot 9 studio",
-  description: "La mejor ropa acorde a tu estilo",
-};
+
 
 export default function RootLayout({
   children,

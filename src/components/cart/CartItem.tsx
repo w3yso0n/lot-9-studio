@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/store/cart";
 import Image from "next/image";
@@ -8,27 +10,34 @@ interface CartItemProps {
     name: string;
     price: number;
     image: string;
-    quantity: number;
   };
+  selectedSize: string; // selectedSize como prop independiente
+  quantity: number; // quantity como prop independiente
 }
 
-const CartItem = ({ product }: CartItemProps) => {
+const CartItem = ({ product, selectedSize, quantity }: CartItemProps) => {
   const removeFromCart = useCartStore((state) => state.removeFromCart);
 
   return (
     <div className="flex items-center justify-between p-4 border-b">
       <div className="flex items-center gap-4">
-        <Image src={product.image} alt={product.name} width={80} height={80} className="rounded-md"/>
+        <Image
+          src={product.image}
+          alt={product.name}
+          width={80}
+          height={80}
+          className="rounded-md"
+        />
         <div>
           <h3 className="text-lg font-bold">{product.name}</h3>
-          <p className="text-gray-600">${product.price.toFixed(2)} x {product.quantity}</p>
+          <p className="text-gray-600">
+            ${product.price.toFixed(2)} x {quantity} (Talla: {selectedSize})
+          </p>
         </div>
       </div>
       <Button variant="destructive" onClick={() => removeFromCart(product.id)}>
         Eliminar
       </Button>
-      
-      
     </div>
   );
 };

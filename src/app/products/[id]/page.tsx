@@ -1,7 +1,9 @@
 "use client";
 
+import { montserrat, nyghtSerif } from "@/app/layout"; // Importa la fuente Montserrat
 import { Button } from "@/components/ui/button";
 import { products } from "@/lib/data";
+import { useCartStore } from "@/store/cart"; // Importa el store del carrito
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { useState } from "react";
@@ -9,7 +11,7 @@ import { useState } from "react";
 export default function ProductPage({ params }: any) {
   const { id } = params;
 
-  const product = products.find((p) => p.id === parseInt(id, 10)) as {
+  type Product = {
     id: number;
     name: string;
     price: number;
@@ -21,7 +23,11 @@ export default function ProductPage({ params }: any) {
       L: number;
       XL: number;
     };
+    selectedSize?: string;
+    quantity: number;
   };
+
+  const product = { ...products.find((p) => p.id === parseInt(id, 10)), quantity: 1 } as Product;
 
   if (!product) return notFound(); // Si el producto no existe, devuelve un 404
 
@@ -39,11 +45,14 @@ export default function ProductPage({ params }: any) {
     ? product.stockBySize[selectedSize] === 0
     : false;
 
+  // Función para añadir al carrito
+  const addToCart = useCartStore((state) => state.addToCart);
+
   return (
-    <section className="container mx-auto py-12">
+    <section className={`container mx-auto py-12 px-4 sm:px-6 lg:px-8 ${montserrat.className}`}> {/* Aplica Montserrat a todo el contenedor */}
       <div className="flex flex-col md:flex-row gap-8">
         {/* Columna de imágenes adicionales */}
-        <div className="flex flex-row md:flex-col gap-4 order-2 md:order-1">
+        <div className="flex flex-row md:flex-col gap-4 order-2 md:order-1 p-4">
           {additionalImages.map((img, index) => (
             <div
               key={index}
@@ -61,7 +70,7 @@ export default function ProductPage({ params }: any) {
         </div>
 
         {/* Imagen principal del producto */}
-        <div className="relative w-full max-w-md h-[500px] order-1 md:order-2">
+        <div className="relative w-full max-w-md h-[500px] order-1 md:order-2 p-4">
           <Image
             src={mainImage} // Usa la imagen principal del estado
             alt={product.name}
@@ -83,8 +92,11 @@ export default function ProductPage({ params }: any) {
         </div>
 
         {/* Detalles del producto */}
-        <div className="max-w-lg order-3">
-          <h1 className="text-3xl font-bold mb-4">{product.name}</h1>
+        <div className="max-w-lg order-3 p-4">
+          {/* Nombre del producto (sin Montserrat) */}
+          <h1 className={`text-3xl font-bold mb-4 ${nyghtSerif.className}`}>{product.name}</h1>
+
+          {/* Precio (con Montserrat) */}
           <p className="text-gray-600 text-lg">${product.price.toFixed(2)}</p>
 
           {/* Tamaños disponibles */}
@@ -107,7 +119,7 @@ export default function ProductPage({ params }: any) {
             </div>
           </div>
 
-          {/* Stock disponible */}
+          {/* Stock disponible (con Montserrat) */}
           <div className="mt-6">
             <h2 className="text-xl font-semibold mb-2">Stock disponible</h2>
             <p className="text-gray-700">
@@ -119,7 +131,7 @@ export default function ProductPage({ params }: any) {
             </p>
           </div>
 
-          {/* Descripción del producto */}
+          {/* Descripción del producto (con Montserrat) */}
           <div className="mt-6">
             <h2 className="text-xl font-semibold mb-2">Descripción</h2>
             <p className="text-gray-700">
@@ -127,11 +139,16 @@ export default function ProductPage({ params }: any) {
             </p>
           </div>
 
-          {/* Botón de añadir al carrito */}
+          {/* Botón de añadir al carrito (con Montserrat) */}
           <div className="mt-6">
             <Button
               className="w-full md:w-auto"
-              disabled={!selectedSize || isOutOfStock} // Deshabilitar si no hay talla seleccionada o no hay stock
+              disabled={!selectedSize || isOutOfStock}
+              onClick={() => {
+                if (selectedSize) {
+                  addToCart(product, selectedSize); // Pasa product y selectedSize
+                }
+              }}
             >
               {selectedSize
                 ? isOutOfStock

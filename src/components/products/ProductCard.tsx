@@ -1,5 +1,6 @@
 "use client";
 
+import { montserrat, nyghtSerif } from "@/app/layout"; // Importa la fuente Montserrat
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import Link from "next/link";
@@ -23,7 +24,7 @@ export const ProductCard = ({ product }: ProductProps) => {
   );
 
   return (
-    <Card className="w-full shadow-md rounded-md bg-white">
+    <Card className={`w-full shadow-md rounded-md bg-white ${montserrat.className}`}>
       {/* Envuelve el contenido de la tarjeta con Link */}
       <Link href={`/products/${product.id}`}>
         <CardContent className="p-4 flex flex-col items-center cursor-pointer">
@@ -50,7 +51,7 @@ export const ProductCard = ({ product }: ProductProps) => {
             )}
           </div>
           {/* Nombre y precio del producto */}
-          <h3 className="mt-4 text-lg font-bold text-center">{product.name}</h3>
+          <h3 className={`mt-4 text-lg font-bold text-center ${nyghtSerif.className}`}>{product.name}</h3>
           <p className="text-gray-600">${product.price.toFixed(2)}</p>
         </CardContent>
       </Link>
