@@ -9,7 +9,7 @@ const HeroBanner = () => {
         src="/images/background.png" // Asegúrate de colocar la imagen en /public/images/
         alt="Moda para hombres"
         fill
-        className="absolute inset-0 z-0"
+        className="absolute inset-0 z-0 object-cover"
         priority
       />
       {/* Contenido del Hero */}

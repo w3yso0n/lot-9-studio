@@ -26,7 +26,7 @@ const NewDropsCarousel = () => {
       >
         {newDrops.map((product) => (
           <SwiperSlide key={product.id}>
-            <ProductCard product={product} />
+            <ProductCard key={product.id} product={product} />
           </SwiperSlide>
         ))}
       </Swiper>

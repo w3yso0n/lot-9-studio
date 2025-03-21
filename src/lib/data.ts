@@ -79,7 +79,7 @@ export const products = [
       price: 299.99,
       images: [
         "/images/Make_Money_Gris_Rojo_Trasera.png",
-        "/images/Make_Make_Money_Gris_Rojo_Frontal.png",
+        "/images/Make_Money_Gris_Rojo_Frontal.png",
         "/images/Render_Gris_Rojo.png"
       ],
       stockBySize: {
@@ -97,8 +97,8 @@ export const products = [
       name: "Make Money",
       price: 299.99,
       images: [
-        "/images/Make_Money_Gris_Rosa_Frontal.png",
         "/images/Make_Money_Gris_Rosa_Trasera.png",
+        "/images/Make_Money_Gris_Rosa_Frontal.png",
         "/images/Render_Gris_Rosa.png"
       ],
       stockBySize: {
@@ -106,24 +106,6 @@ export const products = [
         M: 2,
         L: 2,
         XL: 0,
-      },
-      sizes: ["S", "M", "L", "XL"],
-      colors: ["Red", "Blue"],
-      desc:"",
-    },
-    {
-      id: 7,
-      name: "Make Money",
-      price: 299.99,
-      images: [
-        "/images/Make_Money_Negra_Rojo_Trasera.png",
-        "/images/Make_Money_Negra_Rojo_Frontal.png",
-      ],
-      stockBySize: {
-        S: 1,
-        M: 2,
-        L: 2,
-        XL: 3,
       },
       sizes: ["S", "M", "L", "XL"],
       colors: ["Red", "Blue"],
@@ -153,7 +135,7 @@ export const products = [
       price: 299.99,
       images: [
         "/images/Make_Money_Negro_Gris_Trasera.png",
-        "/images/Make_Money_Negra_Gris_Frontal.png",
+        "/images/Make_Money_Negro_Gris_Frontal.png",
         "/images/Render_Negro_Gris.png",
       ],
       stockBySize: {
@@ -172,7 +154,7 @@ export const products = [
       price: 299.99,
       images: [
         "/images/Make_Money_Negro_Rosa_Trasera.png",
-        "/images/Make_Money_Negra_Rosa_Frontal.png",
+        "/images/Make_Money_Negro_Rosa_Frontal.png",
         "/images/Render_Negro_Rosa.png",
       ],
       stockBySize: {
@@ -249,7 +231,6 @@ export const products = [
       images: [
         "/images/Santal_Negro_Trasera.png",
         "/images/Santal_Negro_Frontal.png",
-        "/images/Render_Angel_Negro.png",
         "/images/Modelo_santal_Negro1.jpg",
         "/images/Modelo_santal_Negro2.jpg",
       ],
@@ -320,6 +301,7 @@ export const newDrops = [
     },
     sizes: ["S", "M", "L", "XL"],
     colors: ["Black"],
+    desc:"",
   },
   {
     id: 18,
@@ -327,7 +309,6 @@ export const newDrops = [
     price: 349.99,
     images: [
       "/images/souls.png",
-      "/images/souls.png"
     ],
     stockBySize: {
       S: 0,
@@ -337,6 +318,7 @@ export const newDrops = [
     },
     sizes: ["S", "M", "L", "XL"],
     colors: ["Black", "White"],
+    desc:"",
   },
   {
     id: 19,
@@ -354,5 +336,6 @@ export const newDrops = [
     },
     sizes: ["S", "M", "L", "XL"],
     colors: ["Red", "Blue"],
+    desc:"",
   },
 ];

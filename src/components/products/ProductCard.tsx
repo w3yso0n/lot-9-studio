@@ -57,7 +57,7 @@ export const ProductCard = ({ product }: ProductProps) => {
           <h3 className={`mt-4 text-lg font-bold text-center ${nyghtSerif.className}`}>
             {product.name}
           </h3>
-          <p className="text-gray-600">${product.price.toFixed(2)}</p>
+          <p className="text-gray-600">${product.price ? product.price.toFixed(2) : 'N/A'}</p>
         </CardContent>
       </Link>
     </Card>

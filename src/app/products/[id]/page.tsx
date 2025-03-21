@@ -1,8 +1,8 @@
 "use client";
 
-import { montserrat, nyghtSerif } from "@/app/fonts";  // Importa la fuente Montserrat
+import { montserrat, nyghtSerif } from "@/app/fonts"; // Importa la fuente Montserrat
 import { Button } from "@/components/ui/button";
-import { products } from "@/lib/data";
+import { newDrops, products } from "@/lib/data";
 import { useCartStore } from "@/store/cart"; // Importa el store del carrito
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -27,13 +27,23 @@ export default function ProductPage({ params }: any) {
     quantity: number;
   };
 
-  const product = { 
-    ...products.find((p) => p.id === parseInt(id, 10)), 
-    images: products.find((p) => p.id === parseInt(id, 10))?.images || [], 
-    quantity: 1 
+  const allProducts = [...products, ...newDrops].reduce((acc, product) => {
+    if (!acc.some((p) => p.id === product.id)) {
+      acc.push(product);
+    }
+    return acc;
+  }, [] as typeof products);
+
+  // Busca el producto en la lista combinada
+  const foundProduct = allProducts.find((p) => p.id === parseInt(id, 10));
+  if (!foundProduct) return notFound(); // Si el producto no existe, devuelve un 404
+
+  const product = {
+    ...foundProduct,
+    images: foundProduct.images || [],
+    quantity: 1,
   } as Product;
 
-  if (!product) return notFound(); // Si el producto no existe, devuelve un 404
 
   // Simulación de imágenes adicionales (misma imagen repetida)
 
