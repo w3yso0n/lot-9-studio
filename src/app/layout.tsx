@@ -1,44 +1,9 @@
 import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
-import { DM_Serif_Display } from "next/font/google"; // Nueva tipografía
 
-import { Geist, Geist_Mono, Montserrat } from "next/font/google";
-import localFont from "next/font/local"; // Import localFont function
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const dmSerif = DM_Serif_Display({
-  subsets: ["latin"],
-  variable: "--font-primary",
-  weight: "400",
-});
-
-export const montserrat = Montserrat({
-  subsets: ["latin"],
-  variable: "--font-secondary",
-  weight: "400",
-});
-
-export const nyghtSerif = localFont({
-  src: [
-    {
-      path: "../fonts/NyghtSerif-BoldItalic.ttf", // Ruta a la fuente
-      weight: "300",
-      style: "normal",
-    },
-  ],
-});
-
-
+import { montserrat, nyghtSerif } from "./fonts";
 
 export default function RootLayout({
   children,
@@ -46,7 +11,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
-        className={`${nyghtSerif.className} antialiased`}
+        className={`${nyghtSerif.className} ${montserrat.className} antialiased`}
       >
         {/* Navbar siempre visible */}
         <Navbar />

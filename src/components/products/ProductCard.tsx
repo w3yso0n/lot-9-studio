@@ -1,6 +1,6 @@
 "use client";
 
-import { montserrat, nyghtSerif } from "@/app/layout"; // Importa la fuente Montserrat
+import { montserrat, nyghtSerif } from "@/app/fonts"; // Importa la fuente Montserrat
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,7 +10,7 @@ interface ProductProps {
     id: number;
     name: string;
     price: number;
-    image: string;
+    images: string[]; // Ahora es un array de imágenes
     stockBySize: { [size: string]: number }; // Stock por tamaño
     sizes: string[];
     colors: string[];
@@ -23,6 +23,9 @@ export const ProductCard = ({ product }: ProductProps) => {
     (stock) => stock === 0
   );
 
+  // Usar la primera imagen como imagen principal
+  const mainImage = product.images[0];
+
   return (
     <Card className={`w-full shadow-md rounded-md bg-white ${montserrat.className}`}>
       {/* Envuelve el contenido de la tarjeta con Link */}
@@ -31,7 +34,7 @@ export const ProductCard = ({ product }: ProductProps) => {
           {/* Contenedor estándar para imágenes */}
           <div className="relative w-full h-[400px] overflow-hidden rounded-md">
             <Image
-              src={product.image}
+              src={mainImage} // Usar la primera imagen del array
               alt={product.name}
               layout="fill"
               objectFit="cover"
@@ -51,7 +54,9 @@ export const ProductCard = ({ product }: ProductProps) => {
             )}
           </div>
           {/* Nombre y precio del producto */}
-          <h3 className={`mt-4 text-lg font-bold text-center ${nyghtSerif.className}`}>{product.name}</h3>
+          <h3 className={`mt-4 text-lg font-bold text-center ${nyghtSerif.className}`}>
+            {product.name}
+          </h3>
           <p className="text-gray-600">${product.price.toFixed(2)}</p>
         </CardContent>
       </Link>

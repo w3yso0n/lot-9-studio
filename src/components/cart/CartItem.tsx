@@ -9,7 +9,7 @@ interface CartItemProps {
     id: number;
     name: string;
     price: number;
-    image: string;
+    images: string[];
   };
   selectedSize: string; // selectedSize como prop independiente
   quantity: number; // quantity como prop independiente
@@ -23,7 +23,7 @@ const CartItem = ({ product, selectedSize, quantity }: CartItemProps) => {
     <div className="flex items-center justify-between p-4 border-b">
       <div className="flex items-center gap-4">
         <Image
-          src={product.image}
+          src={product.images[0]}
           alt={product.name}
           width={80}
           height={80}

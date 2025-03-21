@@ -1,6 +1,6 @@
 "use client";
 
-import { montserrat, nyghtSerif } from "@/app/layout"; // Importa la fuente Montserrat
+import { montserrat, nyghtSerif } from "@/app/fonts";  // Importa la fuente Montserrat
 import { Button } from "@/components/ui/button";
 import { products } from "@/lib/data";
 import { useCartStore } from "@/store/cart"; // Importa el store del carrito
@@ -15,7 +15,7 @@ export default function ProductPage({ params }: any) {
     id: number;
     name: string;
     price: number;
-    image: string;
+    images: string[];
     sizes: ("S" | "M" | "L" | "XL")[];
     stockBySize: {
       S: number;
@@ -27,15 +27,18 @@ export default function ProductPage({ params }: any) {
     quantity: number;
   };
 
-  const product = { ...products.find((p) => p.id === parseInt(id, 10)), quantity: 1 } as Product;
+  const product = { 
+    ...products.find((p) => p.id === parseInt(id, 10)), 
+    images: products.find((p) => p.id === parseInt(id, 10))?.images || [], 
+    quantity: 1 
+  } as Product;
 
   if (!product) return notFound(); // Si el producto no existe, devuelve un 404
 
   // Simulación de imágenes adicionales (misma imagen repetida)
-  const additionalImages = Array(5).fill(product.image);
 
   // Estado para manejar la imagen principal
-  const [mainImage, setMainImage] = useState(product.image);
+  const [mainImage, setMainImage] = useState(product.images[0]);
 
   // Estado para manejar la talla seleccionada
   const [selectedSize, setSelectedSize] = useState<keyof typeof product.stockBySize | null>(null);
@@ -53,7 +56,7 @@ export default function ProductPage({ params }: any) {
       <div className="flex flex-col md:flex-row gap-8">
         {/* Columna de imágenes adicionales */}
         <div className="flex flex-row md:flex-col gap-4 order-2 md:order-1 p-4">
-          {additionalImages.map((img, index) => (
+          {product.images.map((img, index) => (
             <div
               key={index}
               className="relative w-20 h-20 md:w-24 md:h-24 cursor-pointer"
