@@ -103,19 +103,24 @@ export default function ProductPage({ params }: any) {
           <div className="mt-6">
             <h2 className="text-xl font-semibold mb-2">Tamaños disponibles</h2>
             <div className="flex gap-2">
-              {product.sizes.map((size: keyof typeof product.stockBySize) => (
-                <button
-                  key={size}
-                  onClick={() => setSelectedSize(size)}
-                  className={`px-4 py-2 border rounded-lg ${
-                    selectedSize === size
-                      ? "bg-black text-white"
-                      : "border-gray-200 hover:bg-gray-100"
-                  }`}
-                >
-                  {size}
-                </button>
-              ))}
+              {product.sizes.map((size: keyof typeof product.stockBySize) => {
+                const isSizeOutOfStock = product.stockBySize[size] === 0; // Verifica si la talla está agotada
+
+                return (
+                  <button
+                    key={size}
+                    onClick={() => setSelectedSize(size)} 
+                    className={`px-4 py-2 border rounded-lg ${selectedSize === size
+                        ? "bg-black text-white"
+                        : isSizeOutOfStock
+                          ? "line-through text-gray-400 " // Tacha el texto y cambia el cursor
+                          : "border-gray-200 hover:bg-gray-100"
+                      }`}
+                  >
+                    {size}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -146,7 +151,7 @@ export default function ProductPage({ params }: any) {
               disabled={!selectedSize || isOutOfStock}
               onClick={() => {
                 if (selectedSize) {
-                  addToCart(product, selectedSize); // Pasa product y selectedSize
+                  addToCart(product, selectedSize); // Pasa product y selectedSize como argumentos separados
                 }
               }}
             >

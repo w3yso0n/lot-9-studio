@@ -17,6 +17,7 @@ interface CartItemProps {
 
 const CartItem = ({ product, selectedSize, quantity }: CartItemProps) => {
   const removeFromCart = useCartStore((state) => state.removeFromCart);
+  const decreaseQuantity = useCartStore((state) => state.decreaseQuantity);
 
   return (
     <div className="flex items-center justify-between p-4 border-b">
@@ -35,9 +36,19 @@ const CartItem = ({ product, selectedSize, quantity }: CartItemProps) => {
           </p>
         </div>
       </div>
-      <Button variant="destructive" onClick={() => removeFromCart(product.id)}>
+      <Button
+        variant="destructive"
+        onClick={() => removeFromCart(product.id, selectedSize)} // Pasa id y selectedSize
+      >
         Eliminar
       </Button>
+
+      <Button
+  variant="outline"
+  onClick={() => decreaseQuantity(product.id, selectedSize)}
+>
+  -
+</Button>
     </div>
   );
 };

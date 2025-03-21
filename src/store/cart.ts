@@ -8,7 +8,6 @@ interface Product {
   quantity: number;
 }
 
-// Nuevo tipo CartItem que incluye selectedSize
 interface CartItem {
   product: Product;
   quantity: number;
@@ -16,16 +15,16 @@ interface CartItem {
 }
 
 interface CartState {
-  cart: CartItem[]; // Usa CartItem en lugar de Product
+  cart: CartItem[];
   addToCart: (product: Product, selectedSize: string) => void;
-  removeFromCart: (id: number) => void;
+  removeFromCart: (id: number, selectedSize: string) => void;
+  decreaseQuantity: (id: number, selectedSize: string) => void; // Nueva función
   clearCart: () => void;
 }
 
 export const useCartStore = create<CartState>((set) => ({
   cart: [],
 
-  // Modifica addToCart para aceptar selectedSize
   addToCart: (product, selectedSize) =>
     set((state) => {
       const existingItem = state.cart.find(
@@ -47,9 +46,21 @@ export const useCartStore = create<CartState>((set) => ({
       };
     }),
 
-  removeFromCart: (id) =>
+  removeFromCart: (id, selectedSize) =>
     set((state) => ({
-      cart: state.cart.filter((item) => item.product.id !== id),
+      cart: state.cart.filter(
+        (item) => !(item.product.id === id && item.selectedSize === selectedSize)
+      ),
+    })),
+
+  // Función para disminuir la cantidad
+  decreaseQuantity: (id, selectedSize) =>
+    set((state) => ({
+      cart: state.cart.map((item) =>
+        item.product.id === id && item.selectedSize === selectedSize
+          ? { ...item, quantity: item.quantity - 1 }
+          : item
+      ).filter((item) => item.quantity > 0), // Elimina el ítem si la cantidad llega a 0
     })),
 
   clearCart: () => set({ cart: [] }),
