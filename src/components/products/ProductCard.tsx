@@ -15,6 +15,7 @@ interface ProductProps {
     sizes: string[];
     colors: string[];
   };
+  className?: string;
 }
 
 export const ProductCard = ({ product }: ProductProps) => {

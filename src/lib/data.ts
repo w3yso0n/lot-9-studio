@@ -1,5 +1,113 @@
 export const products = [
   {
+    id: 20,
+    name: "D9 WPink",
+    price: 299.99,
+    images: [
+       "/images/Devil_Trasero_Blanco_Rosa.png",
+      "/images/Devil_Frontal_Blanco_.png",
+    ],
+    stockBySize: {
+      S: 2,
+      M: 5,
+      L: 5,
+      XL: 2,
+    },
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Red", "Blue"],
+    desc:"",
+  },
+  {
+    id: 21,
+    name: "D9 WBlue",
+    price: 299.99,
+    images: [
+      "/images/Devil_Trasero_Blanco_Azul.png",
+      "/images/Devil_Frontal_Blanco_.png",
+    ],
+    stockBySize: {
+      S: 2,
+      M: 5,
+      L: 5,
+      XL: 2,
+    },
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Red", "Blue"],
+    desc:"",
+  },
+  {
+    id: 22,
+    name: "D9 WBlack",
+    price: 299.99,
+    images: [
+       "/images/Devil_Frontal_Blanco_Negro.png",
+      "/images/Devil_Frontal_Blanco_.png",
+    ],
+    stockBySize: {
+      S: 2,
+      M: 5,
+      L: 5,
+      XL: 2,
+    },
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Red", "Blue"],
+    desc:"",
+  },
+  {
+    id: 23,
+    name: "D9 BWhite",
+    price: 299.99,
+    images: [
+       "/images/Devil_Trasero_Negro_Blanco.png",
+      "/images/Devil_Frontal_Negro_.png",
+    ],
+    stockBySize: {
+      S: 2,
+      M: 5,
+      L: 5,
+      XL: 2,
+    },
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Red", "Blue"],
+    desc:"",
+  },
+  {
+    id: 24,
+    name: "D9 BOrange",
+    price: 299.99,
+    images: [
+       "/images/Devil_Trasero_Negro_Naranja.png",
+      "/images/Devil_Frontal_Negro_.png",
+    ],
+    stockBySize: {
+      S: 2,
+      M: 5,
+      L: 5,
+      XL: 2,
+    },
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Red", "Blue"],
+    desc:"",
+  },
+   {
+    id: 25,
+    name: "D9 BPink",
+    price: 299.99,
+    images: [
+       "/images/Devil_Trasero_Negro_Rosa.png",
+      "/images/Devil_Frontal_Negro_.png",
+    ],
+    stockBySize: {
+      S: 2,
+      M: 5,
+      L: 5,
+      XL: 2,
+    },
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Red", "Blue"],
+    desc:"",
+  },
+  {
       id: 1,
       name: "Souls",
       price: 349.99,
@@ -282,26 +390,63 @@ export const products = [
       colors: ["Red", "Blue"],
       desc:"",
     },
+
   ]
 
 export const newDrops = [
+  // {
+  //   id: 17,
+  //   name: "Souls",
+  //   price: 349.99,
+  //   images: [
+  //     "/images/newdrop2.jpeg",
+  //     "/images/souls.png"
+  //   ] ,
+  //   stockBySize: {
+  //     S: 0,
+  //     M: 10,
+  //     L: 5,
+  //     XL: 0,
+  //   },
+  //   sizes: ["S", "M", "L", "XL"],
+  //   colors: ["Black"],
+  //   desc:"",
+  // },
   {
-    id: 17,
-    name: "Souls",
-    price: 349.99,
+    id: 20,
+    name: "D9 WPink",
+    price: 299.99,
     images: [
-      "/images/newdrop2.jpeg",
-      "/images/souls.png"
-    ] ,
+       "/images/Devil_Trasero_Blanco_Rosa.png",
+      "/images/Devil_Frontal_Blanco_.png",
+    ],
     stockBySize: {
-      S: 0,
-      M: 10,
+      S: 2,
+      M: 5,
       L: 5,
-      XL: 0,
+      XL: 2,
     },
     sizes: ["S", "M", "L", "XL"],
-    colors: ["Black"],
+    colors: ["Red", "Blue"],
     desc:"",
+  },
+  {
+    id: 2,
+    name: "Nine",
+    price: 349.99,
+    images: [
+      "/images/Nine_Trasero.png",
+      "/images/Nine_Frontal.png",
+      "/images/Render_Nine.png",
+    ],
+    stockBySize: {
+      S: 5,
+      M: 5,
+      L: 5,
+      XL: 5,
+    },
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Black", "White"],
   },
   {
     id: 18,
@@ -320,22 +465,22 @@ export const newDrops = [
     colors: ["Black", "White"],
     desc:"",
   },
-  {
-    id: 19,
-    name: "Souls",
-    price: 349.99,
-    images: [
-      "/images/newdrop3.jpeg",
-      "/images/souls.png"
-    ],
-    stockBySize: {
-      S: 0,
-      M: 0,
-      L: 5,
-      XL: 0,
-    },
-    sizes: ["S", "M", "L", "XL"],
-    colors: ["Red", "Blue"],
-    desc:"",
-  },
+  // {
+  //   id: 19,
+  //   name: "Souls",
+  //   price: 349.99,
+  //   images: [
+  //     "/images/newdrop3.jpeg",
+  //     "/images/souls.png"
+  //   ],
+  //   stockBySize: {
+  //     S: 0,
+  //     M: 0,
+  //     L: 5,
+  //     XL: 0,
+  //   },
+  //   sizes: ["S", "M", "L", "XL"],
+  //   colors: ["Red", "Blue"],
+  //   desc:"",
+  // },
 ];
