@@ -15,7 +15,7 @@ export const products = [
     },
     sizes: ["S", "M", "L", "XL"],
     colors: ["Red", "Blue"],
-    desc:"",
+    desc:"D9 o Devil nine es mas que una playera, es una declaracion de actitud. Este diseño encapsula la esencia de LOT9 STUDIO",
   },
   {
     id: 21,
