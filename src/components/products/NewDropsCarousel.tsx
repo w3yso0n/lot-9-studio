@@ -45,7 +45,7 @@ const NewDropsCarousel = () => {
           Nuevos Drops
         </h2>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Descubre nuestras últimas incorporaciones diseñadas para destacar
+          Descubre nuestras últimos diseños
         </p>
       </motion.div>
 
