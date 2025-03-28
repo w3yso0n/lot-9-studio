@@ -1,5 +1,6 @@
 
 import Image from 'next/image';
+import { montserrat, nyghtSerif } from "@/app/fonts"; // Importa la fuente Montserrat
 
 const HeroBanner = () => {
   return (
