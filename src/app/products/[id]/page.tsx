@@ -24,6 +24,7 @@ export default function ProductPage({ params }: any) {
       XL: number;
     };
     selectedSize?: string;
+    desc:string;
     quantity: number;
   };
 
