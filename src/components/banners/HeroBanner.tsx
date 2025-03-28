@@ -15,10 +15,10 @@ const HeroBanner = () => {
       {/* Contenido del Hero */}
       <div className="relative z-10 text-center text-white px-6">
         <h1 className="text-4xl sm:text-6xl font-bold drop-shadow-md">
-          NO TODOS LO ENTENDERAN
+          NO  TODOS  LO  ENTENDERAN
         </h1>
         <p className="mt-2 text-lg sm:text-xl drop-shadow-md">
-          GDL/MX
+         LOT9STUDIO_GUADALAJARA
         </p>
 
 
