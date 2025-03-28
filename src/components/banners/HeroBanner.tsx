@@ -17,11 +17,9 @@ const HeroBanner = () => {
         <h1 className="text-4xl sm:text-6xl font-bold drop-shadow-md">
           NO  TODOS  LO  ENTENDERAN
         </h1>
-        <p className="mt-2 text-lg sm:text-xl drop-shadow-md">
-         LOT9STUDIO_GUADALAJARA
-        </p>
-
-
+        <p className={`mt-2 text-lg sm:text-xl drop-shadow-md ${montserrat.className}`}>
+  LOT9STUDIO_GUADALAJARA
+</p>
       </div>
 
       {/* Filtro oscuro para mejorar la visibilidad del texto */}
