@@ -267,8 +267,8 @@ export const products = [
       ],
       stockBySize: {
         S: 0,
-        M: 0,
-        L: 0,
+        M: 1,
+        L: 1,
         XL: 0,
       },
       sizes: ["S", "M", "L", "XL"],
