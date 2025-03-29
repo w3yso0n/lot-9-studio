@@ -450,7 +450,7 @@ export const newDrops = [
   },
   {
     id: 18,
-    name: "Souls of Mischief",
+    name: "Souls",
     price: 349.99,
     images: [
       "/images/souls.png",
