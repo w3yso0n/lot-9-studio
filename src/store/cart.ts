@@ -171,7 +171,7 @@ export const useCartStore = create<CartState>()(
       applyDiscount: async (code) => {
         // Simulamos una llamada a API con códigos de descuento
         const validCodes: Record<string, { value: number; type: 'fixed' | 'percentage' }> = {
-          'N9ABRIL25': { value: 10, type: 'percentage' },
+          'LOT9STUDIO': { value: 10, type: 'percentage' },
           'SALE20': { value: 20, type: 'percentage' },
           'ENVIOGRATIS': { value: 5, type: 'fixed' } // $5 de descuento
         };

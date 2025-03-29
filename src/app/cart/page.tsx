@@ -42,7 +42,7 @@ export default function CartPage() {
   const applyDiscount = () => {
     setIsApplyingDiscount(true);
     setTimeout(() => {
-      if (discountCode.toUpperCase() === "N9ABRIL25") {
+      if (discountCode.toUpperCase() === "LOT9STUDIO") {
         setDiscountValue(subtotal * 0.1);
         setDiscountApplied(true);
       } else {
