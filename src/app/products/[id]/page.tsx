@@ -24,6 +24,7 @@ export default function ProductPage({ params }: any) {
       XL: number;
     };
     selectedSize?: string;
+    desc:string;
     quantity: number;
   };
 
@@ -149,14 +150,11 @@ export default function ProductPage({ params }: any) {
             </p>
           </div>
 
-          {/* Descripción del producto (con Montserrat) */}
-          <div className="mt-6">
-            <h2 className="text-xl font-semibold mb-2">Descripción</h2>
-            <p className="text-gray-700">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin et nunc nec velit suscipit sollicitudin.
-            </p>
-          </div>
-
+         {/* Descripción del producto (con Montserrat) */}
+<div className="mt-6">
+  <h2 className="text-xl font-semibold mb-2">Descripción</h2>
+  <p className="text-gray-700">{product.desc}</p>
+</div>
           {/* Botón de añadir al carrito (con Montserrat) */}
           <div className="mt-6">
             <Button

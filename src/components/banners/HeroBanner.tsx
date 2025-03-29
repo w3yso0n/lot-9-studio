@@ -1,5 +1,6 @@
 
 import Image from 'next/image';
+import { montserrat, nyghtSerif } from "@/app/fonts"; // Importa la fuente Montserrat
 
 const HeroBanner = () => {
   return (
@@ -15,13 +16,11 @@ const HeroBanner = () => {
       {/* Contenido del Hero */}
       <div className="relative z-10 text-center text-white px-6">
         <h1 className="text-4xl sm:text-6xl font-bold drop-shadow-md">
-          Estilo & Elegancia
+          NO  TODOS  LO  ENTENDERAN
         </h1>
-        <p className="mt-2 text-lg sm:text-xl drop-shadow-md">
-          Descubre nuestra nueva colección de ropa para hombres
-        </p>
-
-
+        <p className={`mt-2 text-lg sm:text-xl drop-shadow-md ${montserrat.className}`}>
+  LOT9_STUDIO_GUADALAJARA
+</p>
       </div>
 
       {/* Filtro oscuro para mejorar la visibilidad del texto */}

@@ -15,7 +15,7 @@ export const products = [
     },
     sizes: ["S", "M", "L", "XL"],
     colors: ["Red", "Blue"],
-    desc:"",
+    desc:"D9 o Devil nine es mas que una playera, es una declaracion de actitud. Este diseño encapsula la esencia de LOT9 STUDIO",
   },
   {
     id: 21,
@@ -267,8 +267,8 @@ export const products = [
       ],
       stockBySize: {
         S: 0,
-        M: 0,
-        L: 0,
+        M: 1,
+        L: 1,
         XL: 0,
       },
       sizes: ["S", "M", "L", "XL"],
@@ -285,9 +285,9 @@ export const products = [
         "/images/Render_Angel_Blanco.png",
       ],
       stockBySize: {
-        S: 0,
-        M: 0,
-        L: 0,
+        S: 1,
+        M: 1,
+        L: 2,
         XL: 0,
       },
       sizes: ["S", "M", "L", "XL"],
@@ -323,9 +323,9 @@ export const products = [
         "/images/Render_Angel_Negro.png",
       ],
       stockBySize: {
-        S: 0,
-        M: 0,
-        L: 0,
+        S: 1,
+        M: 1,
+        L: 1,
         XL: 0,
       },
       sizes: ["S", "M", "L", "XL"],
@@ -343,10 +343,10 @@ export const products = [
         "/images/Modelo_santal_Negro2.jpg",
       ],
       stockBySize: {
-        S: 1,
-        M: 1,
+        S: 0,
+        M: 0,
         L: 0,
-        XL: 1,
+        XL: 0,
       },
       sizes: ["S", "M", "L", "XL"],
       colors: ["Red", "Blue"],
@@ -450,7 +450,7 @@ export const newDrops = [
   },
   {
     id: 18,
-    name: "Souls of Mischief",
+    name: "Souls",
     price: 349.99,
     images: [
       "/images/souls.png",
