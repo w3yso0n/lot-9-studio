@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useCartStore } from "@/store/cart";
+import { motion } from "framer-motion";
 import { ArrowRightIcon, ShieldCheckIcon, ShoppingCartIcon, TicketIcon, Trash2Icon } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -82,26 +83,85 @@ export default function CartPage() {
   if (!isMounted) return null;
 
   return (
-    <section className={`container mx-auto py-8 px-4 sm:px-6 lg:px-8 ${montserrat.className}`}>
-      <div className="flex flex-col lg:flex-row gap-8">
+    <section className={`container mx-auto py-4 sm:py-6 md:py-8 px-3 sm:px-4 md:px-6 lg:px-8 ${montserrat.className}`}>
+      <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 md:gap-8">
         {/* Sección principal del carrito */}
         <div className="lg:w-2/3">
-          <div className="flex items-center gap-3 mb-6">
-            <h1 className="text-3xl font-bold">Tu Carrito</h1>
+          <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Tu Carrito</h1>
             <Badge variant="secondary" className="text-sm">
               {cart.length} {cart.length === 1 ? "artículo" : "artículos"}
             </Badge>
           </div>
 
           {cart.length === 0 ? (
-            <Card className="text-center py-12">
-              <ShoppingCartIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <h2 className="mt-4 text-lg font-medium text-gray-900">Tu carrito está vacío</h2>
-              <p className="mt-1 text-gray-500">Agrega algunos productos para comenzar</p>
-              <Button className="mt-6" asChild>
-                <a href="/products">Ver productos</a>
-              </Button>
-            </Card>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+              className="w-full"
+            >
+              <Card className="text-center py-8 sm:py-10 md:py-12 mx-auto max-w-md">
+                <motion.div
+                  animate={{ 
+                    y: [0, -10, 0],
+                    rotate: [0, 5, -5, 0]
+                  }}
+                  transition={{ 
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                >
+                  <ShoppingCartIcon className="mx-auto h-10 sm:h-12 w-10 sm:w-12 text-gray-400" />
+                </motion.div>
+                <h2 className="mt-3 sm:mt-4 text-base sm:text-lg md:text-xl font-medium text-gray-900 px-4">
+                  Tu carrito está vacío
+                </h2>
+                <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-500 px-4">
+                  Agrega algunos productos para comenzar
+                </p>
+                <motion.div
+                  className="mt-4 sm:mt-6 px-4"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button className="w-full sm:w-auto" size="lg" asChild>
+                    <a href="/products">Ver productos</a>
+                  </Button>
+                </motion.div>
+                
+                {/* Sugerencias adicionales para móvil */}
+                <div className="mt-6 px-4">
+                  <p className="text-xs sm:text-sm text-gray-400 mb-3">
+                    ¿No sabes qué buscar?
+                  </p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    <motion.button
+                      className="px-3 py-1.5 text-xs sm:text-sm bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Nuevos drops
+                    </motion.button>
+                    <motion.button
+                      className="px-3 py-1.5 text-xs sm:text-sm bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Más vendidos
+                    </motion.button>
+                    <motion.button
+                      className="px-3 py-1.5 text-xs sm:text-sm bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Ofertas
+                    </motion.button>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
           ) : (
             <Card>
               <CardHeader className="border-b">
@@ -140,11 +200,11 @@ export default function CartPage() {
                 {/* Barra de progreso para envío gratis */}
                 {subtotal < freeShippingThreshold && (
                   <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-xs sm:text-sm">
                       <span className="text-muted-foreground">
                         Gasta ${(freeShippingThreshold - subtotal).toFixed(2)} más para envío gratis
                       </span>
-                      <span>{Math.round(progressValue)}%</span>
+                      <span className="font-medium">{Math.round(progressValue)}%</span>
                     </div>
                     <Progress value={progressValue} className="h-2" />
                   </div>
@@ -152,19 +212,21 @@ export default function CartPage() {
 
                 {/* Cupón de descuento */}
                 <div className="space-y-2">
-                  <Label htmlFor="discount">Código de descuento</Label>
-                  <div className="flex gap-2">
+                  <Label htmlFor="discount" className="text-sm sm:text-base">Código de descuento</Label>
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Input
                       id="discount"
                       placeholder="Ingresa tu código"
                       value={discountCode}
                       onChange={(e) => setDiscountCode(e.target.value)}
                       disabled={discountApplied}
+                      className="flex-1"
                     />
                     <Button
                       variant="secondary"
                       onClick={applyDiscount}
                       disabled={isApplyingDiscount || discountApplied}
+                      className="w-full sm:w-auto"
                     >
                       {isApplyingDiscount ? "Aplicando..." : discountApplied ? "Aplicado" : "Aplicar"}
                     </Button>
@@ -202,37 +264,42 @@ export default function CartPage() {
                 </div> */}
 
                 {/* Resumen de precios */}
-                <div className="space-y-3">
-                  <div className="flex justify-between">
+                <div className="space-y-2 sm:space-y-3">
+                  <div className="flex justify-between text-sm sm:text-base">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span className="font-medium">${subtotal.toFixed(2)}</span>
                   </div>
                   {discountValue > 0 && (
-                    <div className="flex justify-between text-green-600">
+                    <div className="flex justify-between text-sm sm:text-base text-green-600">
                       <span className="text-muted-foreground">Descuento</span>
-                      <span>-${discountValue.toFixed(2)}</span>
+                      <span className="font-medium">-${discountValue.toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-sm sm:text-base">
                     <span className="text-muted-foreground">Envío</span>
-                    <span>${shippingCost.toFixed(2)}</span>
+                    <span className="font-medium">${shippingCost.toFixed(2)}</span>
                   </div>
                   <Separator />
-                  <div className="flex justify-between font-bold text-lg">
+                  <div className="flex justify-between font-bold text-base sm:text-lg">
                     <span>Total</span>
                     <span>${total.toFixed(2)}</span>
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="flex flex-col gap-3">
-                <Button className="w-full" size="lg" onClick={handleBuy}>
-                  Proceder a la compra <ArrowRightIcon className="w-4 h-4 ml-2" />
-                </Button>
+              <CardFooter className="flex flex-col gap-2 sm:gap-3">
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Button className="w-full" size="lg" onClick={handleBuy}>
+                    Proceder a la compra <ArrowRightIcon className="w-4 h-4 ml-2" />
+                  </Button>
+                </motion.div>
                 
-                <Alert className="text-sm">
-                  <ShieldCheckIcon className="h-4 w-4" />
-                  <AlertTitle>Compra protegida</AlertTitle>
-                  <AlertDescription>
+                <Alert className="text-xs sm:text-sm">
+                  <ShieldCheckIcon className="h-3 sm:h-4 w-3 sm:w-4" />
+                  <AlertTitle className="text-sm sm:text-base">Compra protegida</AlertTitle>
+                  <AlertDescription className="text-xs sm:text-sm">
                     Reembolso garantizado si no recibes tu pedido
                   </AlertDescription>
                 </Alert>
@@ -243,7 +310,7 @@ export default function CartPage() {
             {/* Detalles de seguridad */}
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="link" className="text-sm text-muted-foreground mt-4">
+                <Button variant="link" className="text-xs sm:text-sm text-muted-foreground mt-3 sm:mt-4">
                   ¿Necesitas ayuda con tu compra?
                 </Button>
               </SheetTrigger>
