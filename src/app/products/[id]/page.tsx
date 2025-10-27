@@ -1,6 +1,6 @@
 "use client";
 
-import { montserrat, nyghtSerif } from "@/app/fonts"; // Importa la fuente Montserrat
+import { poppins } from "@/app/fonts";
 import { Button } from "@/components/ui/button";
 import { newDrops, products } from "@/lib/data";
 import { useCartStore } from "@/store/cart"; // Importa el store del carrito
@@ -63,7 +63,7 @@ export default function ProductPage({ params }: any) {
   const addToCart = useCartStore((state) => state.addToCart);
 
   return (
-    <section className={`container mx-auto py-12 px-4 sm:px-6 lg:px-8 ${montserrat.className}`}> {/* Aplica Montserrat a todo el contenedor */}
+    <section className={`container mx-auto py-12 px-4 sm:px-6 lg:px-8 ${poppins.className}`}>
       <div className="flex flex-col md:flex-row gap-8">
         {/* Columna de imágenes adicionales */}
         <div className="flex flex-row md:flex-col gap-4 order-2 md:order-1 p-4">
@@ -107,8 +107,8 @@ export default function ProductPage({ params }: any) {
 
         {/* Detalles del producto */}
         <div className="max-w-lg order-3 p-4">
-          {/* Nombre del producto (sin Montserrat) */}
-          <h1 className={`text-3xl font-bold mb-4 ${nyghtSerif.className}`}>{product.name}</h1>
+          {/* Nombre del producto */}
+          <h1 className="text-3xl font-bold mb-4">{product.name}</h1>
 
           {/* Precio (con Montserrat) */}
           <p className="text-gray-600 text-lg">${product.price.toFixed(2)}</p>

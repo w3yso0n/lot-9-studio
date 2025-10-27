@@ -1,6 +1,7 @@
 "use client";
 
 import { CartCounter } from "@/components/ui/cart-counter";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -27,7 +28,7 @@ const Navbar = () => {
 
   return (
     <motion.nav 
-      className={`bg-white/90 backdrop-blur-md shadow-lg fixed top-0 left-0 w-full z-50 transition-all duration-500 ${
+      className={`bg-white/90 dark:bg-card/90 backdrop-blur-md shadow-lg fixed top-0 left-0 w-full z-50 transition-all duration-500 ${
         isScrolled ? 'py-2' : 'py-4'
       }`}
       initial={{ y: -100 }}
@@ -55,7 +56,7 @@ const Navbar = () => {
         </motion.div>
 
         {/* Menú Desktop con animaciones */}
-        <motion.div 
+                  <motion.div 
           className="hidden md:flex space-x-8 ml-8"
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
@@ -64,11 +65,11 @@ const Navbar = () => {
           <motion.div whileHover={{ y: -2 }}>
             <Link 
               href="/products" 
-              className="text-gray-700 hover:text-black transition-colors font-medium relative group"
+              className="text-gray-700 dark:text-foreground hover:text-black dark:hover:text-white transition-colors font-medium relative group"
             >
               Productos
               <motion.div
-                className="absolute -bottom-1 left-0 w-0 h-0.5 bg-black group-hover:w-full transition-all duration-300"
+                className="absolute -bottom-1 left-0 w-0 h-0.5 bg-black dark:bg-foreground group-hover:w-full transition-all duration-300"
                 initial={false}
                 whileHover={{ width: "100%" }}
               />
@@ -83,10 +84,13 @@ const Navbar = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
+          {/* Toggle de tema */}
+          <ThemeToggle />
+          
           {/* Carrito con animación */}
           <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
             <Link href="/cart" className="relative">
-              <FaShoppingCart className="w-4 sm:w-5 h-4 sm:h-5 text-gray-700 hover:text-black transition-colors" />
+              <FaShoppingCart className="w-4 sm:w-5 h-4 sm:h-5 text-gray-700 dark:text-foreground hover:text-black dark:hover:text-white transition-colors" />
               <CartCounter />
             </Link>
           </motion.div>
@@ -94,7 +98,7 @@ const Navbar = () => {
           {/* Usuario con animación */}
           <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
             <Link href="/profile">
-              <FaUser className="w-4 sm:w-5 h-4 sm:h-5 text-gray-700 hover:text-black transition-colors" />
+              <FaUser className="w-4 sm:w-5 h-4 sm:h-5 text-gray-700 dark:text-foreground hover:text-black dark:hover:text-white transition-colors" />
             </Link>
           </motion.div>
 
@@ -111,9 +115,9 @@ const Navbar = () => {
               transition={{ duration: 0.3 }}
             >
               {isOpen ? (
-                <FaTimes className="w-4 sm:w-5 h-4 sm:h-5 text-gray-700" />
+                <FaTimes className="w-4 sm:w-5 h-4 sm:h-5 text-gray-700 dark:text-foreground" />
               ) : (
-                <FaBars className="w-4 sm:w-5 h-4 sm:h-5 text-gray-700" />
+                <FaBars className="w-4 sm:w-5 h-4 sm:h-5 text-gray-700 dark:text-foreground" />
               )}
             </motion.div>
           </motion.button>
@@ -124,7 +128,7 @@ const Navbar = () => {
       <AnimatePresence>
         {isOpen && (
           <motion.div 
-            className="md:hidden bg-white/95 backdrop-blur-md shadow-xl absolute w-full left-0 top-full"
+            className="md:hidden bg-white/95 dark:bg-card/95 backdrop-blur-md shadow-xl absolute w-full left-0 top-full"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
@@ -138,7 +142,7 @@ const Navbar = () => {
               >
                 <Link 
                   href="/products" 
-                  className="text-gray-700 hover:text-black transition-colors py-2 border-b border-gray-100 block"
+                  className="text-gray-700 dark:text-foreground hover:text-black dark:hover:text-white transition-colors py-2 border-b border-gray-100 dark:border-border block"
                   onClick={() => setIsOpen(false)}
                 >
                   Productos

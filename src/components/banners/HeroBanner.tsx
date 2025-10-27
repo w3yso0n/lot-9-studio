@@ -1,13 +1,13 @@
 
 "use client";
 
-import { montserrat } from "@/app/fonts";
+import { poppins } from "@/app/fonts";
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 
 const HeroBanner = () => {
   return (
-    <section className="relative w-full h-[400px] sm:h-[500px] md:h-[600px] lg:h-[700px] flex items-center justify-center bg-gray-100 overflow-hidden">
+    <section className="relative w-full h-[400px] sm:h-[500px] md:h-[600px] lg:h-[700px] flex items-center justify-center bg-gray-100 dark:bg-gray-900 overflow-hidden">
       {/* Imagen de fondo con parallax */}
       <motion.div
         className="absolute inset-0 z-0"
@@ -75,7 +75,7 @@ const HeroBanner = () => {
         </motion.h1>
         
         <motion.p 
-          className={`mt-4 sm:mt-6 text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl drop-shadow-md ${montserrat.className} tracking-wider`}
+          className={`mt-4 sm:mt-6 text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl drop-shadow-md ${poppins.className} tracking-wider`}
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 2.2 }}

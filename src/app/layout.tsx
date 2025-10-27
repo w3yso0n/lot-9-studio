@@ -1,26 +1,24 @@
 import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
+import { ThemeProvider } from "@/components/theme-provider";
 
 import "./globals.css";
 
-import { montserrat, nyghtSerif } from "./fonts";
+import { inter, poppins } from "./fonts";
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <body
-        className={`${nyghtSerif.className} ${montserrat.className} antialiased`}
+        className={`${inter.variable} ${poppins.variable} ${inter.className} antialiased`}
       >
-        {/* Navbar siempre visible */}
-        <Navbar />
-
-        {/* Contenido de la página */}
-        <main className="min-h-screen pt-20">{children}</main>
-
-        {/* Footer en todas las páginas */}
-        <Footer />
+        <ThemeProvider>
+          <Navbar />
+          <main className="min-h-screen pt-20">{children}</main>
+          <Footer />
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -1,7 +1,6 @@
 import NewDropsCarousel from "@/components/products/NewDropsCarousel";
 import { ProductCard } from "@/components/products/ProductCard";
 import { products } from "@/lib/data";
-import { montserrat, nyghtSerif } from "@/app/fonts"; // Importa la fuente Montserrat
 
 const AllProducts = () => {
   return (

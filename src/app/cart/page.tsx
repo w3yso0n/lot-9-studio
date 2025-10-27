@@ -1,5 +1,5 @@
 "use client";
-import { montserrat } from "@/app/fonts";
+import { poppins } from "@/app/fonts";
 import CartItem from "@/components/cart/CartItem";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -83,7 +83,7 @@ export default function CartPage() {
   if (!isMounted) return null;
 
   return (
-    <section className={`container mx-auto py-4 sm:py-6 md:py-8 px-3 sm:px-4 md:px-6 lg:px-8 ${montserrat.className}`}>
+    <section className={`container mx-auto py-4 sm:py-6 md:py-8 px-3 sm:px-4 md:px-6 lg:px-8 ${poppins.className}`}>
       <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 md:gap-8">
         {/* Sección principal del carrito */}
         <div className="lg:w-2/3">

@@ -20,6 +20,9 @@ interface ProductProps {
 
 export const ProductCard = ({ product, className }: ProductProps) => {
   const mainImage = product.images[0];
+  
+  // Verificar si hay stock en alguna talla
+  const hasStock = product.sizes.some(size => product.stockBySize[size] > 0);
 
   return (
     <motion.div
@@ -28,7 +31,7 @@ export const ProductCard = ({ product, className }: ProductProps) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <Card className="w-full shadow-lg rounded-xl bg-white overflow-hidden">
+      <Card className="w-full shadow-lg rounded-xl bg-white dark:bg-gray-800 overflow-hidden">
         <Link href={`/products/${product.id}`}>
           <CardContent className="p-0 flex flex-col cursor-pointer">
             {/* Contenedor de imagen */}
@@ -39,37 +42,30 @@ export const ProductCard = ({ product, className }: ProductProps) => {
                 fill
                 className="object-cover"
               />
+              {/* Mostrar sold out si no hay stock en ninguna talla */}
+              {!hasStock && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                  <Image
+                    src="/images/sold_out.png"
+                    alt="Agotado"
+                    width={200}
+                    height={200}
+                    className="opacity-90"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Información del producto */}
             <div className="p-4 space-y-3">
-              <h3 className="text-base sm:text-base md:text-lg font-bold text-center group-hover:text-gray-800 transition-colors">
+              <h3 className="text-base sm:text-base md:text-lg font-bold text-center group-hover:text-gray-800 dark:group-hover:text-gray-200 text-gray-900 dark:text-white transition-colors">
                 {product.name}
               </h3>
               
-              {/* Indicadores de disponibilidad */}
-              <div className="flex justify-center space-x-2">
-                {product.sizes.slice(0, 3).map((size) => {
-                  const isAvailable = product.stockBySize[size] > 0;
-                  return (
-                    <span
-                      key={size}
-                      className={`text-sm px-2 py-1 rounded-full ${
-                        isAvailable 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-500'
-                      }`}
-                    >
-                      {size}
-                    </span>
-                  );
-                })}
-                {product.sizes.length > 3 && (
-                  <span className="text-sm px-2 py-1 rounded-full bg-gray-100 text-gray-500">
-                    +{product.sizes.length - 3}
-                  </span>
-                )}
-              </div>
+              {/* Precio */}
+              <p className="text-xl sm:text-2xl font-bold text-center text-gray-900 dark:text-white">
+                ${product.price.toFixed(2)}
+              </p>
             </div>
           </CardContent>
         </Link>

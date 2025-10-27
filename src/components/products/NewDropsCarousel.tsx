@@ -4,10 +4,12 @@ import { ProductCard } from "@/components/products/ProductCard";
 import { newDrops } from "@/lib/data";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 
 const NewDropsCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<{ [key: number]: number }>({});
 
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev + 1) % newDrops.length);
@@ -46,24 +48,53 @@ const NewDropsCarousel = () => {
             className="flex transition-transform duration-500 ease-in-out"
             animate={{ x: `-${currentIndex * 100}%` }}
           >
-            {newDrops.map((product, index) => (
-              <div key={product.id} className="w-full flex-shrink-0 px-2">
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ 
-                    opacity: currentIndex === index ? 1 : 0.7,
-                    scale: currentIndex === index ? 1.05 : 0.95,
-                  }}
-                  transition={{ duration: 0.3 }}
-                  className="max-w-sm mx-auto"
-                >
-                  <ProductCard 
-                    product={product} 
-                    className="shadow-xl hover:shadow-2xl transition-all duration-300"
-                  />
-                </motion.div>
-              </div>
-            ))}
+            {newDrops.map((product, index) => {
+              const currentImageIndex = selectedImageIndex[product.id] || 0;
+              const mainProduct = { ...product, images: [product.images[currentImageIndex]] };
+              
+              return (
+                <div key={product.id} className="w-full flex-shrink-0 px-2 relative">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ 
+                      opacity: currentIndex === index ? 1 : 0.7,
+                      scale: currentIndex === index ? 1.05 : 0.95,
+                    }}
+                    transition={{ duration: 0.3 }}
+                    className="max-w-sm mx-auto pb-20 space-y-12"
+                  >
+                    <ProductCard 
+                      product={mainProduct} 
+                      className="shadow-xl hover:shadow-2xl transition-all duration-300"
+                    />
+                    
+                    {/* Miniaturas de imágenes adicionales */}
+                    {product.images.length > 1 && (
+                      <div className="absolute bottom-2 left-0 right-0 flex gap-2 justify-center px-4 pb-6">
+                        {product.images.map((img, imgIndex) => (
+                          <button
+                            key={imgIndex}
+                            onClick={() => setSelectedImageIndex({ ...selectedImageIndex, [product.id]: imgIndex })}
+                            className={`relative w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
+                              currentImageIndex === imgIndex
+                                ? 'border-primary scale-110'
+                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500'
+                            }`}
+                          >
+                            <Image
+                              src={img}
+                              alt={`${product.name} - Imagen ${imgIndex + 1}`}
+                              fill
+                              className="object-cover"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                </div>
+              );
+            })}
           </motion.div>
         </div>
 
@@ -71,11 +102,11 @@ const NewDropsCarousel = () => {
         <div className="flex justify-center items-center mt-6 sm:mt-8 gap-4">
           <motion.button
             onClick={prevSlide}
-            className="bg-white/90 backdrop-blur-sm p-2 sm:p-3 rounded-full shadow-lg border border-gray-200 hover:bg-primary hover:text-white hover:border-primary transition-all duration-300"
+            className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm p-2 sm:p-3 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 hover:bg-primary hover:text-white hover:border-primary transition-all duration-300"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
           >
-            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-900 dark:text-white" />
           </motion.button>
 
           {/* Indicadores mejorados */}
@@ -87,7 +118,7 @@ const NewDropsCarousel = () => {
                 className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
                   currentIndex === index 
                     ? 'bg-primary scale-125' 
-                    : 'bg-gray-300 hover:bg-gray-400'
+                    : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500'
                 }`}
                 whileHover={{ scale: 1.2 }}
                 whileTap={{ scale: 0.8 }}
@@ -97,17 +128,17 @@ const NewDropsCarousel = () => {
 
           <motion.button
             onClick={nextSlide}
-            className="bg-white/90 backdrop-blur-sm p-2 sm:p-3 rounded-full shadow-lg border border-gray-200 hover:bg-primary hover:text-white hover:border-primary transition-all duration-300"
+            className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm p-2 sm:p-3 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 hover:bg-primary hover:text-white hover:border-primary transition-all duration-300"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
           >
-            <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+            <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-900 dark:text-white" />
           </motion.button>
         </div>
 
         {/* Indicador de progreso mejorado */}
         <div className="mt-4 sm:mt-6 flex justify-center">
-          <div className="h-1 bg-gray-200 rounded-full w-32 sm:w-48 md:w-64 overflow-hidden">
+          <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded-full w-32 sm:w-48 md:w-64 overflow-hidden">
             <motion.div
               className="h-full bg-gradient-to-r from-primary to-primary/80"
               initial={{ width: "0%" }}
@@ -142,7 +173,7 @@ const NewDropsCarousel = () => {
         viewport={{ once: true }}
       >
         <motion.button
-          className="px-6 sm:px-8 py-3 sm:py-4 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-lg hover:shadow-xl"
+          className="px-6 sm:px-8 py-3 sm:py-4 bg-primary text-white dark:bg-gray-700 dark:text-white rounded-lg font-medium hover:bg-primary/90 dark:hover:bg-gray-600 transition-colors shadow-lg dark:shadow-xl hover:shadow-xl"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >

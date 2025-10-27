@@ -1,6 +1,5 @@
 // src/app/fonts.ts
-import { Geist, Geist_Mono, Montserrat } from "next/font/google";
-import localFont from "next/font/local";
+import { Geist, Geist_Mono, Inter, Poppins } from "next/font/google";
 
 export const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -12,18 +11,16 @@ export const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const montserrat = Montserrat({
+// Fuente principal: Inter (muy neutra y moderna)
+export const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-secondary",
-  weight: "400",
+  variable: "--font-primary",
+  weight: ["300", "400", "500", "600", "700"],
 });
 
-export const nyghtSerif = localFont({
-  src: [
-    {
-      path: "../fonts/NyghtSerif-BoldItalic.ttf", // Ruta a la fuente
-      weight: "300",
-      style: "normal",
-    },
-  ],
+// Fuente secundaria: Poppins (neutral pero con personalidad)
+export const poppins = Poppins({
+  subsets: ["latin"],
+  variable: "--font-secondary",
+  weight: ["300", "400", "500", "600", "700"],
 });
