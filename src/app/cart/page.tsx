@@ -87,12 +87,19 @@ export default function CartPage() {
       <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 md:gap-8">
         {/* Sección principal del carrito */}
         <div className="lg:w-2/3">
-          <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Tu Carrito</h1>
-            <Badge variant="secondary" className="text-sm">
+          <motion.div 
+            className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+              Tu Carrito
+            </h1>
+            <Badge variant="secondary" className="text-sm bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
               {cart.length} {cart.length === 1 ? "artículo" : "artículos"}
             </Badge>
-          </div>
+          </motion.div>
 
           {cart.length === 0 ? (
             <motion.div
@@ -163,14 +170,16 @@ export default function CartPage() {
               </Card>
             </motion.div>
           ) : (
-            <Card>
-              <CardHeader className="border-b">
+            <Card className="overflow-hidden border-gray-200 dark:border-gray-700 shadow-lg">
+              <CardHeader className="border-b bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900">
                 <CardTitle className="flex justify-between items-center">
-                  <span>Productos</span>
-                  <Button variant="ghost" size="sm" onClick={clearCart} className="text-destructive">
-                    <Trash2Icon className="w-4 h-4 mr-2" />
-                    Vaciar carrito
-                  </Button>
+                  <span className="text-lg">Productos</span>
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button variant="ghost" size="sm" onClick={clearCart} className="text-destructive hover:bg-red-50 dark:hover:bg-red-900/20">
+                      <Trash2Icon className="w-4 h-4 mr-2" />
+                      Vaciar carrito
+                    </Button>
+                  </motion.div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="divide-y">
@@ -192,22 +201,35 @@ export default function CartPage() {
         {/* Resumen del pedido */}
         {cart.length > 0 && (
           <div className="lg:w-1/3">
-            <Card className="sticky top-8">
-              <CardHeader>
-                <CardTitle>Resumen del Pedido</CardTitle>
-              </CardHeader>
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Card className="sticky top-8 border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden">
+                <CardHeader className="bg-gradient-to-br from-primary/5 via-primary/3 to-transparent dark:from-primary/10 dark:via-primary/5">
+                  <CardTitle className="flex items-center gap-2">
+                    <div className="w-1 h-6 bg-gradient-to-b from-primary to-primary/50 rounded-full"></div>
+                    <span>Resumen del Pedido</span>
+                  </CardTitle>
+                </CardHeader>
               <CardContent className="space-y-4">
                 {/* Barra de progreso para envío gratis */}
                 {subtotal < freeShippingThreshold && (
-                  <div className="space-y-2">
+                  <motion.div 
+                    className="space-y-2 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-800"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
                     <div className="flex justify-between text-xs sm:text-sm">
-                      <span className="text-muted-foreground">
+                      <span className="text-green-700 dark:text-green-400 font-medium">
                         Gasta ${(freeShippingThreshold - subtotal).toFixed(2)} más para envío gratis
                       </span>
-                      <span className="font-medium">{Math.round(progressValue)}%</span>
+                      <span className="font-bold text-green-600 dark:text-green-400">{Math.round(progressValue)}%</span>
                     </div>
-                    <Progress value={progressValue} className="h-2" />
-                  </div>
+                    <Progress value={progressValue} className="h-3 bg-green-100 dark:bg-green-900" />
+                  </motion.div>
                 )}
 
                 {/* Cupón de descuento */}
@@ -286,26 +308,32 @@ export default function CartPage() {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="flex flex-col gap-2 sm:gap-3">
+              <CardFooter className="flex flex-col gap-3 sm:gap-4 bg-gray-50 dark:bg-gray-800/50">
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  className="w-full"
                 >
-                  <Button className="w-full" size="lg" onClick={handleBuy}>
+                  <Button 
+                    className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white shadow-lg shadow-primary/20" 
+                    size="lg" 
+                    onClick={handleBuy}
+                  >
                     Proceder a la compra <ArrowRightIcon className="w-4 h-4 ml-2" />
                   </Button>
                 </motion.div>
                 
-                <Alert className="text-xs sm:text-sm">
-                  <ShieldCheckIcon className="h-3 sm:h-4 w-3 sm:w-4" />
-                  <AlertTitle className="text-sm sm:text-base">Compra protegida</AlertTitle>
-                  <AlertDescription className="text-xs sm:text-sm">
+                <Alert className="text-xs sm:text-sm border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/20">
+                  <ShieldCheckIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <AlertTitle className="text-sm sm:text-base text-blue-900 dark:text-blue-100">Compra protegida</AlertTitle>
+                  <AlertDescription className="text-xs sm:text-sm text-blue-700 dark:text-blue-300">
                     Reembolso garantizado si no recibes tu pedido
                   </AlertDescription>
                 </Alert>
 
-              </CardFooter>
-            </Card>
+                </CardFooter>
+              </Card>
+            </motion.div>
 
             {/* Detalles de seguridad */}
             <Sheet>

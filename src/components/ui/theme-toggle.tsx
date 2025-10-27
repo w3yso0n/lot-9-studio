@@ -15,14 +15,14 @@ export function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <div className="w-10 h-10 rounded-full bg-gray-200" />
+      <div className="w-8 h-8 rounded-full bg-gray-200" />
     );
   }
 
   return (
     <motion.button
       onClick={toggleTheme}
-      className="relative p-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors duration-300"
+      className="relative p-1.5 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors duration-300"
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.9 }}
       aria-label="Toggle theme"
@@ -36,9 +36,9 @@ export function ThemeToggle() {
         className="flex items-center justify-center"
       >
         {theme === "dark" ? (
-          <FaMoon className="w-5 h-5 text-yellow-300" />
+          <FaMoon className="w-4 h-4 text-yellow-300" />
         ) : (
-          <FaSun className="w-5 h-5 text-orange-500" />
+          <FaSun className="w-4 h-4 text-orange-500" />
         )}
       </motion.div>
     </motion.button>

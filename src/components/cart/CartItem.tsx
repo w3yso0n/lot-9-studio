@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCartStore } from "@/store/cart";
+import { motion } from "framer-motion";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
 
@@ -35,22 +36,34 @@ const CartItem = ({ product, selectedSize, quantity, onUpdateQuantity, onRemove 
     : product.price;
 
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b gap-4">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, x: -100 }}
+      transition={{ duration: 0.3 }}
+      className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 border-b dark:border-gray-700 gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group"
+    >
       {/* Product Info */}
       <div className="flex items-start gap-4 w-full sm:w-auto">
-        <div className="relative aspect-square w-20 h-20 flex-shrink-0">
+        <motion.div 
+          className="relative aspect-square w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 rounded-lg overflow-hidden shadow-md"
+          whileHover={{ scale: 1.05 }}
+          transition={{ duration: 0.2 }}
+        >
           <Image
             src={product.images[0]}
             alt={product.name}
             fill
-            className="rounded-md object-cover"
-            sizes="80px"
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            sizes="96px"
           />
-        </div>
+        </motion.div>
         
         <div className="flex-1">
-          <h3 className="font-medium text-base">{product.name}</h3>
-          <p className="text-sm text-muted-foreground">Talla: {selectedSize}</p>
+          <h3 className="font-semibold text-base sm:text-lg text-gray-900 dark:text-white mb-1">{product.name}</h3>
+          <p className="text-sm text-muted-foreground mb-2">
+            Talla: <span className="font-medium text-gray-700 dark:text-gray-300">{selectedSize}</span>
+          </p>
           
           {/* Price display */}
           <div className="flex items-center gap-2 mt-1">
@@ -77,45 +90,51 @@ const CartItem = ({ product, selectedSize, quantity, onUpdateQuantity, onRemove 
 
       {/* Quantity Controls */}
       <div className="flex items-center justify-between w-full sm:w-auto gap-4">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => decreaseQuantity(product.id, selectedSize)}
-            disabled={quantity <= 1}
-          >
-            <Minus className="h-3 w-3" />
-          </Button>
+        <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700/50 rounded-lg p-1">
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 hover:bg-gray-200 dark:hover:bg-gray-600"
+              onClick={() => decreaseQuantity(product.id, selectedSize)}
+              disabled={quantity <= 1}
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+          </motion.div>
           
           <Input
             type="number"
             min="1"
             value={quantity}
             onChange={handleQuantityChange}
-            className="w-12 h-8 text-center"
+            className="w-16 h-8 text-center font-semibold bg-transparent border-none focus-visible:ring-0 p-0"
           />
           
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => increaseQuantity(product.id, selectedSize)}
-          >
-            <Plus className="h-3 w-3" />
-          </Button>
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 hover:bg-gray-200 dark:hover:bg-gray-600"
+              onClick={() => increaseQuantity(product.id, selectedSize)}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </motion.div>
         </div>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-destructive hover:text-destructive/80"
-          onClick={onRemove}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-destructive hover:text-destructive/80 hover:bg-red-50 dark:hover:bg-red-900/20"
+            onClick={onRemove}
+          >
+            <Trash2 className="h-5 w-5" />
+          </Button>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
