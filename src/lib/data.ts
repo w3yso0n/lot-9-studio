@@ -1,7 +1,7 @@
 export const products = [
   {
     id: 23,
-    name: "DevilNine",
+    name: "DevilNine BA",
     price: 349.99,
     images: [
     "/images/DevilNine_Blanco_Azul.png",  
@@ -20,7 +20,7 @@ export const products = [
   },
    {
     id: 22,
-    name: "DevilNine",
+    name: "DevilNine BR",
     price: 349.99,
     images: [
     "/images/DevilNine_Blanco_Rosa.png",  
@@ -39,7 +39,7 @@ export const products = [
   },
   {
     id: 25,
-    name: "DevilNine",
+    name: "DevilNine BN",
     price: 349.99,
     images: [
       "/images/DevilNine_Blanco_Naranja.png",
@@ -59,7 +59,7 @@ export const products = [
   },
    {
     id: 24,
-    name: "DevilNine",
+    name: "DevilNine GN",
     price: 349.99,
     images: [
       "/images/DevilNine_Gris_Naranja.png",
@@ -79,7 +79,7 @@ export const products = [
   },
    {
     id: 20,
-    name: "DevilNine",
+    name: "DevilNine GP",
     price: 349.99,
     images: [
       "/images/DevilNine_Gary_Pink_Back.png",
@@ -100,7 +100,7 @@ export const products = [
   
   {
     id: 21,
-    name: "DevilNine",
+    name: "DevilNine GA",
     price: 349.99,
     images: [
       "/images/DevilNine_Gris_Azul.png",
