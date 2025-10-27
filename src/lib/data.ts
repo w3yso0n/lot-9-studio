@@ -1,4 +1,82 @@
 export const products = [
+  {
+    id: 23,
+    name: "DevilNine",
+    price: 349.99,
+    images: [
+    "/images/DevilNine_Blanco_Azul.png",  
+    "/images/DevilNine_Blanco_Frontal.png",
+    "/images/modelo playera blanca_Azul.png",
+    ],
+    stockBySize: {
+     S: 2,
+      M: 2,
+      L: 2,
+      XL: 1,
+    },
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Black", "White"],
+    desc:"Diseñada con un fit oversize de 300g, cuello grueso de 3 cm y una textura premium en algodón peinado.",
+  },
+   {
+    id: 22,
+    name: "DevilNine",
+    price: 349.99,
+    images: [
+    "/images/DevilNine_Blanco_Rosa.png",  
+    "/images/DevilNine_Blanco_Frontal.png",
+    "/images/modelo playera blanca.png",
+    ],
+    stockBySize: {
+     S: 2,
+      M: 2,
+      L: 2,
+      XL: 1,
+    },
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Black", "White"],
+    desc:"Diseñada con un fit oversize de 300g, cuello grueso de 3 cm y una textura premium en algodón peinado.",
+  },
+  {
+    id: 25,
+    name: "DevilNine",
+    price: 349.99,
+    images: [
+      "/images/DevilNine_Blanco_Naranja.png",
+      "/images/DevilNine_Blanco_Frontal.png",
+      "/images/Modelo_Playera _Blanco_Naranja.png",
+    
+    ],
+    stockBySize: {
+     S: 1,
+      M: 1,
+      L: 1,
+      XL: 0,
+    },
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Black", "White"],
+    desc:"Diseñada con un fit oversize de 300g, cuello grueso de 3 cm y una textura premium en algodón peinado.",
+  },
+   {
+    id: 24,
+    name: "DevilNine",
+    price: 349.99,
+    images: [
+      "/images/DevilNine_Gris_Naranja.png",
+      "/images/DevilNine_Gary_Front.png",
+      "/images/Modelo_Gris_Naranja.png",
+    
+    ],
+    stockBySize: {
+     S: 1,
+      M: 1,
+      L: 1,
+      XL: 0,
+    },
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Black", "White"],
+    desc:"Diseñada con un fit oversize Boxi de 300g, cuello grueso de 3 cm y una textura premium en algodón peinado.",
+  },
    {
     id: 20,
     name: "DevilNine",
@@ -7,6 +85,27 @@ export const products = [
       "/images/DevilNine_Gary_Pink_Back.png",
       "/images/DevilNine_Gary_Front.png",
       "/images/modelo_DevilNine_Gray.png",
+    
+    ],
+    stockBySize: {
+     S: 1,
+      M: 1,
+      L: 1,
+      XL: 0,
+    },
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Black", "White"],
+    desc:"Diseñada con un fit oversize Boxi de 300g, cuello grueso de 3 cm y una textura premium en algodón peinado.",
+  },
+  
+  {
+    id: 21,
+    name: "DevilNine",
+    price: 349.99,
+    images: [
+      "/images/DevilNine_Gris_Azul.png",
+      "/images/DevilNine_Gary_Front.png",
+      "/images/Modelo_Gris_Azul.png",
     
     ],
     stockBySize: {
