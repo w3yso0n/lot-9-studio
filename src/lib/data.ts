@@ -17,7 +17,7 @@ export const products = [
     },
     sizes: ["S", "M", "L", "XL"],
     colors: ["Black", "White"],
-    desc:"",
+    desc:"Diseñada con un fit oversize Boxi de 300g, cuello grueso de 3 cm y una textura premium en algodón peinado.",
   },
   {
       id: 1,
