@@ -1,9 +1,133 @@
 export const products = [
+  {
+    id: 23,
+    name: "DevilNine BA",
+    price: 349.99,
+    color: "Blanco y Azul",
+    images: [
+    "/images/DevilNine_Blanco_Azul.png",  
+    "/images/DevilNine_Blanco_Frontal.png",
+    "/images/modelo playera blanca_Azul.png",
+    ],
+    stockBySize: {
+     S: 2,
+      M: 2,
+      L: 2,
+      XL: 1,
+    },
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Black", "White"],
+    desc:"Diseñada con un fit oversize de 300g, cuello grueso de 3 cm y una textura premium en algodón peinado.",
+  },
+   {
+    id: 22,
+    name: "DevilNine BR",
+    price: 349.99,
+    color: "Blanco y Rosa",
+    images: [
+    "/images/DevilNine_Blanco_Rosa.png",  
+    "/images/DevilNine_Blanco_Frontal.png",
+    "/images/modelo playera blanca.png",
+    ],
+    stockBySize: {
+     S: 2,
+      M: 2,
+      L: 2,
+      XL: 1,
+    },
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Black", "White"],
+    desc:"Diseñada con un fit oversize de 300g, cuello grueso de 3 cm y una textura premium en algodón peinado.",
+  },
+  {
+    id: 25,
+    name: "DevilNine BN",
+    price: 349.99,
+    color: "Blanco y Naranja",
+    images: [
+      "/images/DevilNine_Blanco_Naranja.png",
+      "/images/DevilNine_Blanco_Frontal.png",
+      "/images/Modelo_Playera _Blanco_Naranja.png",
+    
+    ],
+    stockBySize: {
+     S: 1,
+      M: 1,
+      L: 1,
+      XL: 0,
+    },
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Black", "White"],
+    desc:"Diseñada con un fit oversize de 300g, cuello grueso de 3 cm y una textura premium en algodón peinado.",
+  },
+   {
+    id: 24,
+    name: "DevilNine GN",
+    price: 349.99,
+    color: "Gris y Naranja",
+    images: [
+      "/images/DevilNine_Gris_Naranja.png",
+      "/images/DevilNine_Gary_Front.png",
+      "/images/Modelo_Gris_Naranja.png",
+    
+    ],
+    stockBySize: {
+     S: 1,
+      M: 1,
+      L: 1,
+      XL: 0,
+    },
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Black", "White"],
+    desc:"Diseñada con un fit oversize Boxi de 300g, cuello grueso de 3 cm y una textura premium en algodón peinado.",
+  },
+   {
+    id: 20,
+    name: "DevilNine GP",
+    price: 349.99,
+    color: "Gris y Rosa",
+    images: [
+      "/images/DevilNine_Gary_Pink_Back.png",
+      "/images/DevilNine_Gary_Front.png",
+      "/images/modelo_DevilNine_Gray.png",
+    
+    ],
+    stockBySize: {
+     S: 1,
+      M: 1,
+      L: 1,
+      XL: 0,
+    },
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Black", "White"],
+    desc:"Diseñada con un fit oversize Boxi de 300g, cuello grueso de 3 cm y una textura premium en algodón peinado.",
+  },
   
+  {
+    id: 21,
+    name: "DevilNine GA",
+    price: 349.99,
+    color: "Gris y Azul",
+    images: [
+      "/images/DevilNine_Gris_Azul.png",
+      "/images/DevilNine_Gary_Front.png",
+      "/images/Modelo_Gris_Azul.png",
+    
+    ],
+    stockBySize: {
+     S: 1,
+      M: 1,
+      L: 1,
+      XL: 0,
+    },
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Black", "White"],
+    desc:"Diseñada con un fit oversize Boxi de 300g, cuello grueso de 3 cm y una textura premium en algodón peinado.",
+  },
   {
       id: 1,
       name: "Souls",
-      price: 349.99,
+      price: 399.99,
       color: "Negro",
       images: [
         "/images/Souls_Trasera.png",
@@ -30,10 +154,10 @@ export const products = [
           "/images/Render_Nine.png",
         ],
         stockBySize: {
-          S: 0,
-      M: 0,
-      L: 0,
-      XL: 0,
+          S: 1,
+      M: 1,
+      L: 1,
+      XL: 1,
         },
         sizes: ["S", "M", "L", "XL"],
         colors: ["Black", "White"],
@@ -41,7 +165,7 @@ export const products = [
   {
     id: 3,
     name: "L art Est Tout",
-    price: 499.99,
+    price: 349.99,
     color: "Flores",
     images: [
       "/images/Flores_Trasera.png",
@@ -49,10 +173,10 @@ export const products = [
       "/images/Render_Flores.png"
     ],
     stockBySize: {
-     S: 0,
-      M: 0,
-      L: 0,
-      XL: 0,
+     S: 2,
+      M: 2,
+      L: 2,
+      XL: 2,
     },
     sizes: ["S", "M", "L", "XL"],
     colors: ["Red", "Blue"],
@@ -61,7 +185,7 @@ export const products = [
     {
       id: 4,
       name: "Make Money",
-      price: 299.99,
+      price: 349.99,
       color: "Blanco y Rojo",
       images: [
         "/images/Make_Money_White_Rojo_Trasera.png",
@@ -69,9 +193,9 @@ export const products = [
         "/images/Render_Blanco_Rojo.png"
       ],
       stockBySize: {
-        S: 0,
-      M: 0,
-      L: 0,
+        S: 1,
+      M: 1,
+      L: 1,
       XL: 0,
       },
       sizes: ["S", "M", "L", "XL"],
@@ -81,7 +205,7 @@ export const products = [
     {
       id: 5,
       name: "Make Money",
-      price: 299.99,
+      price: 349.99,
       color: "Gris y Rojo",
       images: [
         "/images/Make_Money_Gris_Rojo_Trasera.png",
@@ -90,7 +214,7 @@ export const products = [
       ],
       stockBySize: {
         S: 0,
-      M: 0,
+      M: 1,
       L: 0,
       XL: 0,
       },
@@ -101,7 +225,7 @@ export const products = [
     {
       id: 6,
       name: "Make Money",
-      price: 299.99,
+      price: 349.99,
       color: "Gris y Rosa",
       images: [
         "/images/Make_Money_Gris_Rosa_Trasera.png",
@@ -109,9 +233,9 @@ export const products = [
         "/images/Render_Gris_Rosa.png"
       ],
       stockBySize: {
-        S: 0,
-      M: 0,
-      L: 0,
+        S: 1,
+      M: 1,
+      L: 1,
       XL: 0,
       },
       sizes: ["S", "M", "L", "XL"],
@@ -121,16 +245,16 @@ export const products = [
     {
       id: 8,
       name: "Make Money",
-      price: 299.99,
+      price: 349.99,
       color: "Negro y Rojo",
       images: [
         "/images/Make_Money_Negra_Rojo_Trasera.png",
         "/images/Make_Money_Negra_Rojo_Frontal.png",
       ],
       stockBySize: {
-        S: 0,
-      M: 0,
-      L: 0,
+        S: 1,
+      M: 1,
+      L: 1,
       XL: 0,
       },
       sizes: ["S", "M", "L", "XL"],
@@ -140,7 +264,7 @@ export const products = [
     {
       id: 9,
       name: "Make Money",
-      price: 299.99,
+      price: 349.99,
       color: "Negro y Gris",
       images: [
         "/images/Make_Money_Negro_Gris_Trasera.png",
@@ -148,9 +272,9 @@ export const products = [
         "/images/Render_Negro_Gris.png",
       ],
       stockBySize: {
-        S: 0,
-      M: 0,
-      L: 0,
+        S: 1,
+      M: 1,
+      L: 1,
       XL: 0,
       },
       sizes: ["S", "M", "L", "XL"],
@@ -160,7 +284,7 @@ export const products = [
     {
       id: 10,
       name: "Make Money",
-      price: 299.99,
+      price: 349.99,
       color: "Negro y Rosa",
       images: [
         "/images/Make_Money_Negro_Rosa_Trasera.png",
@@ -169,8 +293,8 @@ export const products = [
       ],
       stockBySize: {
        S: 0,
-      M: 0,
-      L: 0,
+      M: 1,
+      L: 1,
       XL: 0,
       },
       sizes: ["S", "M", "L", "XL"],
@@ -180,7 +304,7 @@ export const products = [
     {
       id: 11,
       name: "Luck to You",
-      price: 299.99,
+      price: 349.99,
       color: "Blanco y Negro",
       images: [
         "/images/Angel _Blanco_Negro_Trasera.png",
@@ -200,7 +324,7 @@ export const products = [
     {
       id: 12,
       name: "Luck to You",
-      price: 299.99,
+      price: 349.99,
       color: "Gris y Negro",
       images: [
         "/images/Angel _Gris_Negro_Trasera.png",
@@ -220,7 +344,7 @@ export const products = [
     {
       id: 13,
       name: "Luck to You",
-      price: 299.99,
+      price: 349.99,
       color: "Negro y Gris",
       images: [
         "/images/Angel _Negro_Gris_Trasera.png",
@@ -240,7 +364,7 @@ export const products = [
     {
       id: 14,
       name: "Santal",
-      price: 299.99,
+      price: 349.99,
       color: "Negro",
       images: [
         "/images/Santal_Negro_Trasera.png",
@@ -249,10 +373,10 @@ export const products = [
         "/images/Modelo_santal_Negro2.jpg",
       ],
       stockBySize: {
-        S: 0,
-        M: 0,
-        L: 0,
-        XL: 0,
+        S: 2,
+        M: 2,
+        L: 2,
+        XL: 2,
       },
       sizes: ["S", "M", "L", "XL"],
       colors: ["Red", "Blue"],
@@ -261,7 +385,7 @@ export const products = [
     {
       id: 15,
       name: "Santal",
-      price: 299.99,
+      price: 349.99,
       color: "Beige",
       images: [
         "/images/Santal_Beige_Trasera.png",
@@ -269,10 +393,10 @@ export const products = [
         "/images/Render_Santal_Beige.png",
       ],
       stockBySize: {
-        S: 0,
-      M: 0,
-      L: 0,
-      XL: 0,
+      S: 2,
+        M: 2,
+        L: 2,
+        XL: 2
       },
       sizes: ["S", "M", "L", "XL"],
       colors: ["Red", "Blue"],
@@ -281,7 +405,7 @@ export const products = [
     {
       id: 16,
       name: "Santal",
-      price: 299.99,
+      price: 349.99,
       color: "Blanco",
       images: [
         "/images/Santal_Blanco_Trasera.png",
@@ -289,15 +413,16 @@ export const products = [
         "/images/Render_Santal_Blanco.png",
       ],
       stockBySize: {
-       S: 0,
-      M: 0,
-      L: 0,
-      XL: 0,
+      S: 2,
+        M: 2,
+        L: 2,
+        XL: 2
       },
       sizes: ["S", "M", "L", "XL"],
       colors: ["Red", "Blue"],
       desc:"",
     },
+    
 
   ]
 
@@ -320,11 +445,32 @@ export const newDrops = [
   //   colors: ["Black"],
   //   desc:"",
   // },
- 
+  {
+    id: 20,
+    name: "DevilNine",
+    price: 349.99,
+    color: "Gris y Rosa",
+    images: [
+      "/images/DevilNine_Gary_Pink_Back.png",
+      "/images/DevilNine_Gary_Front.png",
+      "/images/modelo_DevilNine_Gray.png",
+    
+    ],
+    stockBySize: {
+     S: 1,
+      M: 1,
+      L: 1,
+      XL: 0,
+    },
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Black", "White"],
+    desc:"",
+  },
   {
     id: 2,
     name: "Nine",
-    price: 349.99,
+    price: 399.99,
+    color: "Negro",
     images: [
       "/images/Nine_Trasero.png",
       "/images/Nine_Frontal.png",
@@ -342,7 +488,8 @@ export const newDrops = [
   {
     id: 18,
     name: "Souls",
-    price: 349.99,
+    price: 399.99,
+    color: "Negro",
     images: [
       "/images/souls.png",
     ],
@@ -356,6 +503,7 @@ export const newDrops = [
     colors: ["Black", "White"],
     desc:"",
   },
+ 
   // {
   //   id: 19,
   //   name: "Souls",
@@ -374,4 +522,5 @@ export const newDrops = [
   //   colors: ["Red", "Blue"],
   //   desc:"",
   // },
+  
 ];
