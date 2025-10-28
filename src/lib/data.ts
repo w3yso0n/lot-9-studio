@@ -4,6 +4,7 @@ export const products = [
       id: 1,
       name: "Souls",
       price: 349.99,
+      color: "Negro",
       images: [
         "/images/Souls_Trasera.png",
         "/images/Souls_Frontal.png",
@@ -22,6 +23,7 @@ export const products = [
         id: 2,
         name: "Nine",
         price: 349.99,
+        color: "Negro",
         images: [
           "/images/Nine_Trasero.png",
           "/images/Nine_Frontal.png",
@@ -40,6 +42,7 @@ export const products = [
     id: 3,
     name: "L art Est Tout",
     price: 499.99,
+    color: "Flores",
     images: [
       "/images/Flores_Trasera.png",
       "/images/Flores_Frontal.png",
@@ -55,10 +58,11 @@ export const products = [
     colors: ["Red", "Blue"],
     desc:"",
   },
-  {
+    {
       id: 4,
       name: "Make Money",
       price: 299.99,
+      color: "Blanco y Rojo",
       images: [
         "/images/Make_Money_White_Rojo_Trasera.png",
         "/images/Make_Money_Blanco_Rojo_Frontal.png",
@@ -78,6 +82,7 @@ export const products = [
       id: 5,
       name: "Make Money",
       price: 299.99,
+      color: "Gris y Rojo",
       images: [
         "/images/Make_Money_Gris_Rojo_Trasera.png",
         "/images/Make_Money_Gris_Rojo_Frontal.png",
@@ -97,6 +102,7 @@ export const products = [
       id: 6,
       name: "Make Money",
       price: 299.99,
+      color: "Gris y Rosa",
       images: [
         "/images/Make_Money_Gris_Rosa_Trasera.png",
         "/images/Make_Money_Gris_Rosa_Frontal.png",
@@ -116,6 +122,7 @@ export const products = [
       id: 8,
       name: "Make Money",
       price: 299.99,
+      color: "Negro y Rojo",
       images: [
         "/images/Make_Money_Negra_Rojo_Trasera.png",
         "/images/Make_Money_Negra_Rojo_Frontal.png",
@@ -134,6 +141,7 @@ export const products = [
       id: 9,
       name: "Make Money",
       price: 299.99,
+      color: "Negro y Gris",
       images: [
         "/images/Make_Money_Negro_Gris_Trasera.png",
         "/images/Make_Money_Negro_Gris_Frontal.png",
@@ -153,6 +161,7 @@ export const products = [
       id: 10,
       name: "Make Money",
       price: 299.99,
+      color: "Negro y Rosa",
       images: [
         "/images/Make_Money_Negro_Rosa_Trasera.png",
         "/images/Make_Money_Negro_Rosa_Frontal.png",
@@ -172,6 +181,7 @@ export const products = [
       id: 11,
       name: "Luck to You",
       price: 299.99,
+      color: "Blanco y Negro",
       images: [
         "/images/Angel _Blanco_Negro_Trasera.png",
         "/images/Angel _Blanco_Negro_Frontal.png",
@@ -191,6 +201,7 @@ export const products = [
       id: 12,
       name: "Luck to You",
       price: 299.99,
+      color: "Gris y Negro",
       images: [
         "/images/Angel _Gris_Negro_Trasera.png",
         "/images/Angel _Gris_Negro_Frontal.png",
@@ -210,6 +221,7 @@ export const products = [
       id: 13,
       name: "Luck to You",
       price: 299.99,
+      color: "Negro y Gris",
       images: [
         "/images/Angel _Negro_Gris_Trasera.png",
         "/images/Angel _Negro_Gris_Frontal.png",
@@ -229,6 +241,7 @@ export const products = [
       id: 14,
       name: "Santal",
       price: 299.99,
+      color: "Negro",
       images: [
         "/images/Santal_Negro_Trasera.png",
         "/images/Santal_Negro_Frontal.png",
@@ -249,6 +262,7 @@ export const products = [
       id: 15,
       name: "Santal",
       price: 299.99,
+      color: "Beige",
       images: [
         "/images/Santal_Beige_Trasera.png",
         "/images/Santal_Beige_Frontal.png",
@@ -268,6 +282,7 @@ export const products = [
       id: 16,
       name: "Santal",
       price: 299.99,
+      color: "Blanco",
       images: [
         "/images/Santal_Blanco_Trasera.png",
         "/images/Santal_Blanco_Frontal.png",

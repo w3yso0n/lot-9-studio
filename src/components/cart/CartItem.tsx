@@ -14,6 +14,7 @@ interface CartItemProps {
     price: number;
     images: string[];
     discount?: number;
+    color?: string;
   };
   selectedSize: string;
   quantity: number;
@@ -60,7 +61,10 @@ const CartItem = ({ product, selectedSize, quantity, onUpdateQuantity, onRemove 
         </motion.div>
         
         <div className="flex-1">
-          <h3 className="font-semibold text-base sm:text-lg text-gray-900 dark:text-white mb-1">{product.name}</h3>
+          <h3 className="font-semibold text-base sm:text-lg text-gray-900 dark:text-white mb-1">
+            {product.name}
+            {product.color && <span className="text-gray-600 dark:text-gray-400"> - {product.color}</span>}
+          </h3>
           <p className="text-sm text-muted-foreground mb-2">
             Talla: <span className="font-medium text-gray-700 dark:text-gray-300">{selectedSize}</span>
           </p>

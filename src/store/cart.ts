@@ -10,6 +10,7 @@ interface Product {
   sizes?: string[]; // Tallas disponibles
   colors?: string[]; // Colores disponibles
   discount?: number; // Descuento opcional
+  color?: string; // Color del producto
 }
 
 interface CartItem {

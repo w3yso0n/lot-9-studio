@@ -59,7 +59,9 @@ export default function CartPage() {
     let message = "¡Hola! Quiero realizar la siguiente compra:\n\n";
 
     cart.forEach((item) => {
-      message += `- ${item.product.name} (Talla: ${item.selectedSize}, Cantidad: ${item.quantity}) - $${(
+      const color = (item.product as any).color || "";
+      const productName = color ? `${item.product.name} - ${color}` : item.product.name;
+      message += `- ${productName} (Talla: ${item.selectedSize}, Cantidad: ${item.quantity}) - $${(
         item.product.price * item.quantity
       ).toFixed(2)}\n`;
     });
