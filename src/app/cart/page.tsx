@@ -85,8 +85,8 @@ export default function CartPage() {
   if (!isMounted) return null;
 
   return (
-    <section className={`container mx-auto py-4 sm:py-6 md:py-8 px-3 sm:px-4 md:px-6 lg:px-8 ${poppins.className}`}>
-      <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 md:gap-8">
+    <section className={`container mx-auto py-6 sm:py-8 md:py-12 px-4 sm:px-6 md:px-8 lg:px-12 ${poppins.className}`}>
+      <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 lg:gap-10">
         {/* Sección principal del carrito */}
         <div className="lg:w-2/3">
           <motion.div 
@@ -110,7 +110,7 @@ export default function CartPage() {
               transition={{ duration: 0.5 }}
               className="w-full"
             >
-              <Card className="text-center py-8 sm:py-10 md:py-12 mx-auto max-w-md">
+              <Card className="text-center py-10 sm:py-12 md:py-16 mx-auto max-w-md px-6">
                 <motion.div
                   animate={{ 
                     y: [0, -10, 0],
@@ -173,18 +173,19 @@ export default function CartPage() {
             </motion.div>
           ) : (
             <Card className="overflow-hidden border-gray-200 dark:border-gray-700 shadow-lg">
-              <CardHeader className="border-b bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900">
-                <CardTitle className="flex justify-between items-center">
-                  <span className="text-lg">Productos</span>
+              <CardHeader className="border-b bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 px-4 sm:px-6">
+                <CardTitle className="flex justify-between items-center text-base sm:text-lg">
+                  <span>Productos</span>
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button variant="ghost" size="sm" onClick={clearCart} className="text-destructive hover:bg-red-50 dark:hover:bg-red-900/20">
-                      <Trash2Icon className="w-4 h-4 mr-2" />
-                      Vaciar carrito
+                    <Button variant="ghost" size="sm" onClick={clearCart} className="text-destructive hover:bg-red-50 dark:hover:bg-red-900/20 text-xs sm:text-sm">
+                      <Trash2Icon className="w-4 h-4 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">Vaciar carrito</span>
+                      <span className="sm:hidden">Vaciar</span>
                     </Button>
                   </motion.div>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="divide-y">
+              <CardContent className="divide-y p-0">
                 {cart.map((item) => (
                   <CartItem
                     key={`${item.product.id}-${item.selectedSize}`}
@@ -209,13 +210,13 @@ export default function CartPage() {
               transition={{ duration: 0.5 }}
             >
               <Card className="sticky top-8 border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden">
-                <CardHeader className="bg-gradient-to-br from-primary/5 via-primary/3 to-transparent dark:from-primary/10 dark:via-primary/5">
-                  <CardTitle className="flex items-center gap-2">
+                <CardHeader className="bg-gradient-to-br from-primary/5 via-primary/3 to-transparent dark:from-primary/10 dark:via-primary/5 px-4 sm:px-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                     <div className="w-1 h-6 bg-gradient-to-b from-primary to-primary/50 rounded-full"></div>
                     <span>Resumen del Pedido</span>
                   </CardTitle>
                 </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 p-4 sm:p-6">
                 {/* Barra de progreso para envío gratis */}
                 {subtotal < freeShippingThreshold && (
                   <motion.div 
@@ -310,7 +311,7 @@ export default function CartPage() {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="flex flex-col gap-3 sm:gap-4 bg-gray-50 dark:bg-gray-800/50">
+              <CardFooter className="flex flex-col gap-3 sm:gap-4 bg-gray-50 dark:bg-gray-800/50 p-4 sm:p-6">
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
