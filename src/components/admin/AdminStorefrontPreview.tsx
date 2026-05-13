@@ -7,8 +7,10 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 
 function encodeWebPath(p: string): string {
-  const parts = p.split("/").filter(Boolean);
-  if (parts.length === 0) return p;
+  const t = p.trim();
+  if (/^https?:\/\//i.test(t)) return t;
+  const parts = t.split("/").filter(Boolean);
+  if (parts.length === 0) return t;
   return "/" + parts.map(encodeURIComponent).join("/");
 }
 

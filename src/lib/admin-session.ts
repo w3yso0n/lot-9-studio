@@ -12,6 +12,12 @@ function getSecret(): string {
   return s;
 }
 
+function adminSecretForVerify(): string | null {
+  const s = process.env.ADMIN_SESSION_SECRET;
+  if (!s || s.length < 16) return null;
+  return s;
+}
+
 export function signAdminSession(): string {
   const payload = Buffer.from(
     JSON.stringify({
@@ -24,11 +30,13 @@ export function signAdminSession(): string {
 }
 
 export function verifyAdminToken(token: string): boolean {
+  const secret = adminSecretForVerify();
+  if (!secret) return false;
   const parts = token.split(".");
   if (parts.length !== 2) return false;
   const [payload, sig] = parts;
   if (!payload || !sig) return false;
-  const expected = createHmac("sha256", getSecret()).update(payload).digest("base64url");
+  const expected = createHmac("sha256", secret).update(payload).digest("base64url");
   try {
     if (expected.length !== sig.length) return false;
     if (!timingSafeEqual(Buffer.from(expected), Buffer.from(sig))) return false;

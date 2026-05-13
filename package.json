@@ -26,6 +26,7 @@
     "input": "^1.0.1",
     "lucide-react": "^0.483.0",
     "next": "15.2.8",
+    "next-cloudinary": "^6.17.5",
     "pg": "^8.20.0",
     "postcss": "^8.5.3",
     "react": "^19.0.0",

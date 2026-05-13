@@ -35,7 +35,7 @@ export const ScrollReveal = ({
       transition: {
         duration,
         delay,
-        ease: "easeOut",
+        ease: "easeOut" as const,
       },
     },
   };

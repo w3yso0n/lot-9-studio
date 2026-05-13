@@ -9,13 +9,15 @@ import {
   parseProductForm,
   updateProduct,
 } from "@/lib/products-mutations";
+import { toUserFacingProductSaveError, toUserFacingUploadError } from "@/lib/user-facing-errors";
+import { hasCloudinaryConfig, uploadToCloudinary } from "@/lib/cloudinary-server";
+import { deletePanelUploadFile } from "@/lib/panel-upload-delete";
 import {
-  absolutePublicPathFromWeb,
   isOwnedUploadPath,
   PRODUCT_UPLOAD_WEB_PREFIX,
 } from "@/lib/upload-products";
 import { randomUUID } from "node:crypto";
-import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
@@ -65,40 +67,62 @@ export async function saveProductAction(
       await insertProduct(input);
     }
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Error al guardar.";
-    return { error: msg };
+    return { error: toUserFacingProductSaveError(e) };
   }
-  revalidateCatalog();
+  try {
+    revalidateCatalog();
+  } catch {
+    return {
+      error:
+        "El producto se guardó, pero no se pudo actualizar la vista de la tienda. Recarga la página de inicio o el catálogo.",
+    };
+  }
   redirect("/admin/dashboard");
 }
 
 export async function uploadProductImageAction(
   formData: FormData
 ): Promise<{ path?: string; error?: string }> {
-  if (!(await verifyAdminSession())) {
-    return { error: "Sesión caducada." };
+  try {
+    if (!(await verifyAdminSession())) {
+      return { error: "Sesión caducada." };
+    }
+    const file = formData.get("file");
+    if (!file || !(file instanceof File)) {
+      return { error: "No se recibió ningún archivo." };
+    }
+    if (file.size === 0) {
+      return { error: "Archivo vacío." };
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      return { error: "El archivo supera 5 MB." };
+    }
+    const ext = MIME_EXT[file.type];
+    if (!ext) {
+      return { error: "Formato no permitido. Usa JPEG, PNG, WebP o GIF." };
+    }
+    const name = `${randomUUID()}${ext}`;
+    const buf = Buffer.from(await file.arrayBuffer());
+
+    if (hasCloudinaryConfig()) {
+      const cloudinaryUrl = await uploadToCloudinary(buf, file.type, name.replace(/\.[^.]+$/, ""));
+      return { path: cloudinaryUrl };
+    }
+
+    if (process.env.VERCEL === "1") {
+      return {
+        error:
+          "Falta configurar Cloudinary en Vercel. Define CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY y CLOUDINARY_API_SECRET, luego vuelve a desplegar.",
+      };
+    }
+
+    const dir = join(process.cwd(), "public", "uploads", "products");
+    await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, name), buf);
+    return { path: `${PRODUCT_UPLOAD_WEB_PREFIX}/${name}` };
+  } catch (e) {
+    return { error: toUserFacingUploadError(e) };
   }
-  const file = formData.get("file");
-  if (!file || !(file instanceof File)) {
-    return { error: "No se recibió ningún archivo." };
-  }
-  if (file.size === 0) {
-    return { error: "Archivo vacío." };
-  }
-  if (file.size > 5 * 1024 * 1024) {
-    return { error: "El archivo supera 5 MB." };
-  }
-  const ext = MIME_EXT[file.type];
-  if (!ext) {
-    return { error: "Formato no permitido. Usa JPEG, PNG, WebP o GIF." };
-  }
-  const name = `${randomUUID()}${ext}`;
-  const dir = join(process.cwd(), "public", "uploads", "products");
-  await mkdir(dir, { recursive: true });
-  const buf = Buffer.from(await file.arrayBuffer());
-  await writeFile(join(dir, name), buf);
-  const path = `${PRODUCT_UPLOAD_WEB_PREFIX}/${name}`;
-  return { path };
 }
 
 export async function deleteProductImageAction(
@@ -120,18 +144,14 @@ export async function deleteProductImageAction(
     return { error: "No se encontró esa imagen en el producto." };
   }
   if (isOwnedUploadPath(path)) {
-    try {
-      await unlink(absolutePublicPathFromWeb(path));
-    } catch {
-      /* archivo ya inexistente */
-    }
+    await deletePanelUploadFile(path);
   }
   revalidateCatalog();
   revalidatePath(`/admin/dashboard/products/${productId}`);
   return { ok: true };
 }
 
-/** Quita del disco una subida huérfana (producto aún no guardado o retirada de la lista). */
+/** Quita del storage una subida huérfana (producto aún no guardado o retirada de la lista). */
 export async function deleteOrphanUploadAction(
   imagePath: string
 ): Promise<{ ok?: true; error?: string }> {
@@ -142,11 +162,7 @@ export async function deleteOrphanUploadAction(
   if (!isOwnedUploadPath(path)) {
     return { error: "Solo se pueden borrar archivos subidos desde el panel." };
   }
-  try {
-    await unlink(absolutePublicPathFromWeb(path));
-  } catch {
-    /* */
-  }
+  await deletePanelUploadFile(path);
   return { ok: true };
 }
 
@@ -162,11 +178,7 @@ export async function deleteProductAction(formData: FormData) {
   await deleteProduct(id);
   for (const p of paths) {
     if (isOwnedUploadPath(p)) {
-      try {
-        await unlink(absolutePublicPathFromWeb(p));
-      } catch {
-        /* */
-      }
+      await deletePanelUploadFile(p);
     }
   }
   revalidateCatalog();

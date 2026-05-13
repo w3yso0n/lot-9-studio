@@ -1,8 +1,8 @@
 import { getPool } from "@/lib/db";
-import { absolutePublicPathFromWeb, isOwnedUploadPath } from "@/lib/upload-products";
+import { isOwnedUploadPath } from "@/lib/upload-products";
+import { deletePanelUploadFile } from "@/lib/panel-upload-delete";
 import { CATALOG_COLOR_FILTER_OPTIONS } from "@/lib/catalog-color-filters";
 import { CATALOG_SIZE_ORDER } from "@/lib/catalog-sizes";
-import { unlink } from "node:fs/promises";
 import type { PoolClient } from "pg";
 
 export type ProductMutationInput = {
@@ -129,11 +129,7 @@ export async function updateProduct(id: number, input: ProductMutationInput): Pr
   }
   for (const webPath of pathsToUnlink) {
     if (!isOwnedUploadPath(webPath)) continue;
-    try {
-      await unlink(absolutePublicPathFromWeb(webPath));
-    } catch {
-      /* archivo ya inexistente o sin permisos */
-    }
+    await deletePanelUploadFile(webPath);
   }
 }
 

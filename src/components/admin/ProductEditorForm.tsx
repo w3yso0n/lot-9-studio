@@ -31,8 +31,10 @@ type Props = {
 };
 
 function encodeWebPath(p: string): string {
-  const parts = p.split("/").filter(Boolean);
-  if (parts.length === 0) return p;
+  const t = p.trim();
+  if (/^https?:\/\//i.test(t)) return t;
+  const parts = t.split("/").filter(Boolean);
+  if (parts.length === 0) return t;
   return "/" + parts.map(encodeURIComponent).join("/");
 }
 
@@ -135,13 +137,19 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
     if (!file) return;
     setUploadMsg(null);
     startImgTransition(async () => {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await uploadProductImageAction(fd);
-      if (res.error) setUploadMsg(res.error);
-      else {
-        const path = res.path;
-        if (path) setImagePaths((prev) => [...prev, path]);
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await uploadProductImageAction(fd);
+        if (res.error) setUploadMsg(res.error);
+        else {
+          const path = res.path;
+          if (path) setImagePaths((prev) => [...prev, path]);
+        }
+      } catch {
+        setUploadMsg(
+          "No se pudo subir la imagen (fallo de red o del servidor). Comprueba la conexión e inténtalo de nuevo."
+        );
       }
     });
   }
@@ -150,15 +158,24 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
     setUploadMsg(null);
     if (productId != null) {
       startImgTransition(async () => {
-        const r = await deleteProductImageAction(productId, path);
-        if (r.error) setUploadMsg(r.error);
-        else setImagePaths((prev) => prev.filter((x) => x !== path));
+        try {
+          const r = await deleteProductImageAction(productId, path);
+          if (r.error) setUploadMsg(r.error);
+          else setImagePaths((prev) => prev.filter((x) => x !== path));
+        } catch {
+          setUploadMsg("No se pudo quitar la imagen. Inténtalo de nuevo.");
+        }
       });
     } else {
       if (isOwnedUploadPath(path)) {
-        const r = await deleteOrphanUploadAction(path);
-        if (r.error) {
-          setUploadMsg(r.error);
+        try {
+          const r = await deleteOrphanUploadAction(path);
+          if (r.error) {
+            setUploadMsg(r.error);
+            return;
+          }
+        } catch {
+          setUploadMsg("No se pudo eliminar el archivo subido. Inténtalo de nuevo.");
           return;
         }
       }
@@ -226,11 +243,12 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
         <div>
           <Label className="text-base">Imágenes</Label>
           <p className="text-sm text-muted-foreground mt-1">
-            Sube archivos (se guardan en{" "}
-            <code className="text-xs bg-muted px-1 rounded">public/uploads/products</code>).
+            Sube archivos (local:{" "}
+            <code className="text-xs bg-muted px-1 rounded">public/uploads/products</code>
+            ; en Vercel con Cloudinary: <code className="text-xs bg-muted px-1 rounded">CLOUDINARY_*</code>).
             {productId != null
-              ? " Las fotos en /uploads/products/ se eliminan del disco al quitarlas o al guardar si ya no figuran en la lista (no afecta imágenes de /images/… de la tienda)."
-              : " Las fotos subidas se pueden quitar antes de guardar; se elimina el archivo del servidor."}
+              ? " Las fotos subidas por el panel se eliminan al quitarlas o al guardar si ya no figuran en la lista (no afecta imágenes históricas de /images/… de la tienda)."
+              : " Las fotos subidas se pueden quitar antes de guardar; el archivo también se elimina del almacenamiento."}
           </p>
         </div>
 
