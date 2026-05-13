@@ -229,7 +229,7 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
             Sube archivos (se guardan en{" "}
             <code className="text-xs bg-muted px-1 rounded">public/uploads/products</code>).
             {productId != null
-              ? " Al quitar una imagen se borra la referencia en la base de datos al instante."
+              ? " Las fotos en /uploads/products/ se eliminan del disco al quitarlas o al guardar si ya no figuran en la lista (no afecta imágenes de /images/… de la tienda)."
               : " Las fotos subidas se pueden quitar antes de guardar; se elimina el archivo del servidor."}
           </p>
         </div>

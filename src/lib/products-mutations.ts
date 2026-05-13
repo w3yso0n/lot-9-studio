@@ -1,6 +1,8 @@
 import { getPool } from "@/lib/db";
+import { absolutePublicPathFromWeb, isOwnedUploadPath } from "@/lib/upload-products";
 import { CATALOG_COLOR_FILTER_OPTIONS } from "@/lib/catalog-color-filters";
 import { CATALOG_SIZE_ORDER } from "@/lib/catalog-sizes";
+import { unlink } from "node:fs/promises";
 import type { PoolClient } from "pg";
 
 export type ProductMutationInput = {
@@ -89,8 +91,17 @@ export async function insertProduct(input: ProductMutationInput): Promise<number
 export async function updateProduct(id: number, input: ProductMutationInput): Promise<void> {
   const pool = getPool();
   const client = await pool.connect();
+  let pathsToUnlink: string[] = [];
   try {
     await client.query("BEGIN");
+    const { rows: prevImg } = await client.query<{ path: string }>(
+      `SELECT path FROM product_images WHERE product_id = $1`,
+      [id]
+    );
+    const previousPaths = prevImg.map((r) => r.path);
+    const nextSet = new Set(input.imagePaths);
+    pathsToUnlink = previousPaths.filter((p) => !nextSet.has(p));
+
     const { rowCount } = await client.query(
       `UPDATE products SET
         name = $1,
@@ -104,15 +115,25 @@ export async function updateProduct(id: number, input: ProductMutationInput): Pr
     );
     if (!rowCount) {
       await client.query("ROLLBACK");
+      pathsToUnlink = [];
       throw new Error("Producto no encontrado");
     }
     await replaceChildRows(client, id, input);
     await client.query("COMMIT");
   } catch (e) {
     await client.query("ROLLBACK");
+    pathsToUnlink = [];
     throw e;
   } finally {
     client.release();
+  }
+  for (const webPath of pathsToUnlink) {
+    if (!isOwnedUploadPath(webPath)) continue;
+    try {
+      await unlink(absolutePublicPathFromWeb(webPath));
+    } catch {
+      /* archivo ya inexistente o sin permisos */
+    }
   }
 }
 
