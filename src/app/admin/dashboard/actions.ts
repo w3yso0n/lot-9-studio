@@ -30,6 +30,31 @@ const MIME_EXT: Record<string, string> = {
   "image/gif": ".gif",
 };
 
+/** Sube bytes a Cloudinary o disco local (misma lógica que el panel). */
+async function persistProductImageFromBuffer(buf: Buffer, mimeType: string): Promise<string> {
+  const ext = MIME_EXT[mimeType];
+  if (!ext) {
+    throw new Error("Formato no permitido. Usa JPEG, PNG, WebP o GIF.");
+  }
+  const name = `${randomUUID()}${ext}`;
+  const publicIdBase = name.replace(/\.[^.]+$/, "");
+
+  if (hasCloudinaryConfig()) {
+    return await uploadToCloudinary(buf, mimeType, publicIdBase);
+  }
+
+  if (process.env.VERCEL === "1") {
+    throw new Error(
+      "Falta configurar Cloudinary en Vercel. Define CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY y CLOUDINARY_API_SECRET."
+    );
+  }
+
+  const dir = join(process.cwd(), "public", "uploads", "products");
+  await mkdir(dir, { recursive: true });
+  await writeFile(join(dir, name), buf);
+  return `${PRODUCT_UPLOAD_WEB_PREFIX}/${name}`;
+}
+
 function revalidateCatalog() {
   revalidatePath("/");
   revalidatePath("/products");
@@ -49,24 +74,65 @@ export async function saveProductAction(
   }
   const idRaw = formData.get("id");
   const input = parseProductForm(formData);
+  const pendingFiles = formData
+    .getAll("pending_images")
+    .filter((v): v is File => typeof v !== "string" && v instanceof File);
+
   if (!input.name) {
     return { error: "El nombre es obligatorio." };
   }
   if (!input.sizeOrder.length) {
     return { error: "Selecciona al menos una talla." };
   }
-  if (input.imagePaths.length === 0) {
-    return { error: "Añade al menos una imagen (sube un archivo o indica una ruta)." };
+
+  let imagePaths = input.imagePaths;
+
+  // Producto nuevo: imágenes en `pending_images` (no se suben a Cloudinary hasta guardar).
+  if (!idRaw && pendingFiles.length > 0) {
+    const uploaded: string[] = [];
+    try {
+      for (const file of pendingFiles) {
+        if (file.size === 0) {
+          throw new Error("Archivo vacío.");
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          throw new Error("El archivo supera 5 MB.");
+        }
+        if (!MIME_EXT[file.type]) {
+          throw new Error("Formato no permitido. Usa JPEG, PNG, WebP o GIF.");
+        }
+        const buf = Buffer.from(await file.arrayBuffer());
+        uploaded.push(await persistProductImageFromBuffer(buf, file.type));
+      }
+      imagePaths = uploaded;
+    } catch (e) {
+      for (const u of uploaded) {
+        await deletePanelUploadFile(u);
+      }
+      return { error: toUserFacingUploadError(e) };
+    }
   }
+
+  if (imagePaths.length === 0) {
+    return { error: "Añade al menos una imagen (sube archivos y guarda, o indica una ruta)." };
+  }
+
+  const inputWithImages: typeof input = { ...input, imagePaths };
+
   try {
     if (idRaw) {
       const id = Number(idRaw);
       if (!Number.isFinite(id)) return { error: "ID de producto inválido." };
-      await updateProduct(id, input);
+      await updateProduct(id, inputWithImages);
     } else {
-      await insertProduct(input);
+      await insertProduct(inputWithImages);
     }
   } catch (e) {
+    if (!idRaw && pendingFiles.length > 0) {
+      for (const u of imagePaths) {
+        await deletePanelUploadFile(u);
+      }
+    }
     return { error: toUserFacingProductSaveError(e) };
   }
   try {
@@ -97,29 +163,12 @@ export async function uploadProductImageAction(
     if (file.size > 5 * 1024 * 1024) {
       return { error: "El archivo supera 5 MB." };
     }
-    const ext = MIME_EXT[file.type];
-    if (!ext) {
+    if (!MIME_EXT[file.type]) {
       return { error: "Formato no permitido. Usa JPEG, PNG, WebP o GIF." };
     }
-    const name = `${randomUUID()}${ext}`;
     const buf = Buffer.from(await file.arrayBuffer());
-
-    if (hasCloudinaryConfig()) {
-      const cloudinaryUrl = await uploadToCloudinary(buf, file.type, name.replace(/\.[^.]+$/, ""));
-      return { path: cloudinaryUrl };
-    }
-
-    if (process.env.VERCEL === "1") {
-      return {
-        error:
-          "Falta configurar Cloudinary en Vercel. Define CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY y CLOUDINARY_API_SECRET, luego vuelve a desplegar.",
-      };
-    }
-
-    const dir = join(process.cwd(), "public", "uploads", "products");
-    await mkdir(dir, { recursive: true });
-    await writeFile(join(dir, name), buf);
-    return { path: `${PRODUCT_UPLOAD_WEB_PREFIX}/${name}` };
+    const path = await persistProductImageFromBuffer(buf, file.type);
+    return { path };
   } catch (e) {
     return { error: toUserFacingUploadError(e) };
   }

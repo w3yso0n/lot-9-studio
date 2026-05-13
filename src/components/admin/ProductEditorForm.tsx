@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  deleteOrphanUploadAction,
   deleteProductImageAction,
   saveProductAction,
   uploadProductImageAction,
@@ -19,10 +18,11 @@ import {
   sortColorFiltersSelected,
 } from "@/lib/catalog-color-filters";
 import { CATALOG_SIZE_ORDER, sortSizesSelected } from "@/lib/catalog-sizes";
-import { isOwnedUploadPath } from "@/lib/product-upload-paths";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { startTransition, useActionState, useEffect, useRef, useState, useTransition } from "react";
+
+type PendingUpload = { id: string; file: File; preview: string };
 
 type Props = {
   initial?: AdminProductRow | null;
@@ -85,8 +85,10 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
   const [isPublished, setIsPublished] = useState(initial?.is_published ?? true);
   const [isNewDrop, setIsNewDrop] = useState(initial?.new_drop_sort != null);
   const [uploadMsg, setUploadMsg] = useState<string | null>(null);
+  const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
   const [imgPending, startImgTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
+  const pendingUploadsRef = useRef<PendingUpload[]>([]);
 
   const productId = initial?.id;
 
@@ -99,6 +101,16 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
 
   const previewPrice = Number.parseFloat(priceStr.replace(",", ".")) || 0;
   const previewSizes = sortSizesSelected(selectedSizes);
+  const previewImages = productId != null ? imagePaths : pendingUploads.map((p) => p.preview);
+
+  pendingUploadsRef.current = pendingUploads;
+  useEffect(() => {
+    return () => {
+      for (const p of pendingUploadsRef.current) {
+        URL.revokeObjectURL(p.preview);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     setName(initial?.name ?? "");
@@ -107,6 +119,7 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
     setImagePaths(initial?.images ?? []);
     setIsPublished(initial?.is_published ?? true);
     setIsNewDrop(initial?.new_drop_sort != null);
+    if (!initial?.id) setPendingUploads([]);
   }, [initial?.id, initial?.name, initial?.price, initial?.desc, initial?.images?.join("|"), initial?.is_published, initial?.new_drop_sort]);
 
   useEffect(() => {
@@ -136,25 +149,55 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
     e.target.value = "";
     if (!file) return;
     setUploadMsg(null);
-    startImgTransition(async () => {
-      try {
-        const fd = new FormData();
-        fd.append("file", file);
-        const res = await uploadProductImageAction(fd);
-        if (res.error) setUploadMsg(res.error);
-        else {
-          const path = res.path;
-          if (path) setImagePaths((prev) => [...prev, path]);
+
+    if (productId != null) {
+      startImgTransition(async () => {
+        try {
+          const fd = new FormData();
+          fd.append("file", file);
+          const res = await uploadProductImageAction(fd);
+          if (res.error) setUploadMsg(res.error);
+          else {
+            const path = res.path;
+            if (path) setImagePaths((prev) => [...prev, path]);
+          }
+        } catch {
+          setUploadMsg(
+            "No se pudo subir la imagen (fallo de red o del servidor). Comprueba la conexión e inténtalo de nuevo."
+          );
         }
-      } catch {
-        setUploadMsg(
-          "No se pudo subir la imagen (fallo de red o del servidor). Comprueba la conexión e inténtalo de nuevo."
-        );
-      }
+      });
+      return;
+    }
+
+    if (file.size === 0) {
+      setUploadMsg("Archivo vacío.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadMsg("El archivo supera 5 MB.");
+      return;
+    }
+    const okTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
+    if (!okTypes.includes(file.type)) {
+      setUploadMsg("Formato no permitido. Usa JPEG, PNG, WebP o GIF.");
+      return;
+    }
+    const preview = URL.createObjectURL(file);
+    const id = crypto.randomUUID();
+    setPendingUploads((prev) => [...prev, { id, file, preview }]);
+  }
+
+  function removePendingUpload(id: string) {
+    setUploadMsg(null);
+    setPendingUploads((prev) => {
+      const item = prev.find((p) => p.id === id);
+      if (item) URL.revokeObjectURL(item.preview);
+      return prev.filter((p) => p.id !== id);
     });
   }
 
-  async function removeImage(path: string) {
+  function removeImage(path: string) {
     setUploadMsg(null);
     if (productId != null) {
       startImgTransition(async () => {
@@ -166,26 +209,23 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
           setUploadMsg("No se pudo quitar la imagen. Inténtalo de nuevo.");
         }
       });
-    } else {
-      if (isOwnedUploadPath(path)) {
-        try {
-          const r = await deleteOrphanUploadAction(path);
-          if (r.error) {
-            setUploadMsg(r.error);
-            return;
-          }
-        } catch {
-          setUploadMsg("No se pudo eliminar el archivo subido. Inténtalo de nuevo.");
-          return;
-        }
-      }
-      setImagePaths((prev) => prev.filter((x) => x !== path));
     }
   }
 
   const formInner = (
     <form
       action={formAction}
+      onSubmit={(e) => {
+        if (productId != null) return;
+        e.preventDefault();
+        const fd = new FormData(e.currentTarget);
+        for (const p of pendingUploads) {
+          fd.append("pending_images", p.file);
+        }
+        startTransition(() => {
+          void formAction(fd);
+        });
+      }}
       className={cn("space-y-8 min-w-0", !showLivePreview && "max-w-3xl")}
     >
       {productId != null ? <input type="hidden" name="id" value={productId} /> : null}
@@ -243,12 +283,21 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
         <div>
           <Label className="text-base">Imágenes</Label>
           <p className="text-sm text-muted-foreground mt-1">
-            Sube archivos (local:{" "}
-            <code className="text-xs bg-muted px-1 rounded">public/uploads/products</code>
-            ; en Vercel con Cloudinary: <code className="text-xs bg-muted px-1 rounded">CLOUDINARY_*</code>).
-            {productId != null
-              ? " Las fotos subidas por el panel se eliminan al quitarlas o al guardar si ya no figuran en la lista (no afecta imágenes históricas de /images/… de la tienda)."
-              : " Las fotos subidas se pueden quitar antes de guardar; el archivo también se elimina del almacenamiento."}
+            {productId != null ? (
+              <>
+                Sube archivos (local:{" "}
+                <code className="text-xs bg-muted px-1 rounded">public/uploads/products</code>
+                ; con Cloudinary: <code className="text-xs bg-muted px-1 rounded">CLOUDINARY_*</code>). Las fotos
+                subidas se eliminan del almacenamiento al quitarlas o si dejan de figurar al guardar (no afecta
+                imágenes de <code className="text-xs bg-muted px-1 rounded">/images/</code>…).
+              </>
+            ) : (
+              <>
+                Las imágenes nuevas no se suben a Cloudinary hasta que pulses <strong>Guardar</strong>. Puedes quitar
+                una imagen de la lista antes de guardar (no se sube nada a la nube). Requisitos: JPEG, PNG, WebP o GIF,
+                máx. 5 MB.
+              </>
+            )}
           </p>
         </div>
 
@@ -263,14 +312,14 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
           <Button
             type="button"
             variant="secondary"
-            disabled={imgPending || pending}
+            disabled={(productId != null ? imgPending : false) || pending}
             onClick={() => fileRef.current?.click()}
           >
-            {imgPending ? "Subiendo…" : "Subir imagen"}
+            {imgPending ? "Subiendo…" : productId != null ? "Subir imagen" : "Añadir imagen"}
           </Button>
         </div>
 
-        {imagePaths.length > 0 ? (
+        {productId != null && imagePaths.length > 0 ? (
           <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {imagePaths.map((src) => (
               <li
@@ -294,6 +343,25 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
                   Quitar
                 </button>
                 <input type="hidden" name="images" value={src} />
+              </li>
+            ))}
+          </ul>
+        ) : productId == null && pendingUploads.length > 0 ? (
+          <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {pendingUploads.map((p) => (
+              <li
+                key={p.id}
+                className="relative aspect-square rounded-lg border bg-background overflow-hidden group"
+              >
+                <Image src={p.preview} alt="" fill className="object-contain p-1" sizes="200px" unoptimized />
+                <button
+                  type="button"
+                  className="absolute top-1 right-1 rounded-md bg-black/70 text-white text-xs px-2 py-1 opacity-90 hover:bg-black"
+                  disabled={pending}
+                  onClick={() => removePendingUpload(p.id)}
+                >
+                  Quitar
+                </button>
               </li>
             ))}
           </ul>
@@ -408,7 +476,7 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
 
       <div className="flex gap-3">
         <Button type="submit" disabled={pending || imgPending}>
-          {pending ? "Guardando…" : "Guardar"}
+          {pending ? "Guardando…" : productId == null && pendingUploads.length > 0 ? "Guardar y subir imágenes" : "Guardar"}
         </Button>
       </div>
     </form>
@@ -424,7 +492,7 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
       <AdminStorefrontPreview
         name={name}
         price={previewPrice}
-        images={imagePaths}
+        images={previewImages}
         variantLabel={variantLabelForSubmit}
         description={description}
         sizes={previewSizes}
