@@ -20,7 +20,8 @@ interface ProductProps {
 
 export const ProductCard = ({ product, className }: ProductProps) => {
   const mainImage = product.images[0];
-  
+  const hasImage = Boolean(mainImage?.trim());
+
   // Verificar si hay stock en alguna talla
   const hasStock = product.sizes.some(size => product.stockBySize[size] > 0);
 
@@ -35,13 +36,19 @@ export const ProductCard = ({ product, className }: ProductProps) => {
         <Link href={`/products/${product.id}`}>
           <CardContent className="p-0 flex flex-col cursor-pointer">
             {/* Contenedor de imagen */}
-            <div className="relative w-full h-[360px] sm:h-[300px] md:h-[350px] lg:h-[400px] overflow-hidden">
-              <Image
-                src={mainImage}
-                alt={product.name}
-                fill
-                className="object-cover"
-              />
+            <div className="relative w-full h-[360px] sm:h-[300px] md:h-[350px] lg:h-[400px] overflow-hidden bg-muted">
+              {hasImage ? (
+                <Image
+                  src={mainImage}
+                  alt={product.name}
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground px-4 text-center">
+                  Sin imagen
+                </div>
+              )}
               {/* Mostrar sold out si no hay stock en ninguna talla */}
               {!hasStock && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50">

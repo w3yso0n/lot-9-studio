@@ -1,15 +1,21 @@
 "use client";
 
 import { ProductCard } from "@/components/products/ProductCard";
-import { newDrops } from "@/lib/data";
+import type { CatalogProduct } from "@/lib/catalog-product";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 
-const NewDropsCarousel = () => {
+type Props = { newDrops: CatalogProduct[] };
+
+const NewDropsCarousel = ({ newDrops }: Props) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedImageIndex, setSelectedImageIndex] = useState<{ [key: number]: number }>({});
+
+  if (newDrops.length === 0) {
+    return null;
+  }
 
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev + 1) % newDrops.length);

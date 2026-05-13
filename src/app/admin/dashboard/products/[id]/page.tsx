@@ -1,0 +1,32 @@
+import { ProductEditorForm } from "@/components/admin/ProductEditorForm";
+import { deleteProductAction } from "@/app/admin/dashboard/actions";
+import { getAdminProductById } from "@/lib/products-repo";
+import { Button } from "@/components/ui/button";
+import { notFound } from "next/navigation";
+
+export const dynamic = "force-dynamic";
+
+type Props = { params: Promise<{ id: string }> };
+
+export default async function EditProductPage({ params }: Props) {
+  const { id: idStr } = await params;
+  const id = Number(idStr);
+  if (!Number.isFinite(id)) notFound();
+  const product = await getAdminProductById(id);
+  if (!product) notFound();
+
+  return (
+    <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <h1 className="text-2xl font-bold">Editar producto #{id}</h1>
+        <form action={deleteProductAction}>
+          <input type="hidden" name="id" value={id} />
+          <Button type="submit" variant="destructive" formNoValidate>
+            Eliminar
+          </Button>
+        </form>
+      </div>
+      <ProductEditorForm initial={product} key={`${product.id}-${product.images.join("~")}`} />
+    </div>
+  );
+}

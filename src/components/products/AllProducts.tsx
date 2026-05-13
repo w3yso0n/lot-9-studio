@@ -1,12 +1,24 @@
 import NewDropsCarousel from "@/components/products/NewDropsCarousel";
 import { ProductCard } from "@/components/products/ProductCard";
-import { products } from "@/lib/data";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import type { CatalogProduct } from "@/lib/catalog-product";
 
-const AllProducts = () => {
+type Props = {
+  products: CatalogProduct[];
+  newDrops: CatalogProduct[];
+  dbError?: string | null;
+};
+
+const AllProducts = ({ products, newDrops, dbError }: Props) => {
   return (
     <section className="container mx-auto px-4 sm:px-6 py-10">
-      {/* Sección de Nuevos Drops */}
-      <NewDropsCarousel />
+      {dbError ? (
+        <Alert className="mb-8 border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+          <AlertTitle>No se pudo cargar el catálogo</AlertTitle>
+          <AlertDescription>{dbError}</AlertDescription>
+        </Alert>
+      ) : null}
+      <NewDropsCarousel newDrops={newDrops} />
 
 
 
