@@ -26,7 +26,10 @@ const NewDropsCarousel = ({ newDrops }: Props) => {
   };
 
   return (
-    <section className="relative container mx-auto py-8 sm:py-12 md:py-16 px-3 sm:px-4">
+    <section
+      id="nuevos-drops"
+      className="relative container mx-auto py-8 sm:py-12 md:py-16 px-3 sm:px-4 scroll-mt-24"
+    >
       {/* Encabezado */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}

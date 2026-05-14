@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger
 import { useCartStore } from "@/store/cart";
 import { motion } from "framer-motion";
 import { ArrowRightIcon, ShieldCheckIcon, ShoppingCartIcon, TicketIcon, Trash2Icon } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function CartPage() {
@@ -110,7 +111,7 @@ export default function CartPage() {
               transition={{ duration: 0.5 }}
               className="w-full"
             >
-              <Card className="text-center py-10 sm:py-12 md:py-16 mx-auto max-w-md px-6">
+              <Card className="text-center py-10 sm:py-12 md:py-16 mx-auto max-w-md px-6 border-border bg-card text-card-foreground">
                 <motion.div
                   animate={{ 
                     y: [0, -10, 0],
@@ -122,12 +123,12 @@ export default function CartPage() {
                     ease: "easeInOut"
                   }}
                 >
-                  <ShoppingCartIcon className="mx-auto h-10 sm:h-12 w-10 sm:w-12 text-gray-400" />
+                  <ShoppingCartIcon className="mx-auto h-10 sm:h-12 w-10 sm:w-12 text-muted-foreground" aria-hidden />
                 </motion.div>
-                <h2 className="mt-3 sm:mt-4 text-base sm:text-lg md:text-xl font-medium text-gray-900 px-4">
+                <h2 className="mt-3 sm:mt-4 text-base sm:text-lg md:text-xl font-medium text-foreground px-4">
                   Tu carrito está vacío
                 </h2>
-                <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-500 px-4">
+                <p className="mt-1 sm:mt-2 text-sm sm:text-base text-muted-foreground px-4">
                   Agrega algunos productos para comenzar
                 </p>
                 <motion.div
@@ -136,37 +137,40 @@ export default function CartPage() {
                   whileTap={{ scale: 0.95 }}
                 >
                   <Button className="w-full sm:w-auto" size="lg" asChild>
-                    <a href="/products">Ver productos</a>
+                    <Link href="/products">Ver productos</Link>
                   </Button>
                 </motion.div>
                 
                 {/* Sugerencias adicionales para móvil */}
                 <div className="mt-6 px-4">
-                  <p className="text-xs sm:text-sm text-gray-400 mb-3">
+                  <p className="text-xs sm:text-sm text-muted-foreground mb-3">
                     ¿No sabes qué buscar?
                   </p>
                   <div className="flex flex-wrap gap-2 justify-center">
-                    <motion.button
-                      className="px-3 py-1.5 text-xs sm:text-sm bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      Nuevos drops
-                    </motion.button>
-                    <motion.button
-                      className="px-3 py-1.5 text-xs sm:text-sm bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      Más vendidos
-                    </motion.button>
-                    <motion.button
-                      className="px-3 py-1.5 text-xs sm:text-sm bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      Ofertas
-                    </motion.button>
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="inline-block">
+                      <Link
+                        href="/products#nuevos-drops"
+                        className="inline-flex px-3 py-1.5 text-xs sm:text-sm rounded-full border border-border bg-muted text-foreground hover:bg-muted/80 transition-colors"
+                      >
+                        Nuevos drops
+                      </Link>
+                    </motion.div>
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="inline-block">
+                      <Link
+                        href="/products#catalogo"
+                        className="inline-flex px-3 py-1.5 text-xs sm:text-sm rounded-full border border-border bg-muted text-foreground hover:bg-muted/80 transition-colors"
+                      >
+                        Más vendidos
+                      </Link>
+                    </motion.div>
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="inline-block">
+                      <Link
+                        href="/products#destacados"
+                        className="inline-flex px-3 py-1.5 text-xs sm:text-sm rounded-full border border-border bg-muted text-foreground hover:bg-muted/80 transition-colors"
+                      >
+                        Ofertas
+                      </Link>
+                    </motion.div>
                   </div>
                 </div>
               </Card>

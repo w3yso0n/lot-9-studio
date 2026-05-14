@@ -23,7 +23,10 @@ const AllProducts = ({ products, newDrops, dbError }: Props) => {
 
 
       {/* Video mejorado */}
-      <div className="my-12 relative aspect-video w-full max-w-4xl mx-auto overflow-hidden rounded-xl shadow-lg bg-black">
+      <div
+        id="destacados"
+        className="my-12 relative aspect-video w-full max-w-4xl mx-auto overflow-hidden rounded-xl shadow-lg bg-black scroll-mt-24"
+      >
         <video
           autoPlay
           muted
@@ -75,7 +78,10 @@ const AllProducts = ({ products, newDrops, dbError }: Props) => {
       </div> */}
 
       {/* Grid de Productos con skeleton loading */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div
+        id="catalogo"
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 scroll-mt-24"
+      >
         {products.map((product) => (
           <ProductCard 
             key={product.id} 
