@@ -20,7 +20,14 @@ import {
 import { CATALOG_SIZE_ORDER, sortSizesSelected } from "@/lib/catalog-sizes";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { startTransition, useActionState, useEffect, useRef, useState, useTransition } from "react";
+import {
+  startTransition,
+  useActionState,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 
 type PendingUpload = { id: string; file: File; preview: string };
 
@@ -29,6 +36,16 @@ type Props = {
   /** Vista previa en columna (recomendado en “Nuevo producto”). */
   showLivePreview?: boolean;
 };
+
+type ProductWithOldPrice = AdminProductRow & {
+  oldPrice?: number | null;
+  old_price?: number | null;
+};
+
+function getInitialOldPrice(initial?: AdminProductRow | null): number | null {
+  const product = initial as ProductWithOldPrice | null | undefined;
+  return product?.oldPrice ?? product?.old_price ?? null;
+}
 
 function encodeWebPath(p: string): string {
   const t = p.trim();
@@ -43,7 +60,9 @@ function deriveInitialSelectedSizes(initial?: AdminProductRow | null): string[] 
   if (initial.sizes.length > 0) {
     return sortSizesSelected(initial.sizes);
   }
-  const withStock = CATALOG_SIZE_ORDER.filter((s) => (initial.stockBySize[s] ?? 0) > 0);
+  const withStock = CATALOG_SIZE_ORDER.filter(
+    (s) => (initial.stockBySize[s] ?? 0) > 0
+  );
   return withStock.length > 0 ? [...withStock] : [...CATALOG_SIZE_ORDER];
 }
 
@@ -72,18 +91,41 @@ function colorsFingerprint(initial?: AdminProductRow | null): string {
 }
 
 export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
-  const [state, formAction, pending] = useActionState(saveProductAction, null as SaveProductState);
+  const [state, formAction, pending] = useActionState(
+    saveProductAction,
+    null as SaveProductState
+  );
+
   const [name, setName] = useState(initial?.name ?? "");
+
   const [priceStr, setPriceStr] = useState(
     initial?.price != null ? String(initial.price) : ""
   );
+
+  const [oldPriceStr, setOldPriceStr] = useState(() => {
+    const oldPrice = getInitialOldPrice(initial);
+    return oldPrice != null ? String(oldPrice) : "";
+  });
+
   const [description, setDescription] = useState(initial?.desc ?? "");
-  const [imagePaths, setImagePaths] = useState<string[]>(() => initial?.images ?? []);
-  const [selectedSizes, setSelectedSizes] = useState<string[]>(() => deriveInitialSelectedSizes(initial));
-  const [selectedColors, setSelectedColors] = useState<string[]>(() => deriveInitialColorFilters(initial));
-  const [stockBySize, setStockBySize] = useState<Record<string, number>>(() => initStockMap(initial));
-  const [isPublished, setIsPublished] = useState(initial?.is_published ?? true);
-  const [isNewDrop, setIsNewDrop] = useState(initial?.new_drop_sort != null);
+  const [imagePaths, setImagePaths] = useState<string[]>(
+    () => initial?.images ?? []
+  );
+  const [selectedSizes, setSelectedSizes] = useState<string[]>(() =>
+    deriveInitialSelectedSizes(initial)
+  );
+  const [selectedColors, setSelectedColors] = useState<string[]>(() =>
+    deriveInitialColorFilters(initial)
+  );
+  const [stockBySize, setStockBySize] = useState<Record<string, number>>(() =>
+    initStockMap(initial)
+  );
+  const [isPublished, setIsPublished] = useState(
+    initial?.is_published ?? true
+  );
+  const [isNewDrop, setIsNewDrop] = useState(
+    initial?.new_drop_sort != null
+  );
   const [uploadMsg, setUploadMsg] = useState<string | null>(null);
   const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
   const [imgPending, startImgTransition] = useTransition();
@@ -94,16 +136,18 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
 
   const variantLabelForSubmit =
     productId != null
-      ? (initial?.color ?? "")
+      ? initial?.color ?? ""
       : sortColorFiltersSelected(selectedColors)
           .map((c) => COLOR_FILTER_LABELS[c as keyof typeof COLOR_FILTER_LABELS])
           .join(" · ") || "Sin variante";
 
   const previewPrice = Number.parseFloat(priceStr.replace(",", ".")) || 0;
   const previewSizes = sortSizesSelected(selectedSizes);
-  const previewImages = productId != null ? imagePaths : pendingUploads.map((p) => p.preview);
+  const previewImages =
+    productId != null ? imagePaths : pendingUploads.map((p) => p.preview);
 
   pendingUploadsRef.current = pendingUploads;
+
   useEffect(() => {
     return () => {
       for (const p of pendingUploadsRef.current) {
@@ -113,14 +157,27 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
   }, []);
 
   useEffect(() => {
+    const oldPrice = getInitialOldPrice(initial);
+
     setName(initial?.name ?? "");
     setPriceStr(initial?.price != null ? String(initial.price) : "");
+    setOldPriceStr(oldPrice != null ? String(oldPrice) : "");
     setDescription(initial?.desc ?? "");
     setImagePaths(initial?.images ?? []);
     setIsPublished(initial?.is_published ?? true);
     setIsNewDrop(initial?.new_drop_sort != null);
+
     if (!initial?.id) setPendingUploads([]);
-  }, [initial?.id, initial?.name, initial?.price, initial?.desc, initial?.images?.join("|"), initial?.is_published, initial?.new_drop_sort]);
+  }, [
+    initial?.id,
+    initial?.name,
+    initial?.price,
+    getInitialOldPrice(initial),
+    initial?.desc,
+    initial?.images?.join("|"),
+    initial?.is_published,
+    initial?.new_drop_sort,
+  ]);
 
   useEffect(() => {
     setSelectedSizes(deriveInitialSelectedSizes(initial));
@@ -148,6 +205,7 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+
     setUploadMsg(null);
 
     if (productId != null) {
@@ -156,8 +214,10 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
           const fd = new FormData();
           fd.append("file", file);
           const res = await uploadProductImageAction(fd);
-          if (res.error) setUploadMsg(res.error);
-          else {
+
+          if (res.error) {
+            setUploadMsg(res.error);
+          } else {
             const path = res.path;
             if (path) setImagePaths((prev) => [...prev, path]);
           }
@@ -174,22 +234,34 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
       setUploadMsg("Archivo vacío.");
       return;
     }
+
     if (file.size > 5 * 1024 * 1024) {
       setUploadMsg("El archivo supera 5 MB.");
       return;
     }
-    const okTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
+
+    const okTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+    ];
+
     if (!okTypes.includes(file.type)) {
       setUploadMsg("Formato no permitido. Usa JPEG, PNG, WebP o GIF.");
       return;
     }
+
     const preview = URL.createObjectURL(file);
     const id = crypto.randomUUID();
+
     setPendingUploads((prev) => [...prev, { id, file, preview }]);
   }
 
   function removePendingUpload(id: string) {
     setUploadMsg(null);
+
     setPendingUploads((prev) => {
       const item = prev.find((p) => p.id === id);
       if (item) URL.revokeObjectURL(item.preview);
@@ -199,12 +271,17 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
 
   function removeImage(path: string) {
     setUploadMsg(null);
+
     if (productId != null) {
       startImgTransition(async () => {
         try {
           const r = await deleteProductImageAction(productId, path);
-          if (r.error) setUploadMsg(r.error);
-          else setImagePaths((prev) => prev.filter((x) => x !== path));
+
+          if (r.error) {
+            setUploadMsg(r.error);
+          } else {
+            setImagePaths((prev) => prev.filter((x) => x !== path));
+          }
         } catch {
           setUploadMsg("No se pudo quitar la imagen. Inténtalo de nuevo.");
         }
@@ -217,23 +294,31 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
       action={formAction}
       onSubmit={(e) => {
         if (productId != null) return;
+
         e.preventDefault();
+
         const fd = new FormData(e.currentTarget);
+
         for (const p of pendingUploads) {
           fd.append("pending_images", p.file);
         }
+
         startTransition(() => {
           void formAction(fd);
         });
       }}
       className={cn("space-y-8 min-w-0", !showLivePreview && "max-w-3xl")}
     >
-      {productId != null ? <input type="hidden" name="id" value={productId} /> : null}
+      {productId != null ? (
+        <input type="hidden" name="id" value={productId} />
+      ) : null}
+
       {state?.error ? (
         <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-md px-3 py-2">
           {state.error}
         </p>
       ) : null}
+
       {uploadMsg ? (
         <p className="text-sm text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-md px-3 py-2">
           {uploadMsg}
@@ -253,18 +338,37 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
 
       <input type="hidden" name="variant_label" value={variantLabelForSubmit} />
 
-      <div className="space-y-2 max-w-sm">
-        <Label htmlFor="price">Precio</Label>
-        <Input
-          id="price"
-          name="price"
-          type="number"
-          step="0.01"
-          min="0"
-          required
-          value={priceStr}
-          onChange={(e) => setPriceStr(e.target.value)}
-        />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="price">Precio actual</Label>
+          <Input
+            id="price"
+            name="price"
+            type="number"
+            step="0.01"
+            min="0"
+            required
+            value={priceStr}
+            onChange={(e) => setPriceStr(e.target.value)}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="old_price">Precio anterior / oferta</Label>
+          <Input
+            id="old_price"
+            name="old_price"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="Ej. 399.99"
+            value={oldPriceStr}
+            onChange={(e) => setOldPriceStr(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Si lo dejas vacío, en 0 o menor a 1, no se mostrará precio tachado.
+          </p>
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -286,16 +390,26 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
             {productId != null ? (
               <>
                 Sube archivos (local:{" "}
-                <code className="text-xs bg-muted px-1 rounded">public/uploads/products</code>
-                ; con Cloudinary: <code className="text-xs bg-muted px-1 rounded">CLOUDINARY_*</code>). Las fotos
-                subidas se eliminan del almacenamiento al quitarlas o si dejan de figurar al guardar (no afecta
-                imágenes de <code className="text-xs bg-muted px-1 rounded">/images/</code>…).
+                <code className="text-xs bg-muted px-1 rounded">
+                  public/uploads/products
+                </code>
+                ; con Cloudinary:{" "}
+                <code className="text-xs bg-muted px-1 rounded">
+                  CLOUDINARY_*
+                </code>
+                ). Las fotos subidas se eliminan del almacenamiento al quitarlas
+                o si dejan de figurar al guardar (no afecta imágenes de{" "}
+                <code className="text-xs bg-muted px-1 rounded">
+                  /images/
+                </code>
+                …).
               </>
             ) : (
               <>
-                Las imágenes nuevas no se suben a Cloudinary hasta que pulses <strong>Guardar</strong>. Puedes quitar
-                una imagen de la lista antes de guardar (no se sube nada a la nube). Requisitos: JPEG, PNG, WebP o GIF,
-                máx. 5 MB.
+                Las imágenes nuevas no se suben a Cloudinary hasta que pulses{" "}
+                <strong>Guardar</strong>. Puedes quitar una imagen de la lista
+                antes de guardar (no se sube nada a la nube). Requisitos: JPEG,
+                PNG, WebP o GIF, máx. 5 MB.
               </>
             )}
           </p>
@@ -308,6 +422,7 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
           className="hidden"
           onChange={onPickFile}
         />
+
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
@@ -315,7 +430,11 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
             disabled={(productId != null ? imgPending : false) || pending}
             onClick={() => fileRef.current?.click()}
           >
-            {imgPending ? "Subiendo…" : productId != null ? "Subir imagen" : "Añadir imagen"}
+            {imgPending
+              ? "Subiendo…"
+              : productId != null
+              ? "Subir imagen"
+              : "Añadir imagen"}
           </Button>
         </div>
 
@@ -334,6 +453,7 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
                   sizes="200px"
                   unoptimized
                 />
+
                 <button
                   type="button"
                   className="absolute top-1 right-1 rounded-md bg-black/70 text-white text-xs px-2 py-1 opacity-90 hover:bg-black"
@@ -342,6 +462,7 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
                 >
                   Quitar
                 </button>
+
                 <input type="hidden" name="images" value={src} />
               </li>
             ))}
@@ -353,7 +474,15 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
                 key={p.id}
                 className="relative aspect-square rounded-lg border bg-background overflow-hidden group"
               >
-                <Image src={p.preview} alt="" fill className="object-contain p-1" sizes="200px" unoptimized />
+                <Image
+                  src={p.preview}
+                  alt=""
+                  fill
+                  className="object-contain p-1"
+                  sizes="200px"
+                  unoptimized
+                />
+
                 <button
                   type="button"
                   className="absolute top-1 right-1 rounded-md bg-black/70 text-white text-xs px-2 py-1 opacity-90 hover:bg-black"
@@ -374,10 +503,11 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
         <div>
           <Label className="text-base">Etiquetas de color (filtros)</Label>
           <p className="text-sm text-muted-foreground mt-1">
-            Opciones del catálogo legado. En la base se guardan en inglés (Black, White…); aquí ves el nombre en
-            español.
+            Opciones del catálogo legado. En la base se guardan en inglés
+            (Black, White…); aquí ves el nombre en español.
           </p>
         </div>
+
         <ToggleGroup
           type="multiple"
           variant="outline"
@@ -386,11 +516,16 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
           className="justify-start"
         >
           {CATALOG_COLOR_FILTER_OPTIONS.map((key) => (
-            <ToggleGroupItem key={key} value={key} aria-label={COLOR_FILTER_LABELS[key]}>
+            <ToggleGroupItem
+              key={key}
+              value={key}
+              aria-label={COLOR_FILTER_LABELS[key]}
+            >
               {COLOR_FILTER_LABELS[key]}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
+
         {sortColorFiltersSelected(selectedColors).map((c) => (
           <input key={c} type="hidden" name="color_filters" value={c} />
         ))}
@@ -400,9 +535,11 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
         <div>
           <Label className="text-base">Tallas disponibles</Label>
           <p className="text-sm text-muted-foreground mt-1">
-            Activa las tallas que vendes. El stock solo aplica a las tallas seleccionadas.
+            Activa las tallas que vendes. El stock solo aplica a las tallas
+            seleccionadas.
           </p>
         </div>
+
         <ToggleGroup
           type="multiple"
           variant="outline"
@@ -411,11 +548,16 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
           className="justify-start"
         >
           {CATALOG_SIZE_ORDER.map((size) => (
-            <ToggleGroupItem key={size} value={size} aria-label={`Talla ${size}`}>
+            <ToggleGroupItem
+              key={size}
+              value={size}
+              aria-label={`Talla ${size}`}
+            >
               {size}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
+
         {sortSizesSelected(selectedSizes).map((s) => (
           <input key={s} type="hidden" name="sizes" value={s} />
         ))}
@@ -443,7 +585,12 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
       </div>
 
       <div className="flex flex-col gap-4 border rounded-lg p-4 bg-muted/20">
-        <input type="hidden" name="is_published" value={isPublished ? "true" : "false"} />
+        <input
+          type="hidden"
+          name="is_published"
+          value={isPublished ? "true" : "false"}
+        />
+
         <label className="flex items-center gap-2 text-sm cursor-pointer">
           <input
             type="checkbox"
@@ -453,7 +600,13 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
           />
           Publicado en la tienda
         </label>
-        <input type="hidden" name="is_new_drop" value={isNewDrop ? "true" : "false"} />
+
+        <input
+          type="hidden"
+          name="is_new_drop"
+          value={isNewDrop ? "true" : "false"}
+        />
+
         <label className="flex items-center gap-2 text-sm cursor-pointer">
           <input
             type="checkbox"
@@ -463,8 +616,11 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
           />
           Mostrar en carrusel &quot;Nuevos Drops&quot;
         </label>
+
         <div className="space-y-2 max-w-xs">
-          <Label htmlFor="new_drop_sort">Orden en Nuevos Drops (menor = primero)</Label>
+          <Label htmlFor="new_drop_sort">
+            Orden en Nuevos Drops (menor = primero)
+          </Label>
           <Input
             id="new_drop_sort"
             name="new_drop_sort"
@@ -476,7 +632,11 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
 
       <div className="flex gap-3">
         <Button type="submit" disabled={pending || imgPending}>
-          {pending ? "Guardando…" : productId == null && pendingUploads.length > 0 ? "Guardar y subir imágenes" : "Guardar"}
+          {pending
+            ? "Guardando…"
+            : productId == null && pendingUploads.length > 0
+            ? "Guardar y subir imágenes"
+            : "Guardar"}
         </Button>
       </div>
     </form>
@@ -489,6 +649,7 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
   return (
     <div className="grid w-full gap-8 lg:gap-10 lg:grid-cols-[minmax(0,1fr)_420px] items-start">
       {formInner}
+
       <AdminStorefrontPreview
         name={name}
         price={previewPrice}
