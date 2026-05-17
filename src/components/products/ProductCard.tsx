@@ -10,6 +10,7 @@ interface ProductProps {
     id: number;
     name: string;
     price: number;
+    oldPrice?: number;
     images: string[];
     stockBySize: { [size: string]: number };
     sizes: string[];
@@ -23,7 +24,13 @@ export const ProductCard = ({ product, className }: ProductProps) => {
   const hasImage = Boolean(mainImage?.trim());
 
   // Verificar si hay stock en alguna talla
-  const hasStock = product.sizes.some(size => product.stockBySize[size] > 0);
+  const hasStock = product.sizes.some((size) => product.stockBySize[size] > 0);
+
+  // Verificar si debe mostrarse precio anterior
+  const showOldPrice =
+    product.oldPrice !== undefined &&
+    product.oldPrice > 1 &&
+    product.oldPrice > product.price;
 
   return (
     <motion.div
@@ -49,6 +56,7 @@ export const ProductCard = ({ product, className }: ProductProps) => {
                   Sin imagen
                 </div>
               )}
+
               {/* Mostrar sold out si no hay stock en ninguna talla */}
               {!hasStock && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50">
@@ -68,11 +76,19 @@ export const ProductCard = ({ product, className }: ProductProps) => {
               <h3 className="text-base sm:text-base md:text-lg font-bold text-center group-hover:text-gray-800 dark:group-hover:text-gray-200 text-gray-900 dark:text-white transition-colors">
                 {product.name}
               </h3>
-              
+
               {/* Precio */}
-              <p className="text-xl sm:text-2xl font-bold text-center text-gray-900 dark:text-white">
-                ${product.price.toFixed(2)}
-              </p>
+              <div className="flex items-center justify-center gap-2">
+                {showOldPrice && (
+                  <span className="text-sm sm:text-base font-medium text-gray-500 dark:text-gray-400 line-through">
+                    ${product.oldPrice?.toFixed(2)}
+                  </span>
+                )}
+
+                <span className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                  ${product.price.toFixed(2)}
+                </span>
+              </div>
             </div>
           </CardContent>
         </Link>
