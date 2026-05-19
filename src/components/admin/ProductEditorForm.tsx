@@ -846,8 +846,9 @@ export function ProductEditorForm({
         <div>
           <Label className="text-base">Colores del modelo</Label>
           <p className="text-sm text-muted-foreground mt-1">
-            Sube una o varias fotos por cada color. La primera imagen del
-            primer color será la portada del producto.
+            Cada color es una opción en la tienda: al elegirla se muestran sus
+            fotos (grande y miniaturas) y el stock por talla. La primera imagen
+            del primer color es la portada en el catálogo.
           </p>
         </div>
 

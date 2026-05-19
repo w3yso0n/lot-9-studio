@@ -1,4 +1,7 @@
-import type { CatalogProduct } from "@/lib/catalog-product";
+import type {
+  CatalogProduct,
+  CatalogProductColorVariant,
+} from "@/lib/catalog-product";
 import { CATALOG_SIZE_ORDER } from "@/lib/catalog-sizes";
 import { getPool } from "@/lib/db";
 import { sanitizeProductImagePaths } from "@/lib/product-image-url";
@@ -121,11 +124,76 @@ function parseOldPrice(value: unknown): number | undefined {
   return undefined;
 }
 
-async function getColorVariantsForProduct(productId: number) {
+function mapColorVariantRows(
+  rows: Array<{
+    label: string;
+    image_path?: string;
+    images: unknown;
+    stock_by_size: unknown;
+  }>
+): CatalogProductColorVariant[] {
+  return rows
+    .map((row) => {
+      const fromGallery = sanitizeProductImagePaths(parseJsonArray(row.images));
+      const images =
+        fromGallery.length > 0
+          ? fromGallery
+          : sanitizeProductImagePaths([row.image_path ?? ""]);
+      return {
+        label: row.label,
+        images,
+        stockBySize: parseStock(row.stock_by_size),
+      };
+    })
+    .filter((row) => row.images.length > 0);
+}
+
+function parseColorVariantsAgg(raw: unknown): CatalogProductColorVariant[] {
+  if (!Array.isArray(raw)) return [];
+  return mapColorVariantRows(
+    raw.map((item) => {
+      const row = item as Record<string, unknown>;
+      return {
+        label: String(row.label ?? ""),
+        image_path: String(row.image_path ?? ""),
+        images: row.images,
+        stock_by_size: row.stock_by_size,
+      };
+    })
+  );
+}
+
+const colorVariantsAggSql = `
+  COALESCE((
+    SELECT json_agg(
+      json_build_object(
+        'label', pcv.label,
+        'image_path', pcv.image_path,
+        'images', COALESCE(img.images, '[]'::json),
+        'stock_by_size', COALESCE(stk.stock_by_size, '{}'::json)
+      )
+      ORDER BY pcv.sort_order, pcv.id
+    )
+    FROM product_color_variants pcv
+    LEFT JOIN LATERAL (
+      SELECT json_agg(pcvi.image_path ORDER BY pcvi.sort_order, pcvi.id) AS images
+      FROM product_color_variant_images pcvi
+      WHERE pcvi.color_variant_id = pcv.id
+    ) img ON true
+    LEFT JOIN LATERAL (
+      SELECT json_object_agg(pcvs.size, pcvs.quantity) AS stock_by_size
+      FROM product_color_variant_stock pcvs
+      WHERE pcvs.color_variant_id = pcv.id
+    ) stk ON true
+    WHERE pcv.product_id = p.id
+  ), '[]'::json) AS color_variants_agg`;
+
+async function getColorVariantsForProduct(
+  productId: number
+): Promise<CatalogProductColorVariant[]> {
   const pool = getPool();
   const { rows } = await pool.query<ProductColorVariantRow>(
     `SELECT
-       pcv.id,
        pcv.label,
        pcv.image_path,
        COALESCE(img.images, '[]'::json) AS images,
@@ -145,21 +213,7 @@ async function getColorVariantsForProduct(productId: number) {
      ORDER BY pcv.sort_order, pcv.id`,
     [productId]
   );
-
-  return rows
-    .map((row) => {
-      const fromGallery = sanitizeProductImagePaths(parseJsonArray(row.images));
-      const images =
-        fromGallery.length > 0
-          ? fromGallery
-          : sanitizeProductImagePaths([row.image_path]);
-      return {
-        label: row.label,
-        images,
-        stockBySize: parseStock(row.stock_by_size),
-      };
-    })
-    .filter((row) => row.images.length > 0);
+  return mapColorVariantRows(rows);
 }
 
 function rowToCatalogGridProduct(row: CatalogGridRow): CatalogProduct {
@@ -309,33 +363,35 @@ async function fetchProductById(
 ): Promise<CatalogProduct | null> {
   const pool = getPool();
   const pub = opts?.includeUnpublished ? "" : "AND p.is_published = true";
-  const { rows } = await pool.query<ProductRow>(
-    `${productSelect}
+  const { rows } = await pool.query<
+    ProductRow & { color_variants_agg: unknown }
+  >(
+    `SELECT ${productSelectList}, ${colorVariantsAggSql}
+     FROM products p
      WHERE p.id = $1 ${pub}`,
     [id]
   );
   if (!rows[0]) return null;
-  const product = rowToProduct(rows[0]);
-  const [{ rows: variants }, colorVariants] = await Promise.all([
-    pool.query<ProductVariantRow>(
-      `SELECT
-         vp.id,
-         vp.name,
-         vp.variant_label AS color,
-         (SELECT pi.path
-          FROM product_images pi
-          WHERE pi.product_id = vp.id
-          ORDER BY pi.sort_order, pi.id
-          LIMIT 1) AS image
-       FROM product_variant_links v
-       INNER JOIN products vp ON vp.id = v.variant_product_id
-       WHERE v.product_id = $1
-         AND vp.is_published = true
-       ORDER BY v.sort_order, vp.id`,
-      [id]
-    ),
-    getColorVariantsForProduct(id),
-  ]);
+  const row = rows[0];
+  const product = rowToProduct(row);
+  const colorVariants = parseColorVariantsAgg(row.color_variants_agg);
+  const { rows: variants } = await pool.query<ProductVariantRow>(
+    `SELECT
+       vp.id,
+       vp.name,
+       vp.variant_label AS color,
+       (SELECT pi.path
+        FROM product_images pi
+        WHERE pi.product_id = vp.id
+        ORDER BY pi.sort_order, pi.id
+        LIMIT 1) AS image
+     FROM product_variant_links v
+     INNER JOIN products vp ON vp.id = v.variant_product_id
+     WHERE v.product_id = $1
+       AND vp.is_published = true
+     ORDER BY v.sort_order, vp.id`,
+    [id]
+  );
   const sizes =
     product.sizes.length > 0
       ? product.sizes
