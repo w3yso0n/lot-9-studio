@@ -11,6 +11,8 @@ export type CatalogProduct = {
   sizes: string[];
   colors: string[];
   desc: string;
+  /** En listados: evita agregar todo el stock por talla en SQL. */
+  inStock?: boolean;
   variants?: CatalogProductVariant[];
   colorVariants?: CatalogProductColorVariant[];
 };

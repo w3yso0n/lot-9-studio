@@ -32,6 +32,7 @@ const AllProducts = ({ products, newDrops, dbError }: Props) => {
           muted
           loop
           playsInline
+          preload="metadata"
           disablePictureInPicture
           controlsList="nodownload nofullscreen"
           className="w-full h-full object-cover"

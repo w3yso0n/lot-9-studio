@@ -25,7 +25,7 @@ type CatalogGridRow = QueryResultRow & {
   old_price?: string | number | null;
   color: string;
   cover_image: string | null;
-  stock_by_size: unknown;
+  in_stock: boolean;
 };
 
 type NewDropRow = QueryResultRow & {
@@ -35,8 +35,7 @@ type NewDropRow = QueryResultRow & {
   old_price?: string | number | null;
   color: string;
   images: unknown;
-  stock_by_size: unknown;
-  sizes: unknown;
+  in_stock: boolean;
 };
 
 type AdminListRow = QueryResultRow & {
@@ -55,10 +54,6 @@ type ProductVariantRow = QueryResultRow & {
   name: string;
   color: string;
   image: string | null;
-};
-
-type AdminVariantOptionRow = ProductVariantRow & {
-  is_selected: boolean;
 };
 
 type ProductColorVariantRow = QueryResultRow & {
@@ -133,19 +128,19 @@ async function getColorVariantsForProduct(productId: number) {
        pcv.id,
        pcv.label,
        pcv.image_path,
-       COALESCE(
-         (SELECT json_agg(pcvi.image_path ORDER BY pcvi.sort_order, pcvi.id)
-          FROM product_color_variant_images pcvi
-          WHERE pcvi.color_variant_id = pcv.id),
-         '[]'::json
-       ) AS images,
-       COALESCE(
-         (SELECT json_object_agg(pcvs.size, pcvs.quantity)
-          FROM product_color_variant_stock pcvs
-          WHERE pcvs.color_variant_id = pcv.id),
-         '{}'::json
-       ) AS stock_by_size
+       COALESCE(img.images, '[]'::json) AS images,
+       COALESCE(stk.stock_by_size, '{}'::json) AS stock_by_size
      FROM product_color_variants pcv
+     LEFT JOIN LATERAL (
+       SELECT json_agg(pcvi.image_path ORDER BY pcvi.sort_order, pcvi.id) AS images
+       FROM product_color_variant_images pcvi
+       WHERE pcvi.color_variant_id = pcv.id
+     ) img ON true
+     LEFT JOIN LATERAL (
+       SELECT json_object_agg(pcvs.size, pcvs.quantity) AS stock_by_size
+       FROM product_color_variant_stock pcvs
+       WHERE pcvs.color_variant_id = pcv.id
+     ) stk ON true
      WHERE pcv.product_id = $1
      ORDER BY pcv.sort_order, pcv.id`,
     [productId]
@@ -168,41 +163,39 @@ async function getColorVariantsForProduct(productId: number) {
 }
 
 function rowToCatalogGridProduct(row: CatalogGridRow): CatalogProduct {
-  const stockBySize = parseStock(row.stock_by_size);
-  const sizes = normalizeSizes([], stockBySize);
   const price = typeof row.price === "string" ? parseFloat(row.price) : row.price;
   const cover = row.cover_image == null ? "" : String(row.cover_image);
   return {
     id: row.id,
     code: row.id,
     name: row.name,
-    price,
+    price: Number.isFinite(price) ? price : 0,
     oldPrice: parseOldPrice(row.old_price),
     color: row.color,
-    images: cover ? [cover] : [],
-    stockBySize,
-    sizes,
+    images: sanitizeProductImagePaths(cover ? [cover] : []),
+    stockBySize: {},
+    sizes: [],
     colors: [],
     desc: "",
+    inStock: row.in_stock,
   };
 }
 
 function rowToNewDropProduct(row: NewDropRow): CatalogProduct {
-  const stockBySize = parseStock(row.stock_by_size);
-  const sizes = normalizeSizes(parseJsonArray(row.sizes), stockBySize);
   const price = typeof row.price === "string" ? parseFloat(row.price) : row.price;
   return {
     id: row.id,
     code: row.id,
     name: row.name,
-    price,
+    price: Number.isFinite(price) ? price : 0,
     oldPrice: parseOldPrice(row.old_price),
     color: row.color,
-    images: parseJsonArray(row.images),
-    stockBySize,
-    sizes,
+    images: sanitizeProductImagePaths(parseJsonArray(row.images)),
+    stockBySize: {},
+    sizes: [],
     colors: [],
     desc: "",
+    inStock: row.in_stock,
   };
 }
 
@@ -237,75 +230,78 @@ const productSelectList = `
 
 const productSelect = `SELECT ${productSelectList} FROM products p`;
 
-/** Grid tienda: portada + stock (sin descripción ni filtros ni tallas en SQL). */
-async function fetchCatalogProductsGrid(): Promise<CatalogProduct[]> {
+const catalogGridSql = `
+  SELECT
+    p.id,
+    p.name,
+    p.price,
+    p.old_price,
+    p.variant_label AS color,
+    (SELECT pi.path
+     FROM product_images pi
+     WHERE pi.product_id = p.id
+     ORDER BY pi.sort_order, pi.id
+     LIMIT 1) AS cover_image,
+    EXISTS (
+      SELECT 1 FROM product_stock ps
+      WHERE ps.product_id = p.id AND ps.quantity > 0
+    ) AS in_stock
+  FROM products p
+  WHERE p.is_published = true
+  ORDER BY p.id DESC`;
+
+const newDropsSql = `
+  SELECT
+    p.id,
+    p.name,
+    p.price,
+    p.old_price,
+    p.variant_label AS color,
+    COALESCE(
+      (SELECT json_agg(pi.path ORDER BY pi.sort_order, pi.id)
+       FROM product_images pi WHERE pi.product_id = p.id),
+      '[]'::json
+    ) AS images,
+    EXISTS (
+      SELECT 1 FROM product_stock ps
+      WHERE ps.product_id = p.id AND ps.quantity > 0
+    ) AS in_stock
+  FROM products p
+  INNER JOIN new_drop_items nd ON nd.product_id = p.id
+  WHERE p.is_published = true
+  ORDER BY nd.sort_order ASC, p.id DESC`;
+
+export type StorefrontHomeData = {
+  products: CatalogProduct[];
+  newDrops: CatalogProduct[];
+};
+
+/** Una conexión, dos consultas en paralelo (home y /products). */
+async function fetchStorefrontHomeData(): Promise<StorefrontHomeData> {
   const pool = getPool();
-  const { rows } = await pool.query<CatalogGridRow>(
-    `SELECT
-       p.id,
-       p.name,
-       p.price,
-       p.old_price,
-       p.variant_label AS color,
-       (SELECT pi.path
-        FROM product_images pi
-        WHERE pi.product_id = p.id
-        ORDER BY pi.sort_order, pi.id
-        LIMIT 1) AS cover_image,
-       COALESCE(
-         (SELECT json_object_agg(ps.size, ps.quantity)
-          FROM product_stock ps WHERE ps.product_id = p.id),
-         '{}'::json
-       ) AS stock_by_size
-     FROM products p
-     WHERE p.is_published = true
-     ORDER BY p.id DESC`
-  );
-  return rows.map(rowToCatalogGridProduct);
+  const [grid, drops] = await Promise.all([
+    pool.query<CatalogGridRow>(catalogGridSql),
+    pool.query<NewDropRow>(newDropsSql),
+  ]);
+  return {
+    products: grid.rows.map(rowToCatalogGridProduct),
+    newDrops: drops.rows.map(rowToNewDropProduct),
+  };
 }
 
-export const getCatalogProducts = unstable_cache(fetchCatalogProductsGrid, ["catalog-products-grid"], {
-  revalidate: 60,
-  tags: ["catalog"],
-});
+export const getStorefrontHomeData = unstable_cache(
+  fetchStorefrontHomeData,
+  ["storefront-home"],
+  { revalidate: 60, tags: ["catalog"] }
+);
 
-/** Nuevos drops: todas las imágenes + stock/tallas; sin descripción ni filtros de color. */
-async function fetchNewDrops(): Promise<CatalogProduct[]> {
-  const pool = getPool();
-  const { rows } = await pool.query<NewDropRow>(
-    `SELECT
-       p.id,
-       p.name,
-       p.price,
-       p.old_price,
-       p.variant_label AS color,
-       COALESCE(
-         (SELECT json_agg(pi.path ORDER BY pi.sort_order, pi.id)
-          FROM product_images pi WHERE pi.product_id = p.id),
-         '[]'::json
-       ) AS images,
-       COALESCE(
-         (SELECT json_object_agg(ps.size, ps.quantity)
-          FROM product_stock ps WHERE ps.product_id = p.id),
-         '{}'::json
-       ) AS stock_by_size,
-       COALESCE(
-         (SELECT json_agg(sz.size ORDER BY sz.sort_order, sz.size)
-          FROM product_sizes sz WHERE sz.product_id = p.id),
-         '[]'::json
-       ) AS sizes
-     FROM products p
-     INNER JOIN new_drop_items nd ON nd.product_id = p.id
-     WHERE p.is_published = true
-     ORDER BY nd.sort_order ASC, p.id DESC`
-  );
-  return rows.map(rowToNewDropProduct);
+export async function getCatalogProducts(): Promise<CatalogProduct[]> {
+  return (await getStorefrontHomeData()).products;
 }
 
-export const getNewDrops = unstable_cache(fetchNewDrops, ["catalog-new-drops"], {
-  revalidate: 60,
-  tags: ["catalog"],
-});
+export async function getNewDrops(): Promise<CatalogProduct[]> {
+  return (await getStorefrontHomeData()).newDrops;
+}
 
 async function fetchProductById(
   id: number,
@@ -320,24 +316,26 @@ async function fetchProductById(
   );
   if (!rows[0]) return null;
   const product = rowToProduct(rows[0]);
-  const { rows: variants } = await pool.query<ProductVariantRow>(
-    `SELECT
-       vp.id,
-       vp.name,
-       vp.variant_label AS color,
-       (SELECT pi.path
-        FROM product_images pi
-        WHERE pi.product_id = vp.id
-        ORDER BY pi.sort_order, pi.id
-        LIMIT 1) AS image
-     FROM product_variant_links v
-     INNER JOIN products vp ON vp.id = v.variant_product_id
-     WHERE v.product_id = $1
-       AND vp.is_published = true
-     ORDER BY v.sort_order, vp.id`,
-    [id]
-  );
-  const colorVariants = await getColorVariantsForProduct(id);
+  const [{ rows: variants }, colorVariants] = await Promise.all([
+    pool.query<ProductVariantRow>(
+      `SELECT
+         vp.id,
+         vp.name,
+         vp.variant_label AS color,
+         (SELECT pi.path
+          FROM product_images pi
+          WHERE pi.product_id = vp.id
+          ORDER BY pi.sort_order, pi.id
+          LIMIT 1) AS image
+       FROM product_variant_links v
+       INNER JOIN products vp ON vp.id = v.variant_product_id
+       WHERE v.product_id = $1
+         AND vp.is_published = true
+       ORDER BY v.sort_order, vp.id`,
+      [id]
+    ),
+    getColorVariantsForProduct(id),
+  ]);
   const sizes =
     product.sizes.length > 0
       ? product.sizes
@@ -355,12 +353,22 @@ async function fetchProductById(
   };
 }
 
-function getCachedStorefrontProductById(id: number) {
-  return unstable_cache(
-    () => fetchProductById(id),
-    ["catalog-product-detail", String(id)],
-    { revalidate: 60, tags: ["catalog", `product-${id}`] }
-  )();
+const productDetailCache = new Map<
+  number,
+  () => Promise<CatalogProduct | null>
+>();
+
+function getCachedStorefrontProductById(id: number): Promise<CatalogProduct | null> {
+  let cached = productDetailCache.get(id);
+  if (!cached) {
+    cached = unstable_cache(
+      () => fetchProductById(id),
+      ["catalog-product-detail", String(id)],
+      { revalidate: 60, tags: ["catalog", `product-${id}`] }
+    );
+    productDetailCache.set(id, cached);
+  }
+  return cached();
 }
 
 export async function getProductById(
@@ -446,61 +454,21 @@ export async function getAdminProductById(id: number): Promise<AdminProductRow |
   );
   if (!rows[0]) return null;
   const row = rows[0];
-  const { rows: variantRows } = await pool.query<{ variant_product_id: number }>(
-    `SELECT variant_product_id
-     FROM product_variant_links
-     WHERE product_id = $1
-     ORDER BY sort_order, variant_product_id`,
-    [id]
-  );
+  const [{ rows: variantRows }, colorVariants] = await Promise.all([
+    pool.query<{ variant_product_id: number }>(
+      `SELECT variant_product_id
+       FROM product_variant_links
+       WHERE product_id = $1
+       ORDER BY sort_order, variant_product_id`,
+      [id]
+    ),
+    getColorVariantsForProduct(id),
+  ]);
   return {
     ...rowToProduct(row),
     is_published: row.is_published,
     new_drop_sort: row.new_drop_sort,
     variantProductIds: variantRows.map((r) => r.variant_product_id),
-    colorVariants: await getColorVariantsForProduct(id),
+    colorVariants,
   };
-}
-
-export type AdminProductVariantOption = {
-  id: number;
-  name: string;
-  color: string;
-  image: string;
-  isSelected: boolean;
-};
-
-export async function getAdminProductVariantOptions(
-  productId?: number
-): Promise<AdminProductVariantOption[]> {
-  const pool = getPool();
-  const id = productId ?? 0;
-  const { rows } = await pool.query<AdminVariantOptionRow>(
-    `SELECT
-       p.id,
-       p.name,
-       p.variant_label AS color,
-       (SELECT pi.path
-        FROM product_images pi
-        WHERE pi.product_id = p.id
-        ORDER BY pi.sort_order, pi.id
-        LIMIT 1) AS image,
-       EXISTS (
-         SELECT 1
-         FROM product_variant_links v
-         WHERE v.product_id = $1 AND v.variant_product_id = p.id
-       ) AS is_selected
-     FROM products p
-     WHERE p.id <> $1
-     ORDER BY p.name ASC, p.variant_label ASC, p.id ASC`,
-    [id]
-  );
-
-  return rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    color: row.color,
-    image: row.image ?? "",
-    isSelected: row.is_selected,
-  }));
 }

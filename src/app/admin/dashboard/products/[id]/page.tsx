@@ -4,8 +4,6 @@ import { getAdminProductById } from "@/lib/products-repo";
 import { Button } from "@/components/ui/button";
 import { notFound } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
 type Props = { params: Promise<{ id: string }> };
 
 export default async function EditProductPage({ params }: Props) {

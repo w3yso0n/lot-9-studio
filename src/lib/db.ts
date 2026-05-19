@@ -18,7 +18,9 @@ export function getPool(): Pool {
   if (!globalForPg.pgPool) {
     globalForPg.pgPool = new Pool({
       connectionString: connectionStringWithUtf8(url),
-      max: 10,
+      max: process.env.VERCEL === "1" ? 3 : 10,
+      idleTimeoutMillis: 20_000,
+      connectionTimeoutMillis: 8_000,
     });
   }
   return globalForPg.pgPool;

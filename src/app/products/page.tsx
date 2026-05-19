@@ -1,14 +1,14 @@
 import AllProducts from "@/components/products/AllProducts";
-import { getCatalogProducts, getNewDrops } from "@/lib/products-repo";
+import { getStorefrontHomeData } from "@/lib/products-repo";
 
 export const revalidate = 60;
 
 export default async function ProductsPage() {
-  let products: Awaited<ReturnType<typeof getCatalogProducts>> = [];
-  let newDrops: Awaited<ReturnType<typeof getNewDrops>> = [];
+  let products: Awaited<ReturnType<typeof getStorefrontHomeData>>["products"] = [];
+  let newDrops: Awaited<ReturnType<typeof getStorefrontHomeData>>["newDrops"] = [];
   let dbError: string | null = null;
   try {
-    [products, newDrops] = await Promise.all([getCatalogProducts(), getNewDrops()]);
+    ({ products, newDrops } = await getStorefrontHomeData());
   } catch (e) {
     dbError = e instanceof Error ? e.message : "Error de base de datos.";
   }

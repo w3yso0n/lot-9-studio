@@ -2,7 +2,6 @@
 
 import { ProductImage } from "@/components/products/ProductImage";
 import { Card, CardContent } from "@/components/ui/card";
-import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -17,6 +16,7 @@ interface ProductProps {
     stockBySize: { [size: string]: number };
     sizes: string[];
     colors: string[];
+    inStock?: boolean;
   };
   className?: string;
 }
@@ -26,7 +26,9 @@ export const ProductCard = ({ product, className }: ProductProps) => {
   const hasImage = Boolean(mainImage?.trim());
   const oldPrice = product.oldPrice;
 
-  const hasStock = product.sizes.some((size) => product.stockBySize[size] > 0);
+  const hasStock =
+    product.inStock ??
+    product.sizes.some((size) => (product.stockBySize[size] ?? 0) > 0);
 
   const showOldPrice =
     oldPrice !== undefined &&
@@ -35,12 +37,7 @@ export const ProductCard = ({ product, className }: ProductProps) => {
     oldPrice > product.price;
 
   return (
-    <motion.div
-      className={`w-full ${className}`}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
+    <div className={`w-full ${className ?? ""}`}>
       <Card className="w-full shadow-lg rounded-xl bg-white dark:bg-gray-800 overflow-hidden">
         <Link href={`/products/${product.id}`}>
           <CardContent className="p-0 flex flex-col cursor-pointer">
@@ -73,7 +70,7 @@ export const ProductCard = ({ product, className }: ProductProps) => {
             </div>
 
             <div className="p-4 space-y-3">
-              <h3 className="text-base sm:text-base md:text-lg font-bold text-center group-hover:text-gray-800 dark:group-hover:text-gray-200 text-gray-900 dark:text-white transition-colors">
+              <h3 className="text-base sm:text-base md:text-lg font-bold text-center text-gray-900 dark:text-white">
                 {product.name}
               </h3>
 
@@ -92,6 +89,6 @@ export const ProductCard = ({ product, className }: ProductProps) => {
           </CardContent>
         </Link>
       </Card>
-    </motion.div>
+    </div>
   );
 };
