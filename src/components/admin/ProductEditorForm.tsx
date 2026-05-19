@@ -26,10 +26,29 @@ import {
   startTransition,
   useActionState,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useTransition,
 } from "react";
+
+const IMAGE_OK_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+] as const;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+function validateImageFile(file: File): string | null {
+  if (file.size === 0) return "Archivo vacío.";
+  if (file.size > MAX_IMAGE_BYTES) return "El archivo supera 5 MB.";
+  if (!IMAGE_OK_TYPES.includes(file.type as (typeof IMAGE_OK_TYPES)[number])) {
+    return "Formato no permitido. Usa JPEG, PNG, WebP o GIF.";
+  }
+  return null;
+}
 
 type ColorVariantImageDraft = {
   id: string;
@@ -116,6 +135,41 @@ function initColorVariants(initial?: AdminProductRow | null): ColorVariantDraft[
   }));
 }
 
+function draftImagesFromFiles(files: File[]): ColorVariantImageDraft[] {
+  return files.map((file) => ({
+    id: crypto.randomUUID(),
+    imagePath: "",
+    preview: URL.createObjectURL(file),
+    file,
+  }));
+}
+
+function appendColorVariantImages(
+  prev: ColorVariantDraft[],
+  targetId: string | null,
+  newImages: ColorVariantImageDraft[],
+  initial?: AdminProductRow | null
+): ColorVariantDraft[] {
+  if (newImages.length === 0) return prev;
+
+  if (targetId) {
+    return prev.map((variant) =>
+      variant.id === targetId
+        ? { ...variant, images: [...variant.images, ...newImages] }
+        : variant
+    );
+  }
+
+  const newVariants: ColorVariantDraft[] = newImages.map((image, index) => ({
+    id: crypto.randomUUID(),
+    label: `Color ${prev.length + index + 1}`,
+    images: [image],
+    stockBySize: initStockMap(initial),
+  }));
+
+  return [...prev, ...newVariants];
+}
+
 export function ProductEditorForm({
   initial,
   showLivePreview = false,
@@ -178,10 +232,16 @@ export function ProductEditorForm({
 
   const previewPrice = Number.parseFloat(priceStr.replace(",", ".")) || 0;
   const previewSizes = sortSizesSelected(selectedSizes);
-  const previewImages =
-    colorVariants[0]?.images
+  const usesColorVariants = colorVariants.length > 0;
+
+  const previewImages = useMemo(() => {
+    const fromVariant = colorVariants[0]?.images
       .map((image) => image.preview ?? image.imagePath)
-      .filter(Boolean) ?? [];
+      .filter(Boolean);
+    if (fromVariant && fromVariant.length > 0) return fromVariant;
+    if (imagePaths.length > 0) return imagePaths;
+    return pendingUploads.map((p) => p.preview);
+  }, [colorVariants, imagePaths, pendingUploads]);
   const previewStockBySize = CATALOG_SIZE_ORDER.reduce<Record<string, number>>(
     (acc, size) => {
       acc[size] =
@@ -272,24 +332,34 @@ export function ProductEditorForm({
   }, [selectedSizes]);
 
   function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+    const files = Array.from(e.target.files ?? []);
     e.target.value = "";
-    if (!file) return;
+    if (files.length === 0) return;
 
     setUploadMsg(null);
+
+    for (const file of files) {
+      const err = validateImageFile(file);
+      if (err) {
+        setUploadMsg(err);
+        return;
+      }
+    }
 
     if (productId != null) {
       startImgTransition(async () => {
         try {
-          const fd = new FormData();
-          fd.append("file", file);
-          const res = await uploadProductImageAction(fd);
-
-          if (res.error) {
-            setUploadMsg(res.error);
-          } else {
-            const path = res.path;
-            if (path) setImagePaths((prev) => [...prev, path]);
+          for (const file of files) {
+            const fd = new FormData();
+            fd.append("file", file);
+            const res = await uploadProductImageAction(fd);
+            if (res.error) {
+              setUploadMsg(res.error);
+              return;
+            }
+            if (res.path) {
+              setImagePaths((prev) => [...prev, res.path!]);
+            }
           }
         } catch {
           setUploadMsg(
@@ -300,33 +370,12 @@ export function ProductEditorForm({
       return;
     }
 
-    if (file.size === 0) {
-      setUploadMsg("Archivo vacío.");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadMsg("El archivo supera 5 MB.");
-      return;
-    }
-
-    const okTypes = [
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "image/webp",
-      "image/gif",
-    ];
-
-    if (!okTypes.includes(file.type)) {
-      setUploadMsg("Formato no permitido. Usa JPEG, PNG, WebP o GIF.");
-      return;
-    }
-
-    const preview = URL.createObjectURL(file);
-    const id = crypto.randomUUID();
-
-    setPendingUploads((prev) => [...prev, { id, file, preview }]);
+    const next = files.map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+    setPendingUploads((prev) => [...prev, ...next]);
   }
 
   function removePendingUpload(id: string) {
@@ -360,74 +409,46 @@ export function ProductEditorForm({
   }
 
   function onPickColorVariantFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+    const files = Array.from(e.target.files ?? []);
     e.target.value = "";
-    if (!file) return;
+    if (files.length === 0) return;
 
     setUploadMsg(null);
 
-    if (file.size === 0) {
-      setUploadMsg("Archivo vacío.");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadMsg("El archivo supera 5 MB.");
-      return;
-    }
-
-    const okTypes = [
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "image/webp",
-      "image/gif",
-    ];
-
-    if (!okTypes.includes(file.type)) {
-      setUploadMsg("Formato no permitido. Usa JPEG, PNG, WebP o GIF.");
-      return;
+    for (const file of files) {
+      const err = validateImageFile(file);
+      if (err) {
+        setUploadMsg(err);
+        return;
+      }
     }
 
     const targetId = colorVariantUploadTargetRef.current;
     colorVariantUploadTargetRef.current = null;
-    const label = `Color ${colorVariants.length + 1}`;
 
     if (productId != null) {
       startImgTransition(async () => {
         try {
-          const fd = new FormData();
-          fd.append("file", file);
-          const res = await uploadProductImageAction(fd);
-
-          if (res.error) {
-            setUploadMsg(res.error);
-          } else if (res.path) {
-            const imagePath = res.path;
-            const image: ColorVariantImageDraft = {
-              id: crypto.randomUUID(),
-              imagePath,
-            };
-            setColorVariants((prev) => {
-              if (targetId) {
-                return prev.map((variant) =>
-                  variant.id === targetId
-                    ? { ...variant, images: [...variant.images, image] }
-                    : variant
-                );
-              }
-
-              return [
-                ...prev,
-                {
-                  id: crypto.randomUUID(),
-                  label,
-                  images: [image],
-                  stockBySize: initStockMap(initial),
-                },
-              ];
-            });
+          const uploaded: ColorVariantImageDraft[] = [];
+          for (const file of files) {
+            const fd = new FormData();
+            fd.append("file", file);
+            const res = await uploadProductImageAction(fd);
+            if (res.error) {
+              setUploadMsg(res.error);
+              return;
+            }
+            if (res.path) {
+              uploaded.push({
+                id: crypto.randomUUID(),
+                imagePath: res.path,
+              });
+            }
           }
+          if (uploaded.length === 0) return;
+          setColorVariants((prev) =>
+            appendColorVariantImages(prev, targetId, uploaded, initial)
+          );
         } catch {
           setUploadMsg("No se pudo subir la imagen. Inténtalo de nuevo.");
         }
@@ -435,32 +456,10 @@ export function ProductEditorForm({
       return;
     }
 
-    const image: ColorVariantImageDraft = {
-      id: crypto.randomUUID(),
-      imagePath: "",
-      preview: URL.createObjectURL(file),
-      file,
-    };
-
-    setColorVariants((prev) => {
-      if (targetId) {
-        return prev.map((variant) =>
-          variant.id === targetId
-            ? { ...variant, images: [...variant.images, image] }
-            : variant
-        );
-      }
-
-      return [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          label,
-          images: [image],
-          stockBySize: initStockMap(initial),
-        },
-      ];
-    });
+    const drafts = draftImagesFromFiles(files);
+    setColorVariants((prev) =>
+      appendColorVariantImages(prev, targetId, drafts, initial)
+    );
   }
 
   function pickColorVariantImage(variantId?: string) {
@@ -642,25 +641,26 @@ export function ProductEditorForm({
         />
       </div>
 
-      <div className="hidden">
-        <div>
-          <Label className="text-base">Imágenes</Label>
-          <p className="text-sm text-muted-foreground mt-1">
-            {productId != null
-              ? "Las fotos se suben a Cloudinary al elegir archivo. Al quitarlas del producto también se borran de la nube."
-              : "Al guardar, las imágenes pendientes se suben a Cloudinary. Formatos: JPEG, PNG, WebP o GIF (máx. 5 MB)."}
-          </p>
-        </div>
+      {!usesColorVariants ? (
+        <div className="space-y-4 rounded-lg border bg-muted/15 p-4">
+          <div>
+            <Label className="text-base">Imágenes del producto</Label>
+            <p className="text-sm text-muted-foreground mt-1">
+              Producto sin variantes de color: galería y stock global por talla.
+              Puedes elegir varias fotos a la vez. Para varios colores con fotos
+              distintas, usa &quot;Añadir colores&quot; más abajo.
+            </p>
+          </div>
 
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          className="hidden"
-          onChange={onPickFile}
-        />
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            multiple
+            className="hidden"
+            onChange={onPickFile}
+          />
 
-        <div className="flex flex-wrap gap-2">
           <Button
             type="button"
             variant="secondary"
@@ -670,156 +670,96 @@ export function ProductEditorForm({
             {imgPending
               ? "Subiendo…"
               : productId != null
-              ? "Subir imagen"
-              : "Añadir imagen"}
+                ? "Subir imágenes"
+                : "Añadir imágenes"}
           </Button>
-        </div>
 
-        {productId != null && imagePaths.length > 0 ? (
-          <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {imagePaths.map((src) => (
-              <li
-                key={src}
-                className="relative aspect-square rounded-lg border bg-background overflow-hidden group"
-              >
-                <Image
-                  src={encodeWebPath(src)}
-                  alt=""
-                  fill
-                  className="object-contain p-1"
-                  sizes="200px"
-                  unoptimized
-                />
-
-                <button
-                  type="button"
-                  className="absolute top-1 right-1 rounded-md bg-black/70 text-white text-xs px-2 py-1 opacity-90 hover:bg-black"
-                  disabled={imgPending || pending}
-                  onClick={() => removeImage(src)}
+          {productId != null && imagePaths.length > 0 ? (
+            <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {imagePaths.map((src) => (
+                <li
+                  key={src}
+                  className="relative aspect-square rounded-lg border bg-background overflow-hidden"
                 >
-                  Quitar
-                </button>
-
-                <input type="hidden" name="images" value={src} />
-              </li>
-            ))}
-          </ul>
-        ) : productId == null && pendingUploads.length > 0 ? (
-          <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {pendingUploads.map((p) => (
-              <li
-                key={p.id}
-                className="relative aspect-square rounded-lg border bg-background overflow-hidden group"
-              >
-                <Image
-                  src={p.preview}
-                  alt=""
-                  fill
-                  className="object-contain p-1"
-                  sizes="200px"
-                  unoptimized
-                />
-
-                <button
-                  type="button"
-                  className="absolute top-1 right-1 rounded-md bg-black/70 text-white text-xs px-2 py-1 opacity-90 hover:bg-black"
-                  disabled={pending}
-                  onClick={() => removePendingUpload(p.id)}
+                  <Image
+                    src={encodeWebPath(src)}
+                    alt=""
+                    fill
+                    className="object-contain p-1"
+                    sizes="200px"
+                    unoptimized
+                  />
+                  <button
+                    type="button"
+                    className="absolute top-1 right-1 rounded-md bg-black/70 text-white text-xs px-2 py-1 hover:bg-black"
+                    disabled={imgPending || pending}
+                    onClick={() => removeImage(src)}
+                  >
+                    Quitar
+                  </button>
+                  <input type="hidden" name="images" value={src} />
+                </li>
+              ))}
+            </ul>
+          ) : productId == null && pendingUploads.length > 0 ? (
+            <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {pendingUploads.map((p) => (
+                <li
+                  key={p.id}
+                  className="relative aspect-square rounded-lg border bg-background overflow-hidden"
                 >
-                  Quitar
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-muted-foreground">Aún no hay imágenes.</p>
-        )}
-      </div>
+                  <Image
+                    src={p.preview}
+                    alt=""
+                    fill
+                    className="object-contain p-1"
+                    sizes="200px"
+                    unoptimized
+                  />
+                  <button
+                    type="button"
+                    className="absolute top-1 right-1 rounded-md bg-black/70 text-white text-xs px-2 py-1 hover:bg-black"
+                    disabled={pending}
+                    onClick={() => removePendingUpload(p.id)}
+                  >
+                    Quitar
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">Aún no hay imágenes.</p>
+          )}
 
-      <div className="hidden">
-        <div>
-          <Label className="text-base">Tallas disponibles</Label>
-          <p className="text-sm text-muted-foreground mt-1">
-            Activa las tallas que vendes para este modelo. El stock de cada
-            color se captura en la seccion de modelos/colores.
-          </p>
-        </div>
-
-        <ToggleGroup
-          type="multiple"
-          variant="outline"
-          value={selectedSizes}
-          onValueChange={(v) => setSelectedSizes(v)}
-          className="justify-start"
-        >
-          {CATALOG_SIZE_ORDER.map((size) => (
-            <ToggleGroupItem
-              key={size}
-              value={size}
-              aria-label={`Talla ${size}`}
+          <div className="space-y-2 pt-2 border-t">
+            <Label className="text-sm">Filtros del catálogo</Label>
+            <ToggleGroup
+              type="multiple"
+              variant="outline"
+              value={selectedColors}
+              onValueChange={(v) => setSelectedColors(v)}
+              className="justify-start"
             >
-              {size}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
-
-        {sortSizesSelected(selectedSizes).map((s) => (
-          <input key={s} type="hidden" name="sizes" value={s} />
-        ))}
-      </div>
-
-      <div className="hidden">
-        {sortSizesSelected(selectedSizes).map((size) => (
-          <div key={size} className="space-y-2">
-            <Label htmlFor={`stock_${size}`}>Stock base {size}</Label>
-            <Input
-              id={`stock_${size}`}
-              name={`stock_${size}`}
-              type="number"
-              min="0"
-              value={String(stockBySize[size] ?? 0)}
-              onChange={(e) =>
-                setStockBySize((prev) => ({
-                  ...prev,
-                  [size]: Math.max(0, Math.floor(Number(e.target.value) || 0)),
-                }))
-              }
-            />
+              {CATALOG_COLOR_FILTER_OPTIONS.map((key) => (
+                <ToggleGroupItem
+                  key={key}
+                  value={key}
+                  aria-label={COLOR_FILTER_LABELS[key]}
+                >
+                  {COLOR_FILTER_LABELS[key]}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+            {sortColorFiltersSelected(selectedColors).map((c) => (
+              <input key={c} type="hidden" name="color_filters" value={c} />
+            ))}
           </div>
-        ))}
-      </div>
-
-      <div className="hidden">
-        <div>
-          <Label className="text-base">Etiquetas de color (filtros)</Label>
-          <p className="text-sm text-muted-foreground mt-1">
-            Opciones del catálogo legado. En la base se guardan en inglés
-            (Black, White…); aquí ves el nombre en español.
-          </p>
         </div>
-
-        <ToggleGroup
-          type="multiple"
-          variant="outline"
-          value={selectedColors}
-          onValueChange={(v) => setSelectedColors(v)}
-          className="justify-start"
-        >
-          {CATALOG_COLOR_FILTER_OPTIONS.map((key) => (
-            <ToggleGroupItem
-              key={key}
-              value={key}
-              aria-label={COLOR_FILTER_LABELS[key]}
-            >
-              {COLOR_FILTER_LABELS[key]}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
-
-        {sortColorFiltersSelected(selectedColors).map((c) => (
+      ) : (
+        sortColorFiltersSelected(selectedColors).map((c) => (
           <input key={c} type="hidden" name="color_filters" value={c} />
-        ))}
-      </div>
+        ))
+      )}
 
       <div className="space-y-4 rounded-lg border bg-muted/15 p-4">
         <div>
@@ -858,10 +798,42 @@ export function ProductEditorForm({
           ))}
         </div>
 
+        {!usesColorVariants && sortSizesSelected(selectedSizes).length > 0 ? (
+          <div className="space-y-2 rounded-lg border bg-background p-3">
+            <Label className="text-sm">Stock por talla (producto sin colores)</Label>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {sortSizesSelected(selectedSizes).map((size) => (
+                <div key={size} className="space-y-1.5">
+                  <Label htmlFor={`stock_${size}`} className="text-xs">
+                    Stock {size}
+                  </Label>
+                  <Input
+                    id={`stock_${size}`}
+                    name={`stock_${size}`}
+                    type="number"
+                    min="0"
+                    value={String(stockBySize[size] ?? 0)}
+                    onChange={(e) =>
+                      setStockBySize((prev) => ({
+                        ...prev,
+                        [size]: Math.max(
+                          0,
+                          Math.floor(Number(e.target.value) || 0)
+                        ),
+                      }))
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         <input
           ref={colorVariantFileRef}
           type="file"
           accept="image/jpeg,image/png,image/webp,image/gif"
+          multiple
           className="hidden"
           onChange={onPickColorVariantFile}
         />
@@ -872,7 +844,9 @@ export function ProductEditorForm({
           disabled={(productId != null ? imgPending : false) || pending}
           onClick={() => pickColorVariantImage()}
         >
-          {imgPending ? "Subiendo..." : "Crear color con imagen"}
+          {imgPending
+            ? "Subiendo…"
+            : "Añadir colores (varias fotos = varios colores)"}
         </Button>
 
         {colorVariants.length > 0 ? (

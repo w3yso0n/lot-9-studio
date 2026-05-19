@@ -1,4 +1,4 @@
-import { ProductEditorForm } from "@/components/admin/ProductEditorForm";
+import { AdminProductEditorShell } from "@/components/admin/AdminProductEditorShell";
 import { deleteProductAction } from "@/app/admin/dashboard/actions";
 import { getAdminProductById } from "@/lib/products-repo";
 import { Button } from "@/components/ui/button";
@@ -24,9 +24,9 @@ export default async function EditProductPage({ params }: Props) {
           </Button>
         </form>
       </div>
-      <ProductEditorForm
+      <AdminProductEditorShell
         initial={product}
-        key={`${product.id}-${product.images.join("~")}`}
+        key={`${product.id}-${(product.colorVariants ?? []).length}-${product.images.join("~")}`}
       />
     </div>
   );
