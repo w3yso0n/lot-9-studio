@@ -36,25 +36,14 @@ export function toUserFacingProductSaveError(error: unknown): string {
   return "No se pudo guardar el producto. Revisa los datos e inténtalo de nuevo. Si sigue fallando, contacta con soporte.";
 }
 
-/** Fallos al escribir subidas en disco (p. ej. Vercel: FS de solo lectura). */
+/** Fallos al subir imágenes del panel (Cloudinary). */
 export function toUserFacingUploadError(error: unknown): string {
-  const errno = error as NodeJS.ErrnoException;
-  if (errno?.code === "EROFS" || errno?.code === "EPERM") {
-    return "En este servidor no se puede guardar archivos en disco (entorno de solo lectura). Configura Cloudinary (CLOUDINARY_*) para subidas en producción.";
+  if (error instanceof Error && /cloudinary|CLOUDINARY|signature|api key|api secret|invalid/i.test(error.message)) {
+    return "La subida a Cloudinary falló. Revisa CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY y CLOUDINARY_API_SECRET en Vercel.";
   }
-  if (errno?.code === "ENOSPC") {
-    return "No hay espacio suficiente en el servidor para guardar la imagen.";
-  }
-  if (errno?.code === "ENOENT") {
-    return "No se encontró la carpeta de subidas en el servidor. Revisa el despliegue.";
+  if (error instanceof Error && /configura cloudinary|faltan variables/i.test(error.message)) {
+    return error.message;
   }
 
-  if (error instanceof Error && /read-only|EROFS|EPERM/i.test(error.message)) {
-    return "No se puede escribir en el disco del servidor. Este entorno suele requerir almacenamiento de archivos en la nube.";
-  }
-  if (error instanceof Error && /cloudinary|signature|api key|api secret|invalid/i.test(error.message)) {
-    return "La subida a Cloudinary falló. Revisa CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY y CLOUDINARY_API_SECRET.";
-  }
-
-  return "No se pudo subir la imagen. Prueba con otro archivo (JPEG, PNG, WebP o GIF, máx. 5 MB) o inténtalo más tarde.";
+  return "No se pudo subir la imagen a Cloudinary. Prueba con otro archivo (JPEG, PNG, WebP o GIF, máx. 5 MB) o inténtalo más tarde.";
 }

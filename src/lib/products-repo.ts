@@ -357,25 +357,41 @@ export async function getNewDrops(): Promise<CatalogProduct[]> {
   return (await getStorefrontHomeData()).newDrops;
 }
 
-async function fetchProductById(
-  id: number,
-  opts?: { includeUnpublished?: boolean }
-): Promise<CatalogProduct | null> {
-  const pool = getPool();
-  const pub = opts?.includeUnpublished ? "" : "AND p.is_published = true";
-  const { rows } = await pool.query<
-    ProductRow & { color_variants_agg: unknown }
-  >(
-    `SELECT ${productSelectList}, ${colorVariantsAggSql}
-     FROM products p
-     WHERE p.id = $1 ${pub}`,
-    [id]
-  );
-  if (!rows[0]) return null;
-  const row = rows[0];
-  const product = rowToProduct(row);
-  const colorVariants = parseColorVariantsAgg(row.color_variants_agg);
-  const { rows: variants } = await pool.query<ProductVariantRow>(
+const productDetailSelectList = `
+  p.id,
+  p.name,
+  p.price,
+  p.old_price,
+  p.variant_label AS color,
+  COALESCE(p.description, '') AS product_desc,
+  COALESCE(
+  CASE
+    WHEN EXISTS (SELECT 1 FROM product_color_variants pcv WHERE pcv.product_id = p.id)
+    THEN '[]'::json
+    ELSE (
+      SELECT json_agg(pi.path ORDER BY pi.sort_order, pi.id)
+      FROM product_images pi WHERE pi.product_id = p.id
+    )
+  END,
+  '[]'::json
+  ) AS images,
+  COALESCE(
+    (SELECT json_object_agg(ps.size, ps.quantity)
+     FROM product_stock ps WHERE ps.product_id = p.id),
+    '{}'::json
+  ) AS stock_by_size,
+  COALESCE(
+    (SELECT json_agg(sz.size ORDER BY sz.sort_order, sz.size)
+     FROM product_sizes sz WHERE sz.product_id = p.id),
+    '[]'::json
+  ) AS sizes
+`;
+
+async function fetchLinkedVariants(
+  pool: ReturnType<typeof getPool>,
+  id: number
+): Promise<CatalogProduct["variants"]> {
+  const { rows } = await pool.query<ProductVariantRow>(
     `SELECT
        vp.id,
        vp.name,
@@ -392,20 +408,58 @@ async function fetchProductById(
      ORDER BY v.sort_order, vp.id`,
     [id]
   );
+  return rows.map((v) => ({
+    id: v.id,
+    name: v.name,
+    color: v.color,
+    image: v.image?.trim() ?? "",
+  }));
+}
+
+async function fetchProductById(
+  id: number,
+  opts?: { includeUnpublished?: boolean }
+): Promise<CatalogProduct | null> {
+  const pool = getPool();
+  const pub = opts?.includeUnpublished ? "" : "AND p.is_published = true";
+  const { rows } = await pool.query<
+    ProductRow & { color_variants_agg: unknown }
+  >(
+    `SELECT ${productDetailSelectList}, ${colorVariantsAggSql}
+     FROM products p
+     WHERE p.id = $1 ${pub}`,
+    [id]
+  );
+  if (!rows[0]) return null;
+  const row = rows[0];
+  const product = rowToProduct(row);
+  const colorVariants = parseColorVariantsAgg(row.color_variants_agg);
+  const hasColorVariants = colorVariants.length > 0;
+
+  const variants = hasColorVariants
+    ? undefined
+    : await fetchLinkedVariants(pool, id);
+
   const sizes =
     product.sizes.length > 0
       ? product.sizes
-      : normalizeSizes([], product.stockBySize);
+      : hasColorVariants
+        ? normalizeSizes(
+            [],
+            colorVariants.reduce<Record<string, number>>((acc, variant) => {
+              for (const [size, qty] of Object.entries(variant.stockBySize)) {
+                acc[size] = (acc[size] ?? 0) + qty;
+              }
+              return acc;
+            }, {})
+          )
+        : normalizeSizes([], product.stockBySize);
+
   return {
     ...product,
     sizes,
-    variants: variants.map((v) => ({
-      id: v.id,
-      name: v.name,
-      color: v.color,
-      image: v.image?.trim() ?? "",
-    })),
-    colorVariants,
+    variants,
+    colorVariants: hasColorVariants ? colorVariants : undefined,
   };
 }
 

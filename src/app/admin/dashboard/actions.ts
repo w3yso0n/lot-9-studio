@@ -12,13 +12,8 @@ import {
 import { toUserFacingProductSaveError, toUserFacingUploadError } from "@/lib/user-facing-errors";
 import { hasCloudinaryConfig, uploadToCloudinary } from "@/lib/cloudinary-server";
 import { deletePanelUploadFile } from "@/lib/panel-upload-delete";
-import {
-  isOwnedUploadPath,
-  PRODUCT_UPLOAD_WEB_PREFIX,
-} from "@/lib/upload-products";
+import { isOwnedUploadPath } from "@/lib/upload-products";
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -30,29 +25,20 @@ const MIME_EXT: Record<string, string> = {
   "image/gif": ".gif",
 };
 
-/** Sube bytes a Cloudinary o disco local (misma lógica que el panel). */
+/** Sube bytes a Cloudinary (único almacenamiento en producción / Vercel). */
 async function persistProductImageFromBuffer(buf: Buffer, mimeType: string): Promise<string> {
   const ext = MIME_EXT[mimeType];
   if (!ext) {
     throw new Error("Formato no permitido. Usa JPEG, PNG, WebP o GIF.");
   }
-  const name = `${randomUUID()}${ext}`;
-  const publicIdBase = name.replace(/\.[^.]+$/, "");
-
-  if (hasCloudinaryConfig()) {
-    return await uploadToCloudinary(buf, mimeType, publicIdBase);
-  }
-
-  if (process.env.VERCEL === "1") {
+  if (!hasCloudinaryConfig()) {
     throw new Error(
-      "Falta configurar Cloudinary en Vercel. Define CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY y CLOUDINARY_API_SECRET."
+      "Falta configurar Cloudinary. Define CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY y CLOUDINARY_API_SECRET en el servidor."
     );
   }
-
-  const dir = join(process.cwd(), "public", "uploads", "products");
-  await mkdir(dir, { recursive: true });
-  await writeFile(join(dir, name), buf);
-  return `${PRODUCT_UPLOAD_WEB_PREFIX}/${name}`;
+  const name = `${randomUUID()}${ext}`;
+  const publicIdBase = name.replace(/\.[^.]+$/, "");
+  return await uploadToCloudinary(buf, mimeType, publicIdBase);
 }
 
 function revalidateCatalog(productId?: number) {
@@ -208,6 +194,12 @@ export async function uploadProductImageAction(
   try {
     if (!(await verifyAdminSession())) {
       return { error: "Sesión caducada." };
+    }
+    if (!hasCloudinaryConfig()) {
+      return {
+        error:
+          "Cloudinary no está configurado. Añade CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY y CLOUDINARY_API_SECRET.",
+      };
     }
     const file = formData.get("file");
     if (!file || !(file instanceof File)) {

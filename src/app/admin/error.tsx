@@ -21,8 +21,8 @@ export default function AdminError({
         <h1 className="text-2xl font-semibold tracking-tight">Error en administración</h1>
         <p className="text-muted-foreground text-sm leading-relaxed">
           No se pudo completar la acción o cargar esta sección. Si acabas de guardar un producto o subir una imagen, revisa
-          la conexión a la base de datos y la configuración del servidor (en Vercel las subidas a disco suelen fallar sin
-          almacenamiento externo).
+          la conexión a la base de datos y que Cloudinary esté configurado (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY,
+          CLOUDINARY_API_SECRET).
         </p>
       </div>
       <div className="flex flex-wrap items-center justify-center gap-3">

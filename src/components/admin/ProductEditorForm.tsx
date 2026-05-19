@@ -20,6 +20,7 @@ import {
 } from "@/lib/catalog-color-filters";
 import { CATALOG_SIZE_ORDER, sortSizesSelected } from "@/lib/catalog-sizes";
 import { cn } from "@/lib/utils";
+import { AdminPreviewImage } from "@/components/admin/AdminPreviewImage";
 import Image from "next/image";
 import {
   startTransition,
@@ -645,31 +646,9 @@ export function ProductEditorForm({
         <div>
           <Label className="text-base">Imágenes</Label>
           <p className="text-sm text-muted-foreground mt-1">
-            {productId != null ? (
-              <>
-                Sube archivos (local:{" "}
-                <code className="text-xs bg-muted px-1 rounded">
-                  public/uploads/products
-                </code>
-                ; con Cloudinary:{" "}
-                <code className="text-xs bg-muted px-1 rounded">
-                  CLOUDINARY_*
-                </code>
-                ). Las fotos subidas se eliminan del almacenamiento al quitarlas
-                o si dejan de figurar al guardar (no afecta imágenes de{" "}
-                <code className="text-xs bg-muted px-1 rounded">
-                  /images/
-                </code>
-                …).
-              </>
-            ) : (
-              <>
-                Las imágenes nuevas no se suben a Cloudinary hasta que pulses{" "}
-                <strong>Guardar</strong>. Puedes quitar una imagen de la lista
-                antes de guardar (no se sube nada a la nube). Requisitos: JPEG,
-                PNG, WebP o GIF, máx. 5 MB.
-              </>
-            )}
+            {productId != null
+              ? "Las fotos se suben a Cloudinary al elegir archivo. Al quitarlas del producto también se borran de la nube."
+              : "Al guardar, las imágenes pendientes se suben a Cloudinary. Formatos: JPEG, PNG, WebP o GIF (máx. 5 MB)."}
           </p>
         </div>
 
@@ -847,8 +826,9 @@ export function ProductEditorForm({
           <Label className="text-base">Colores del modelo</Label>
           <p className="text-sm text-muted-foreground mt-1">
             Cada color es una opción en la tienda: al elegirla se muestran sus
-            fotos (grande y miniaturas) y el stock por talla. La primera imagen
-            del primer color es la portada en el catálogo.
+            fotos (grande y miniaturas) y el stock por talla. Las imágenes se
+            guardan en Cloudinary. La primera imagen del primer color es la
+            portada en el catálogo.
           </p>
         </div>
 
@@ -944,13 +924,12 @@ export function ProductEditorForm({
                         className="relative aspect-square overflow-hidden rounded-md border bg-muted"
                       >
                         {src ? (
-                          <Image
-                            src={image.preview ?? encodeWebPath(src)}
+                          <AdminPreviewImage
+                            src={image.preview ?? src}
                             alt=""
                             fill
                             className="object-contain p-1"
                             sizes="160px"
-                            unoptimized
                           />
                         ) : null}
 
@@ -1070,7 +1049,7 @@ export function ProductEditorForm({
             ? "Guardando…"
             : productId == null &&
               (pendingUploads.length > 0 || hasPendingColorVariantUploads)
-            ? "Guardar y subir imágenes"
+            ? "Guardar y subir a Cloudinary"
             : "Guardar"}
         </Button>
       </div>
@@ -1082,8 +1061,8 @@ export function ProductEditorForm({
   }
 
   return (
-    <div className="grid w-full gap-8 lg:gap-10 lg:grid-cols-[minmax(0,1fr)_420px] items-start">
-      {formInner}
+    <div className="grid w-full gap-8 lg:gap-10 lg:grid-cols-[minmax(0,1fr)_min(100%,420px)] items-start">
+      <div className="min-w-0">{formInner}</div>
 
       <AdminStorefrontPreview
         name={name}
@@ -1093,6 +1072,13 @@ export function ProductEditorForm({
         description={description}
         sizes={previewSizes}
         stockBySize={previewStockBySize}
+        colorVariants={colorVariants.map((variant) => ({
+          label: variant.label,
+          images: variant.images
+            .map((image) => image.preview ?? image.imagePath)
+            .filter(Boolean),
+          stockBySize: variant.stockBySize,
+        }))}
         isPublished={isPublished}
         isNewDrop={isNewDrop}
       />

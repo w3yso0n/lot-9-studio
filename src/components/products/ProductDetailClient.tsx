@@ -1,19 +1,21 @@
 "use client";
 
 import { poppins } from "@/app/fonts";
-import { ProductImage } from "@/components/products/ProductImage";
 import { Button } from "@/components/ui/button";
 import type { CatalogProduct } from "@/lib/catalog-product";
 import { CATALOG_SIZE_ORDER } from "@/lib/catalog-sizes";
 import {
-  encodeProductImagePath,
+  getProductImageDisplayUrl,
   sanitizeProductImagePaths,
 } from "@/lib/product-image-url";
 import { cn } from "@/lib/utils";
 import { useCartStore } from "@/store/cart";
 import Image from "next/image";
 import Link from "next/link";
-import { memo, useCallback, useEffect, useMemo, useReducer } from "react";
+import { memo, useMemo, useReducer } from "react";
+
+/** Evita montar decenas de miniaturas a la vez en productos con muchas fotos. */
+const MAX_THUMBNAILS = 20;
 
 function formatPrice(value: number): string {
   return Number.isFinite(value) ? value.toFixed(2) : "0.00";
@@ -75,13 +77,6 @@ function buildColorOptions(product: CatalogProduct): ColorOption[] {
   ];
 }
 
-function preloadImage(src: string) {
-  const url = encodeProductImagePath(src);
-  if (!url || typeof window === "undefined") return;
-  const img = new window.Image();
-  img.src = url;
-}
-
 type DetailState = {
   colorIndex: number;
   mainImageIndex: number;
@@ -121,7 +116,7 @@ const ThumbButton = memo(function ThumbButton({
   selected: boolean;
   onClick: () => void;
 }) {
-  const url = encodeProductImagePath(src);
+  const url = getProductImageDisplayUrl(src, "thumb");
   if (!url) return null;
 
   return (
@@ -152,22 +147,18 @@ const ColorSwatch = memo(function ColorSwatch({
   thumb,
   selected,
   onSelect,
-  onPrefetch,
 }: {
   label: string;
   thumb: string;
   selected: boolean;
   onSelect: () => void;
-  onPrefetch: () => void;
 }) {
-  const url = encodeProductImagePath(thumb);
+  const url = getProductImageDisplayUrl(thumb, "swatch");
 
   return (
     <button
       type="button"
       onClick={onSelect}
-      onPointerEnter={onPrefetch}
-      onFocus={onPrefetch}
       className={cn(
         "relative block h-16 w-16 shrink-0 overflow-hidden border-2 bg-white",
         selected ? "border-black" : "border-gray-200 hover:border-gray-500"
@@ -247,20 +238,26 @@ export function ProductDetailClient({ product }: Props) {
     product.oldPrice > 1 &&
     product.oldPrice > product.price;
 
-  useEffect(() => {
-    for (const option of colorOptions) {
-      for (const src of option.images) preloadImage(src);
-    }
-  }, [colorOptions]);
+  const mainDisplaySrc = mainImage
+    ? getProductImageDisplayUrl(mainImage, "main")
+    : "";
 
-  const prefetchColor = useCallback(
-    (index: number) => {
-      const option = colorOptions[index];
-      if (!option) return;
-      for (const src of option.images) preloadImage(src);
-    },
-    [colorOptions]
-  );
+  const { thumbIndices, hiddenThumbCount } = useMemo(() => {
+    if (activeImages.length <= MAX_THUMBNAILS) {
+      return {
+        thumbIndices: activeImages.map((_, i) => i),
+        hiddenThumbCount: 0,
+      };
+    }
+    const indices = new Set<number>();
+    for (let i = 0; i < MAX_THUMBNAILS - 1; i++) indices.add(i);
+    indices.add(safeMainIndex);
+    const sorted = [...indices].sort((a, b) => a - b);
+    return {
+      thumbIndices: sorted,
+      hiddenThumbCount: activeImages.length - sorted.length,
+    };
+  }, [activeImages, safeMainIndex]);
 
   return (
     <section
@@ -269,32 +266,42 @@ export function ProductDetailClient({ product }: Props) {
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
         {/* Galería: miniaturas a la izquierda + foto grande (como el resto de productos) */}
         <div className="flex flex-col-reverse sm:flex-row gap-4 lg:flex-1 lg:min-w-0">
-          {activeImages.length > 0 ? (
+          {thumbIndices.length > 0 ? (
             <div
               className="flex flex-row sm:flex-col gap-3 sm:gap-4 overflow-x-auto sm:overflow-y-auto sm:max-h-[min(70vh,520px)] p-1 shrink-0"
               aria-label="Miniaturas"
             >
-              {activeImages.map((img, index) => (
+              {thumbIndices.map((imageIndex) => (
                 <ThumbButton
-                  key={`${safeColorIndex}-${img}`}
-                  src={img}
-                  alt={`${product.name} - ${index + 1}`}
-                  selected={safeMainIndex === index}
-                  onClick={() => dispatch({ type: "select-thumb", index })}
+                  key={`${safeColorIndex}-${activeImages[imageIndex]}-${imageIndex}`}
+                  src={activeImages[imageIndex] ?? ""}
+                  alt={`${product.name} - ${imageIndex + 1}`}
+                  selected={safeMainIndex === imageIndex}
+                  onClick={() =>
+                    dispatch({ type: "select-thumb", index: imageIndex })
+                  }
                 />
               ))}
+              {hiddenThumbCount > 0 ? (
+                <p className="text-xs text-muted-foreground self-center px-1 sm:max-w-[5rem] sm:text-center">
+                  +{hiddenThumbCount} fotos más
+                </p>
+              ) : null}
             </div>
           ) : null}
 
           <div className="relative w-full flex-1 aspect-[3/4] max-h-[min(75vh,560px)] min-h-[280px] rounded-lg bg-muted overflow-hidden">
-            {mainImage ? (
-              <ProductImage
-                src={mainImage}
+            {mainDisplaySrc ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={mainImage}
+                src={mainDisplaySrc}
                 alt={product.name}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 560px"
-                priority
+                decoding="async"
+                fetchPriority={
+                  safeColorIndex === 0 && safeMainIndex === 0 ? "high" : "auto"
+                }
+                className="absolute inset-0 h-full w-full object-cover"
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
@@ -345,7 +352,6 @@ export function ProductDetailClient({ product }: Props) {
                     thumb={option.thumb}
                     selected={safeColorIndex === index}
                     onSelect={() => dispatch({ type: "select-color", index })}
-                    onPrefetch={() => prefetchColor(index)}
                   />
                 ))}
               </div>
@@ -368,7 +374,7 @@ export function ProductDetailClient({ product }: Props) {
                       {variant.image ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={encodeProductImagePath(variant.image)}
+                          src={getProductImageDisplayUrl(variant.image, "swatch")}
                           alt=""
                           width={64}
                           height={64}
