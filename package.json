@@ -6,9 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "db:seed:legacy": "tsx scripts/seed-from-legacy.ts",
-    "db:fix-text": "tsx scripts/fix-product-text-from-data.ts"
+    "lint": "next lint"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.6",

@@ -2,7 +2,6 @@ import type { CatalogProduct } from "@/lib/catalog-product";
 import { CATALOG_SIZE_ORDER } from "@/lib/catalog-sizes";
 import { getPool } from "@/lib/db";
 import { sanitizeProductImagePaths } from "@/lib/product-image-url";
-import { ensureProductVariantsSchema } from "@/lib/product-variants-schema";
 import { unstable_cache } from "next/cache";
 import type { QueryResultRow } from "pg";
 
@@ -129,7 +128,6 @@ function parseOldPrice(value: unknown): number | undefined {
 
 async function getColorVariantsForProduct(productId: number) {
   const pool = getPool();
-  await ensureProductVariantsSchema(pool);
   const { rows } = await pool.query<ProductColorVariantRow>(
     `SELECT
        pcv.id,
@@ -314,7 +312,6 @@ async function fetchProductById(
   opts?: { includeUnpublished?: boolean }
 ): Promise<CatalogProduct | null> {
   const pool = getPool();
-  await ensureProductVariantsSchema(pool);
   const pub = opts?.includeUnpublished ? "" : "AND p.is_published = true";
   const { rows } = await pool.query<ProductRow>(
     `${productSelect}
@@ -437,7 +434,6 @@ export async function getAdminProductList(): Promise<AdminProductListItem[]> {
 
 export async function getAdminProductById(id: number): Promise<AdminProductRow | null> {
   const pool = getPool();
-  await ensureProductVariantsSchema(pool);
   const { rows } = await pool.query<
     ProductRow & { is_published: boolean; new_drop_sort: number | null }
   >(
@@ -478,8 +474,6 @@ export async function getAdminProductVariantOptions(
   productId?: number
 ): Promise<AdminProductVariantOption[]> {
   const pool = getPool();
-  await ensureProductVariantsSchema(pool);
-
   const id = productId ?? 0;
   const { rows } = await pool.query<AdminVariantOptionRow>(
     `SELECT

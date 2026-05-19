@@ -3,7 +3,6 @@ import { isOwnedUploadPath } from "@/lib/upload-products";
 import { deletePanelUploadFile } from "@/lib/panel-upload-delete";
 import { CATALOG_COLOR_FILTER_OPTIONS } from "@/lib/catalog-color-filters";
 import { CATALOG_SIZE_ORDER } from "@/lib/catalog-sizes";
-import { ensureProductVariantsSchema } from "@/lib/product-variants-schema";
 import type { PoolClient } from "pg";
 
 export type ProductMutationInput = {
@@ -71,8 +70,6 @@ async function replaceChildRows(
       [productId, input.newDropSort]
     );
   }
-
-  await ensureProductVariantsSchema(client);
 
   await client.query(`DELETE FROM product_color_variants WHERE product_id = $1`, [
     productId,
@@ -187,7 +184,6 @@ export async function updateProduct(id: number, input: ProductMutationInput): Pr
     );
 
     const previousPaths = prevImg.map((r) => r.path);
-    await ensureProductVariantsSchema(client);
     const { rows: prevVariantImg } = await client.query<{ image_path: string }>(
       `SELECT pcv.image_path
        FROM product_color_variants pcv

@@ -1,6 +1,6 @@
 /**
  * Etiquetas de filtro (`product_color_filters`) usadas en el catálogo legado.
- * Extraídas de `scripts/legacy-data.ts`: solo aparecen estas combinaciones.
+ * Opciones fijas del catálogo (filtros de color en la tienda).
  */
 export const CATALOG_COLOR_FILTER_OPTIONS = ["Black", "White", "Red", "Blue"] as const;
 export type CatalogColorFilter = (typeof CATALOG_COLOR_FILTER_OPTIONS)[number];
