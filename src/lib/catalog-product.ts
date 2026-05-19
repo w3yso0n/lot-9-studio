@@ -3,10 +3,27 @@ export type CatalogProduct = {
   id: number;
   name: string;
   price: number;
+  oldPrice?: number | null;
+  code?: string | number;
   color: string;
   images: string[];
   stockBySize: Record<string, number>;
   sizes: string[];
   colors: string[];
   desc: string;
+  variants?: CatalogProductVariant[];
+  colorVariants?: CatalogProductColorVariant[];
+};
+
+export type CatalogProductVariant = {
+  id: number;
+  name: string;
+  color: string;
+  image: string;
+};
+
+export type CatalogProductColorVariant = {
+  label: string;
+  images: string[];
+  stockBySize: Record<string, number>;
 };

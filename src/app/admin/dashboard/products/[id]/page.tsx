@@ -26,7 +26,10 @@ export default async function EditProductPage({ params }: Props) {
           </Button>
         </form>
       </div>
-      <ProductEditorForm initial={product} key={`${product.id}-${product.images.join("~")}`} />
+      <ProductEditorForm
+        initial={product}
+        key={`${product.id}-${product.images.join("~")}`}
+      />
     </div>
   );
 }

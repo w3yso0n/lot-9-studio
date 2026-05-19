@@ -2,6 +2,7 @@
 
 import {
   deleteProductImageAction,
+  deleteOrphanUploadAction,
   saveProductAction,
   uploadProductImageAction,
   type SaveProductState,
@@ -29,7 +30,19 @@ import {
   useTransition,
 } from "react";
 
+type ColorVariantImageDraft = {
+  id: string;
+  imagePath: string;
+  preview?: string;
+  file?: File;
+};
 type PendingUpload = { id: string; file: File; preview: string };
+type ColorVariantDraft = {
+  id: string;
+  label: string;
+  images: ColorVariantImageDraft[];
+  stockBySize: Record<string, number>;
+};
 
 type Props = {
   initial?: AdminProductRow | null;
@@ -90,7 +103,22 @@ function colorsFingerprint(initial?: AdminProductRow | null): string {
   return initial.colors?.join("|") ?? "";
 }
 
-export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
+function initColorVariants(initial?: AdminProductRow | null): ColorVariantDraft[] {
+  return (initial?.colorVariants ?? []).map((variant, index) => ({
+    id: `saved-${index}-${variant.images.join("~")}`,
+    label: variant.label,
+    images: variant.images.map((image, imageIndex) => ({
+      id: `saved-${index}-${imageIndex}-${image}`,
+      imagePath: image,
+    })),
+    stockBySize: { ...variant.stockBySize },
+  }));
+}
+
+export function ProductEditorForm({
+  initial,
+  showLivePreview = false,
+}: Props) {
   const [state, formAction, pending] = useActionState(
     saveProductAction,
     null as SaveProductState
@@ -117,6 +145,9 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
   const [selectedColors, setSelectedColors] = useState<string[]>(() =>
     deriveInitialColorFilters(initial)
   );
+  const [colorVariants, setColorVariants] = useState<ColorVariantDraft[]>(() =>
+    initColorVariants(initial)
+  );
   const [stockBySize, setStockBySize] = useState<Record<string, number>>(() =>
     initStockMap(initial)
   );
@@ -130,7 +161,10 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
   const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
   const [imgPending, startImgTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
+  const colorVariantFileRef = useRef<HTMLInputElement>(null);
+  const colorVariantUploadTargetRef = useRef<string | null>(null);
   const pendingUploadsRef = useRef<PendingUpload[]>([]);
+  const colorVariantsRef = useRef<ColorVariantDraft[]>([]);
 
   const productId = initial?.id;
 
@@ -144,14 +178,38 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
   const previewPrice = Number.parseFloat(priceStr.replace(",", ".")) || 0;
   const previewSizes = sortSizesSelected(selectedSizes);
   const previewImages =
-    productId != null ? imagePaths : pendingUploads.map((p) => p.preview);
+    colorVariants[0]?.images
+      .map((image) => image.preview ?? image.imagePath)
+      .filter(Boolean) ?? [];
+  const previewStockBySize = CATALOG_SIZE_ORDER.reduce<Record<string, number>>(
+    (acc, size) => {
+      acc[size] =
+        colorVariants.length > 0
+          ? colorVariants.reduce(
+              (sum, variant) => sum + (variant.stockBySize[size] ?? 0),
+              0
+            )
+          : stockBySize[size] ?? 0;
+      return acc;
+    },
+    {}
+  );
+  const hasPendingColorVariantUploads = colorVariants.some((variant) =>
+    variant.images.some((image) => image.file)
+  );
 
   pendingUploadsRef.current = pendingUploads;
+  colorVariantsRef.current = colorVariants;
 
   useEffect(() => {
     return () => {
       for (const p of pendingUploadsRef.current) {
         URL.revokeObjectURL(p.preview);
+      }
+      for (const variant of colorVariantsRef.current) {
+        for (const image of variant.images) {
+          if (image.preview) URL.revokeObjectURL(image.preview);
+        }
       }
     };
   }, []);
@@ -164,6 +222,7 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
     setOldPriceStr(oldPrice != null ? String(oldPrice) : "");
     setDescription(initial?.desc ?? "");
     setImagePaths(initial?.images ?? []);
+    setColorVariants(initColorVariants(initial));
     setIsPublished(initial?.is_published ?? true);
     setIsNewDrop(initial?.new_drop_sort != null);
 
@@ -199,6 +258,16 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
       }
       return next;
     });
+
+    setColorVariants((prev) =>
+      prev.map((variant) => {
+        const next = { ...variant.stockBySize };
+        for (const s of CATALOG_SIZE_ORDER) {
+          if (!selectedSizes.includes(s)) next[s] = 0;
+        }
+        return { ...variant, stockBySize: next };
+      })
+    );
   }, [selectedSizes]);
 
   function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -289,6 +358,187 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
     }
   }
 
+  function onPickColorVariantFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setUploadMsg(null);
+
+    if (file.size === 0) {
+      setUploadMsg("Archivo vacío.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadMsg("El archivo supera 5 MB.");
+      return;
+    }
+
+    const okTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+    ];
+
+    if (!okTypes.includes(file.type)) {
+      setUploadMsg("Formato no permitido. Usa JPEG, PNG, WebP o GIF.");
+      return;
+    }
+
+    const targetId = colorVariantUploadTargetRef.current;
+    colorVariantUploadTargetRef.current = null;
+    const label = `Color ${colorVariants.length + 1}`;
+
+    if (productId != null) {
+      startImgTransition(async () => {
+        try {
+          const fd = new FormData();
+          fd.append("file", file);
+          const res = await uploadProductImageAction(fd);
+
+          if (res.error) {
+            setUploadMsg(res.error);
+          } else if (res.path) {
+            const imagePath = res.path;
+            const image: ColorVariantImageDraft = {
+              id: crypto.randomUUID(),
+              imagePath,
+            };
+            setColorVariants((prev) => {
+              if (targetId) {
+                return prev.map((variant) =>
+                  variant.id === targetId
+                    ? { ...variant, images: [...variant.images, image] }
+                    : variant
+                );
+              }
+
+              return [
+                ...prev,
+                {
+                  id: crypto.randomUUID(),
+                  label,
+                  images: [image],
+                  stockBySize: initStockMap(initial),
+                },
+              ];
+            });
+          }
+        } catch {
+          setUploadMsg("No se pudo subir la imagen. Inténtalo de nuevo.");
+        }
+      });
+      return;
+    }
+
+    const image: ColorVariantImageDraft = {
+      id: crypto.randomUUID(),
+      imagePath: "",
+      preview: URL.createObjectURL(file),
+      file,
+    };
+
+    setColorVariants((prev) => {
+      if (targetId) {
+        return prev.map((variant) =>
+          variant.id === targetId
+            ? { ...variant, images: [...variant.images, image] }
+            : variant
+        );
+      }
+
+      return [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          label,
+          images: [image],
+          stockBySize: initStockMap(initial),
+        },
+      ];
+    });
+  }
+
+  function pickColorVariantImage(variantId?: string) {
+    colorVariantUploadTargetRef.current = variantId ?? null;
+    colorVariantFileRef.current?.click();
+  }
+
+  function updateColorVariantLabel(id: string, label: string) {
+    setColorVariants((prev) =>
+      prev.map((variant) =>
+        variant.id === id ? { ...variant, label } : variant
+      )
+    );
+  }
+
+  function updateColorVariantStock(
+    id: string,
+    size: string,
+    quantity: number
+  ) {
+    setColorVariants((prev) =>
+      prev.map((variant) =>
+        variant.id === id
+          ? {
+              ...variant,
+              stockBySize: {
+                ...variant.stockBySize,
+                [size]: Math.max(0, Math.floor(quantity || 0)),
+              },
+            }
+          : variant
+      )
+    );
+  }
+
+  function removeColorVariant(id: string) {
+    setUploadMsg(null);
+
+    const savedImages = new Set(
+      (initial?.colorVariants ?? []).flatMap((variant) => variant.images)
+    );
+
+    setColorVariants((prev) => {
+      const item = prev.find((variant) => variant.id === id);
+      for (const image of item?.images ?? []) {
+        if (image.preview) URL.revokeObjectURL(image.preview);
+        if (productId != null && image.imagePath && !savedImages.has(image.imagePath)) {
+          void deleteOrphanUploadAction(image.imagePath);
+        }
+      }
+      return prev.filter((variant) => variant.id !== id);
+    });
+  }
+
+  function removeColorVariantImage(variantId: string, imageId: string) {
+    setUploadMsg(null);
+
+    const savedImages = new Set(
+      (initial?.colorVariants ?? []).flatMap((variant) => variant.images)
+    );
+
+    setColorVariants((prev) =>
+      prev
+        .map((variant) => {
+          if (variant.id !== variantId) return variant;
+          const item = variant.images.find((image) => image.id === imageId);
+          if (item?.preview) URL.revokeObjectURL(item.preview);
+          if (productId != null && item?.imagePath && !savedImages.has(item.imagePath)) {
+            void deleteOrphanUploadAction(item.imagePath);
+          }
+          return {
+            ...variant,
+            images: variant.images.filter((image) => image.id !== imageId),
+          };
+        })
+        .filter((variant) => variant.images.length > 0)
+    );
+  }
+
   const formInner = (
     <form
       action={formAction}
@@ -301,6 +551,14 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
 
         for (const p of pendingUploads) {
           fd.append("pending_images", p.file);
+        }
+
+        for (const variant of colorVariants) {
+          for (const image of variant.images) {
+            if (image.file) {
+              fd.append("pending_color_variant_images", image.file);
+            }
+          }
         }
 
         startTransition(() => {
@@ -383,7 +641,7 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
         />
       </div>
 
-      <div className="space-y-4 rounded-lg border bg-muted/20 p-4">
+      <div className="hidden">
         <div>
           <Label className="text-base">Imágenes</Label>
           <p className="text-sm text-muted-foreground mt-1">
@@ -499,7 +757,60 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
         )}
       </div>
 
-      <div className="space-y-3 rounded-lg border bg-muted/15 p-4">
+      <div className="hidden">
+        <div>
+          <Label className="text-base">Tallas disponibles</Label>
+          <p className="text-sm text-muted-foreground mt-1">
+            Activa las tallas que vendes para este modelo. El stock de cada
+            color se captura en la seccion de modelos/colores.
+          </p>
+        </div>
+
+        <ToggleGroup
+          type="multiple"
+          variant="outline"
+          value={selectedSizes}
+          onValueChange={(v) => setSelectedSizes(v)}
+          className="justify-start"
+        >
+          {CATALOG_SIZE_ORDER.map((size) => (
+            <ToggleGroupItem
+              key={size}
+              value={size}
+              aria-label={`Talla ${size}`}
+            >
+              {size}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+
+        {sortSizesSelected(selectedSizes).map((s) => (
+          <input key={s} type="hidden" name="sizes" value={s} />
+        ))}
+      </div>
+
+      <div className="hidden">
+        {sortSizesSelected(selectedSizes).map((size) => (
+          <div key={size} className="space-y-2">
+            <Label htmlFor={`stock_${size}`}>Stock base {size}</Label>
+            <Input
+              id={`stock_${size}`}
+              name={`stock_${size}`}
+              type="number"
+              min="0"
+              value={String(stockBySize[size] ?? 0)}
+              onChange={(e) =>
+                setStockBySize((prev) => ({
+                  ...prev,
+                  [size]: Math.max(0, Math.floor(Number(e.target.value) || 0)),
+                }))
+              }
+            />
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden">
         <div>
           <Label className="text-base">Etiquetas de color (filtros)</Label>
           <p className="text-sm text-muted-foreground mt-1">
@@ -531,57 +842,179 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
         ))}
       </div>
 
-      <div className="space-y-3 rounded-lg border bg-muted/15 p-4">
+      <div className="space-y-4 rounded-lg border bg-muted/15 p-4">
         <div>
-          <Label className="text-base">Tallas disponibles</Label>
+          <Label className="text-base">Colores del modelo</Label>
           <p className="text-sm text-muted-foreground mt-1">
-            Activa las tallas que vendes. El stock solo aplica a las tallas
-            seleccionadas.
+            Sube una o varias fotos por cada color. La primera imagen del
+            primer color será la portada del producto.
           </p>
         </div>
 
-        <ToggleGroup
-          type="multiple"
-          variant="outline"
-          value={selectedSizes}
-          onValueChange={(v) => setSelectedSizes(v)}
-          className="justify-start"
-        >
-          {CATALOG_SIZE_ORDER.map((size) => (
-            <ToggleGroupItem
-              key={size}
-              value={size}
-              aria-label={`Talla ${size}`}
-            >
-              {size}
-            </ToggleGroupItem>
+        <div className="space-y-3 rounded-lg border bg-background p-3">
+          <Label className="text-sm">Tallas disponibles del modelo</Label>
+
+          <ToggleGroup
+            type="multiple"
+            variant="outline"
+            value={selectedSizes}
+            onValueChange={(v) => setSelectedSizes(v)}
+            className="justify-start"
+          >
+            {CATALOG_SIZE_ORDER.map((size) => (
+              <ToggleGroupItem
+                key={size}
+                value={size}
+                aria-label={`Talla ${size}`}
+              >
+                {size}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+
+          {sortSizesSelected(selectedSizes).map((s) => (
+            <input key={s} type="hidden" name="sizes" value={s} />
           ))}
-        </ToggleGroup>
+        </div>
 
-        {sortSizesSelected(selectedSizes).map((s) => (
-          <input key={s} type="hidden" name="sizes" value={s} />
-        ))}
-      </div>
+        <input
+          ref={colorVariantFileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          className="hidden"
+          onChange={onPickColorVariantFile}
+        />
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {sortSizesSelected(selectedSizes).map((size) => (
-          <div key={size} className="space-y-2">
-            <Label htmlFor={`stock_${size}`}>Stock {size}</Label>
-            <Input
-              id={`stock_${size}`}
-              name={`stock_${size}`}
-              type="number"
-              min="0"
-              value={String(stockBySize[size] ?? 0)}
-              onChange={(e) =>
-                setStockBySize((prev) => ({
-                  ...prev,
-                  [size]: Math.max(0, Math.floor(Number(e.target.value) || 0)),
-                }))
-              }
-            />
-          </div>
-        ))}
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={(productId != null ? imgPending : false) || pending}
+          onClick={() => pickColorVariantImage()}
+        >
+          {imgPending ? "Subiendo..." : "Crear color con imagen"}
+        </Button>
+
+        {colorVariants.length > 0 ? (
+          <ul className="space-y-4">
+            {colorVariants.map((variant, variantIndex) => (
+              <li
+                key={variant.id}
+                className="space-y-3 rounded-lg border bg-background p-3"
+              >
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <Input
+                    value={variant.label}
+                    onChange={(e) =>
+                      updateColorVariantLabel(variant.id, e.target.value)
+                    }
+                    placeholder="Nombre del color"
+                    className="h-9 sm:max-w-xs"
+                  />
+
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      disabled={(productId != null ? imgPending : false) || pending}
+                      onClick={() => pickColorVariantImage(variant.id)}
+                    >
+                      Añadir foto
+                    </Button>
+
+                    <button
+                      type="button"
+                      className="rounded-md bg-black/80 px-3 py-2 text-xs text-white hover:bg-black"
+                      disabled={pending}
+                      onClick={() => removeColorVariant(variant.id)}
+                    >
+                      Quitar color
+                    </button>
+                  </div>
+                </div>
+
+                <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {variant.images.map((image) => {
+                    const src = image.preview ?? image.imagePath;
+
+                    return (
+                      <li
+                        key={image.id}
+                        className="relative aspect-square overflow-hidden rounded-md border bg-muted"
+                      >
+                        {src ? (
+                          <Image
+                            src={image.preview ?? encodeWebPath(src)}
+                            alt=""
+                            fill
+                            className="object-contain p-1"
+                            sizes="160px"
+                            unoptimized
+                          />
+                        ) : null}
+
+                        <button
+                          type="button"
+                          className="absolute right-1 top-1 rounded-md bg-black/70 px-2 py-1 text-xs text-white hover:bg-black"
+                          disabled={pending}
+                          onClick={() =>
+                            removeColorVariantImage(variant.id, image.id)
+                          }
+                        >
+                          Quitar
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {sortSizesSelected(selectedSizes).map((size) => (
+                    <div key={size} className="space-y-1.5">
+                      <Label
+                        htmlFor={`color_variant_stock_${variantIndex}_${size}`}
+                        className="text-xs"
+                      >
+                        Stock {size}
+                      </Label>
+                      <Input
+                        id={`color_variant_stock_${variantIndex}_${size}`}
+                        name={`color_variant_stock_${variantIndex}_${size}`}
+                        type="number"
+                        min="0"
+                        value={String(variant.stockBySize[size] ?? 0)}
+                        onChange={(e) =>
+                          updateColorVariantStock(
+                            variant.id,
+                            size,
+                            Number(e.target.value)
+                          )
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <input
+                  type="hidden"
+                  name="color_variant_labels"
+                  value={variant.label}
+                />
+                <input
+                  type="hidden"
+                  name="color_variant_images"
+                  value={variant.images
+                    .map((image) => image.imagePath || "__pending__")
+                    .join("|")}
+                />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Aún no hay imágenes de colores.
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col gap-4 border rounded-lg p-4 bg-muted/20">
@@ -634,7 +1067,8 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
         <Button type="submit" disabled={pending || imgPending}>
           {pending
             ? "Guardando…"
-            : productId == null && pendingUploads.length > 0
+            : productId == null &&
+              (pendingUploads.length > 0 || hasPendingColorVariantUploads)
             ? "Guardar y subir imágenes"
             : "Guardar"}
         </Button>
@@ -657,7 +1091,7 @@ export function ProductEditorForm({ initial, showLivePreview = false }: Props) {
         variantLabel={variantLabelForSubmit}
         description={description}
         sizes={previewSizes}
-        stockBySize={stockBySize}
+        stockBySize={previewStockBySize}
         isPublished={isPublished}
         isNewDrop={isNewDrop}
       />

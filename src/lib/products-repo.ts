@@ -1,6 +1,7 @@
 import type { CatalogProduct } from "@/lib/catalog-product";
 import { CATALOG_SIZE_ORDER } from "@/lib/catalog-sizes";
 import { getPool } from "@/lib/db";
+import { ensureProductVariantsSchema } from "@/lib/product-variants-schema";
 import { unstable_cache } from "next/cache";
 import type { QueryResultRow } from "pg";
 
@@ -8,6 +9,7 @@ type ProductRow = QueryResultRow & {
   id: number;
   name: string;
   price: string | number;
+  old_price?: string | number | null;
   color: string;
   product_desc: string;
   images: unknown;
@@ -20,6 +22,7 @@ type CatalogGridRow = QueryResultRow & {
   id: number;
   name: string;
   price: string | number;
+  old_price?: string | number | null;
   color: string;
   cover_image: string | null;
   stock_by_size: unknown;
@@ -29,6 +32,7 @@ type NewDropRow = QueryResultRow & {
   id: number;
   name: string;
   price: string | number;
+  old_price?: string | number | null;
   color: string;
   images: unknown;
   stock_by_size: unknown;
@@ -39,10 +43,30 @@ type AdminListRow = QueryResultRow & {
   id: number;
   name: string;
   price: string | number;
+  old_price?: string | number | null;
   color: string;
   cover_image: string | null;
   is_published: boolean;
   new_drop_sort: number | null;
+};
+
+type ProductVariantRow = QueryResultRow & {
+  id: number;
+  name: string;
+  color: string;
+  image: string | null;
+};
+
+type AdminVariantOptionRow = ProductVariantRow & {
+  is_selected: boolean;
+};
+
+type ProductColorVariantRow = QueryResultRow & {
+  id: number;
+  label: string;
+  image_path: string;
+  images: unknown;
+  stock_by_size: unknown;
 };
 
 function parseJsonArray(v: unknown): string[] {
@@ -79,8 +103,10 @@ function rowToProduct(row: ProductRow): CatalogProduct {
   const price = typeof row.price === "string" ? parseFloat(row.price) : row.price;
   return {
     id: row.id,
+    code: row.id,
     name: row.name,
     price,
+    oldPrice: parseOldPrice(row.old_price),
     color: row.color,
     images: parseJsonArray(row.images),
     stockBySize,
@@ -90,6 +116,51 @@ function rowToProduct(row: ProductRow): CatalogProduct {
   };
 }
 
+function parseOldPrice(value: unknown): number | undefined {
+  if (value == null) return undefined;
+  if (typeof value === "string") {
+    const parsed = parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+  if (typeof value === "number") return value;
+  return undefined;
+}
+
+async function getColorVariantsForProduct(productId: number) {
+  const pool = getPool();
+  await ensureProductVariantsSchema(pool);
+  const { rows } = await pool.query<ProductColorVariantRow>(
+    `SELECT
+       pcv.id,
+       pcv.label,
+       pcv.image_path,
+       COALESCE(
+         (SELECT json_agg(pcvi.image_path ORDER BY pcvi.sort_order, pcvi.id)
+          FROM product_color_variant_images pcvi
+          WHERE pcvi.color_variant_id = pcv.id),
+         '[]'::json
+       ) AS images,
+       COALESCE(
+         (SELECT json_object_agg(pcvs.size, pcvs.quantity)
+          FROM product_color_variant_stock pcvs
+          WHERE pcvs.color_variant_id = pcv.id),
+         '{}'::json
+       ) AS stock_by_size
+     FROM product_color_variants pcv
+     WHERE pcv.product_id = $1
+     ORDER BY pcv.sort_order, pcv.id`,
+    [productId]
+  );
+
+  return rows.map((row) => ({
+    label: row.label,
+    images: parseJsonArray(row.images).length > 0
+      ? parseJsonArray(row.images)
+      : [row.image_path].filter(Boolean),
+    stockBySize: parseStock(row.stock_by_size),
+  }));
+}
+
 function rowToCatalogGridProduct(row: CatalogGridRow): CatalogProduct {
   const stockBySize = parseStock(row.stock_by_size);
   const sizes = normalizeSizes([], stockBySize);
@@ -97,8 +168,10 @@ function rowToCatalogGridProduct(row: CatalogGridRow): CatalogProduct {
   const cover = row.cover_image == null ? "" : String(row.cover_image);
   return {
     id: row.id,
+    code: row.id,
     name: row.name,
     price,
+    oldPrice: parseOldPrice(row.old_price),
     color: row.color,
     images: cover ? [cover] : [],
     stockBySize,
@@ -114,8 +187,10 @@ function rowToNewDropProduct(row: NewDropRow): CatalogProduct {
   const price = typeof row.price === "string" ? parseFloat(row.price) : row.price;
   return {
     id: row.id,
+    code: row.id,
     name: row.name,
     price,
+    oldPrice: parseOldPrice(row.old_price),
     color: row.color,
     images: parseJsonArray(row.images),
     stockBySize,
@@ -129,6 +204,7 @@ const productSelectList = `
   p.id,
   p.name,
   p.price,
+  p.old_price,
   p.variant_label AS color,
   COALESCE(p.description, '') AS product_desc,
   COALESCE(
@@ -163,6 +239,7 @@ async function fetchCatalogProductsGrid(): Promise<CatalogProduct[]> {
        p.id,
        p.name,
        p.price,
+       p.old_price,
        p.variant_label AS color,
        (SELECT pi.path
         FROM product_images pi
@@ -194,6 +271,7 @@ async function fetchNewDrops(): Promise<CatalogProduct[]> {
        p.id,
        p.name,
        p.price,
+       p.old_price,
        p.variant_label AS color,
        COALESCE(
          (SELECT json_agg(pi.path ORDER BY pi.sort_order, pi.id)
@@ -228,6 +306,7 @@ export async function getProductById(
   opts?: { includeUnpublished?: boolean }
 ): Promise<CatalogProduct | null> {
   const pool = getPool();
+  await ensureProductVariantsSchema(pool);
   const pub = opts?.includeUnpublished ? "" : "AND p.is_published = true";
   const { rows } = await pool.query<ProductRow>(
     `${productSelect}
@@ -235,12 +314,40 @@ export async function getProductById(
     [id]
   );
   if (!rows[0]) return null;
-  return rowToProduct(rows[0]);
+  const product = rowToProduct(rows[0]);
+  const { rows: variants } = await pool.query<ProductVariantRow>(
+    `SELECT
+       vp.id,
+       vp.name,
+       vp.variant_label AS color,
+       (SELECT pi.path
+        FROM product_images pi
+        WHERE pi.product_id = vp.id
+        ORDER BY pi.sort_order, pi.id
+        LIMIT 1) AS image
+     FROM product_variant_links v
+     INNER JOIN products vp ON vp.id = v.variant_product_id
+     WHERE v.product_id = $1
+       AND vp.is_published = true
+     ORDER BY v.sort_order, vp.id`,
+    [id]
+  );
+  return {
+    ...product,
+    variants: variants.map((v) => ({
+      id: v.id,
+      name: v.name,
+      color: v.color,
+      image: v.image ?? "",
+    })),
+    colorVariants: await getColorVariantsForProduct(id),
+  };
 }
 
 export type AdminProductRow = CatalogProduct & {
   is_published: boolean;
   new_drop_sort: number | null;
+  variantProductIds: number[];
 };
 
 /** Listado admin: solo datos de tarjeta (portada + precio + estado). */
@@ -248,6 +355,7 @@ export type AdminProductListItem = {
   id: number;
   name: string;
   price: number;
+  oldPrice?: number | null;
   color: string;
   images: string[];
   is_published: boolean;
@@ -261,6 +369,7 @@ export async function getAdminProductList(): Promise<AdminProductListItem[]> {
        p.id,
        p.name,
        p.price,
+       p.old_price,
        p.variant_label AS color,
        p.is_published,
        (SELECT nd.sort_order FROM new_drop_items nd WHERE nd.product_id = p.id LIMIT 1) AS new_drop_sort,
@@ -274,11 +383,18 @@ export async function getAdminProductList(): Promise<AdminProductListItem[]> {
   );
   return rows.map((row) => {
     const price = typeof row.price === "string" ? parseFloat(row.price) : row.price;
+    const oldPrice =
+      row.old_price == null
+        ? undefined
+        : typeof row.old_price === "string"
+        ? parseFloat(row.old_price)
+        : row.old_price;
     const cover = row.cover_image == null ? "" : String(row.cover_image);
     return {
       id: row.id,
       name: row.name,
       price,
+      oldPrice,
       color: row.color,
       images: cover ? [cover] : [],
       is_published: row.is_published,
@@ -289,6 +405,7 @@ export async function getAdminProductList(): Promise<AdminProductListItem[]> {
 
 export async function getAdminProductById(id: number): Promise<AdminProductRow | null> {
   const pool = getPool();
+  await ensureProductVariantsSchema(pool);
   const { rows } = await pool.query<
     ProductRow & { is_published: boolean; new_drop_sort: number | null }
   >(
@@ -301,9 +418,63 @@ export async function getAdminProductById(id: number): Promise<AdminProductRow |
   );
   if (!rows[0]) return null;
   const row = rows[0];
+  const { rows: variantRows } = await pool.query<{ variant_product_id: number }>(
+    `SELECT variant_product_id
+     FROM product_variant_links
+     WHERE product_id = $1
+     ORDER BY sort_order, variant_product_id`,
+    [id]
+  );
   return {
     ...rowToProduct(row),
     is_published: row.is_published,
     new_drop_sort: row.new_drop_sort,
+    variantProductIds: variantRows.map((r) => r.variant_product_id),
+    colorVariants: await getColorVariantsForProduct(id),
   };
+}
+
+export type AdminProductVariantOption = {
+  id: number;
+  name: string;
+  color: string;
+  image: string;
+  isSelected: boolean;
+};
+
+export async function getAdminProductVariantOptions(
+  productId?: number
+): Promise<AdminProductVariantOption[]> {
+  const pool = getPool();
+  await ensureProductVariantsSchema(pool);
+
+  const id = productId ?? 0;
+  const { rows } = await pool.query<AdminVariantOptionRow>(
+    `SELECT
+       p.id,
+       p.name,
+       p.variant_label AS color,
+       (SELECT pi.path
+        FROM product_images pi
+        WHERE pi.product_id = p.id
+        ORDER BY pi.sort_order, pi.id
+        LIMIT 1) AS image,
+       EXISTS (
+         SELECT 1
+         FROM product_variant_links v
+         WHERE v.product_id = $1 AND v.variant_product_id = p.id
+       ) AS is_selected
+     FROM products p
+     WHERE p.id <> $1
+     ORDER BY p.name ASC, p.variant_label ASC, p.id ASC`,
+    [id]
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    color: row.color,
+    image: row.image ?? "",
+    isSelected: row.is_selected,
+  }));
 }

@@ -192,12 +192,26 @@ export default function CartPage() {
               <CardContent className="divide-y p-0">
                 {cart.map((item) => (
                   <CartItem
-                    key={`${item.product.id}-${item.selectedSize}`}
+                    key={`${item.product.id}-${item.selectedSize}-${item.selectedColor ?? ""}`}
                     product={item.product}
                     selectedSize={item.selectedSize}
+                    selectedColor={item.selectedColor}
                     quantity={item.quantity}
-                    onUpdateQuantity={(newQuantity: number) => updateQuantity(item.product.id, item.selectedSize, newQuantity)}
-                    onRemove={() => removeFromCart(item.product.id, item.selectedSize)}
+                    onUpdateQuantity={(newQuantity: number) =>
+                      updateQuantity(
+                        item.product.id,
+                        item.selectedSize,
+                        newQuantity,
+                        item.selectedColor
+                      )
+                    }
+                    onRemove={() =>
+                      removeFromCart(
+                        item.product.id,
+                        item.selectedSize,
+                        item.selectedColor
+                      )
+                    }
                   />
                 ))}
               </CardContent>

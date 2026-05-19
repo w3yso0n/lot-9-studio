@@ -95,8 +95,14 @@ export default async function AdminDashboardPage() {
                     <CardDescription className="line-clamp-2">{p.color}</CardDescription>
                   </CardHeader>
                   <CardContent className="px-4 pb-3 flex-1">
-                    <p className="text-xl font-semibold tabular-nums">${p.price.toFixed(2)}</p>
-                    <p className="text-xs text-muted-foreground mt-1">ID · {p.id}</p>
+                    <div className="flex items-center justify-start gap-3">
+                      {p.oldPrice != null && p.oldPrice > 1 && p.oldPrice > p.price ? (
+                        <span className="text-sm text-muted-foreground line-through">
+                          ${p.oldPrice.toFixed(2)}
+                        </span>
+                      ) : null}
+                      <p className="text-xl font-semibold tabular-nums">${p.price.toFixed(2)}</p>
+                    </div>
                   </CardContent>
                   <CardFooter className="px-4 pb-4 pt-0 mt-auto border-t bg-muted/20">
                     <Button asChild className="w-full" variant="default">

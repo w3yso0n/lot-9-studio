@@ -10,7 +10,8 @@ interface ProductProps {
     id: number;
     name: string;
     price: number;
-    oldPrice?: number;
+    oldPrice?: number | null;
+    code?: string | number;
     images: string[];
     stockBySize: { [size: string]: number };
     sizes: string[];
@@ -22,15 +23,15 @@ interface ProductProps {
 export const ProductCard = ({ product, className }: ProductProps) => {
   const mainImage = product.images[0];
   const hasImage = Boolean(mainImage?.trim());
+  const oldPrice = product.oldPrice;
 
-  // Verificar si hay stock en alguna talla
   const hasStock = product.sizes.some((size) => product.stockBySize[size] > 0);
 
-  // Verificar si debe mostrarse precio anterior
   const showOldPrice =
-    product.oldPrice !== undefined &&
-    product.oldPrice > 1 &&
-    product.oldPrice > product.price;
+    oldPrice !== undefined &&
+    oldPrice !== null &&
+    oldPrice > 1 &&
+    oldPrice > product.price;
 
   return (
     <motion.div
@@ -42,7 +43,6 @@ export const ProductCard = ({ product, className }: ProductProps) => {
       <Card className="w-full shadow-lg rounded-xl bg-white dark:bg-gray-800 overflow-hidden">
         <Link href={`/products/${product.id}`}>
           <CardContent className="p-0 flex flex-col cursor-pointer">
-            {/* Contenedor de imagen */}
             <div className="relative w-full h-[360px] sm:h-[300px] md:h-[350px] lg:h-[400px] overflow-hidden bg-muted">
               {hasImage ? (
                 <Image
@@ -57,7 +57,6 @@ export const ProductCard = ({ product, className }: ProductProps) => {
                 </div>
               )}
 
-              {/* Mostrar sold out si no hay stock en ninguna talla */}
               {!hasStock && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                   <Image
@@ -71,17 +70,15 @@ export const ProductCard = ({ product, className }: ProductProps) => {
               )}
             </div>
 
-            {/* Información del producto */}
             <div className="p-4 space-y-3">
               <h3 className="text-base sm:text-base md:text-lg font-bold text-center group-hover:text-gray-800 dark:group-hover:text-gray-200 text-gray-900 dark:text-white transition-colors">
                 {product.name}
               </h3>
 
-              {/* Precio */}
-              <div className="flex items-center justify-center gap-2">
+              <div className="flex flex-col items-center justify-center gap-1">
                 {showOldPrice && (
                   <span className="text-sm sm:text-base font-medium text-gray-500 dark:text-gray-400 line-through">
-                    ${product.oldPrice?.toFixed(2)}
+                    ${oldPrice.toFixed(2)}
                   </span>
                 )}
 

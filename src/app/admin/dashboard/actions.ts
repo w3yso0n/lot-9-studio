@@ -77,6 +77,9 @@ export async function saveProductAction(
   const pendingFiles = formData
     .getAll("pending_images")
     .filter((v): v is File => typeof v !== "string" && v instanceof File);
+  const pendingVariantFiles = formData
+    .getAll("pending_color_variant_images")
+    .filter((v): v is File => typeof v !== "string" && v instanceof File);
 
   if (!input.name) {
     return { error: "El nombre es obligatorio." };
@@ -86,6 +89,8 @@ export async function saveProductAction(
   }
 
   let imagePaths = input.imagePaths;
+  let colorVariants = input.colorVariants;
+  let uploadedVariantImages: string[] = [];
 
   // Producto nuevo: imágenes en `pending_images` (no se suben a Cloudinary hasta guardar).
   if (!idRaw && pendingFiles.length > 0) {
@@ -113,11 +118,57 @@ export async function saveProductAction(
     }
   }
 
-  if (imagePaths.length === 0) {
+  if (
+    imagePaths.length === 0 &&
+    pendingVariantFiles.length === 0 &&
+    !colorVariants.some((variant) => variant.imagePaths.some(Boolean))
+  ) {
     return { error: "Añade al menos una imagen (sube archivos y guarda, o indica una ruta)." };
   }
 
-  const inputWithImages: typeof input = { ...input, imagePaths };
+  if (!idRaw && pendingVariantFiles.length > 0) {
+    const uploaded: string[] = [];
+    try {
+      for (const file of pendingVariantFiles) {
+        if (file.size === 0) {
+          throw new Error("Archivo vacio.");
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          throw new Error("El archivo supera 5 MB.");
+        }
+        if (!MIME_EXT[file.type]) {
+          throw new Error("Formato no permitido. Usa JPEG, PNG, WebP o GIF.");
+        }
+        const buf = Buffer.from(await file.arrayBuffer());
+        uploaded.push(await persistProductImageFromBuffer(buf, file.type));
+      }
+
+      let pendingIndex = 0;
+      colorVariants = colorVariants
+        .map((variant) => ({
+          ...variant,
+          imagePaths: variant.imagePaths.map((imagePath) => {
+            if (imagePath) return imagePath;
+            return uploaded[pendingIndex++] ?? "";
+          }),
+        }))
+        .filter((variant) => variant.imagePaths.some(Boolean));
+      uploadedVariantImages = uploaded;
+    } catch (e) {
+      for (const u of [...imagePaths, ...uploaded]) {
+        await deletePanelUploadFile(u);
+      }
+      return { error: toUserFacingUploadError(e) };
+    }
+  }
+
+  imagePaths = colorVariants[0]?.imagePaths.filter(Boolean) ?? imagePaths;
+
+  if (imagePaths.length === 0) {
+    return { error: "Agrega al menos un color del modelo con una imagen." };
+  }
+
+  const inputWithImages: typeof input = { ...input, imagePaths, colorVariants };
 
   try {
     if (idRaw) {
@@ -128,8 +179,8 @@ export async function saveProductAction(
       await insertProduct(inputWithImages);
     }
   } catch (e) {
-    if (!idRaw && pendingFiles.length > 0) {
-      for (const u of imagePaths) {
+    if (!idRaw && (pendingFiles.length > 0 || uploadedVariantImages.length > 0)) {
+      for (const u of [...imagePaths, ...uploadedVariantImages]) {
         await deletePanelUploadFile(u);
       }
     }

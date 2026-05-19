@@ -17,12 +17,20 @@ interface CartItemProps {
     color?: string;
   };
   selectedSize: string;
+  selectedColor?: string;
   quantity: number;
   onUpdateQuantity: (newQuantity: number) => void;
   onRemove: () => void;
 }
 
-const CartItem = ({ product, selectedSize, quantity, onUpdateQuantity, onRemove }: CartItemProps) => {
+const CartItem = ({
+  product,
+  selectedSize,
+  selectedColor,
+  quantity,
+  onUpdateQuantity,
+  onRemove,
+}: CartItemProps) => {
   const { increaseQuantity, decreaseQuantity } = useCartStore();
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,7 +108,7 @@ const CartItem = ({ product, selectedSize, quantity, onUpdateQuantity, onRemove 
               variant="ghost"
               size="icon"
               className="h-8 w-8 hover:bg-gray-200 dark:hover:bg-gray-600"
-              onClick={() => decreaseQuantity(product.id, selectedSize)}
+              onClick={() => decreaseQuantity(product.id, selectedSize, selectedColor)}
               disabled={quantity <= 1}
             >
               <Minus className="h-4 w-4" />
@@ -120,7 +128,7 @@ const CartItem = ({ product, selectedSize, quantity, onUpdateQuantity, onRemove 
               variant="ghost"
               size="icon"
               className="h-8 w-8 hover:bg-gray-200 dark:hover:bg-gray-600"
-              onClick={() => increaseQuantity(product.id, selectedSize)}
+              onClick={() => increaseQuantity(product.id, selectedSize, selectedColor)}
             >
               <Plus className="h-4 w-4" />
             </Button>
