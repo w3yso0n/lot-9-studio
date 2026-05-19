@@ -2,7 +2,9 @@ import type { Pool, PoolClient } from "pg";
 
 type Db = Pool | PoolClient;
 
-export async function ensureProductVariantsSchema(db: Db): Promise<void> {
+let schemaReady: Promise<void> | null = null;
+
+async function runProductVariantsSchemaMigrations(db: Db): Promise<void> {
   await db.query(`
     CREATE TABLE IF NOT EXISTS product_variant_links (
       product_id INTEGER NOT NULL REFERENCES products (id) ON DELETE CASCADE,
@@ -55,4 +57,15 @@ export async function ensureProductVariantsSchema(db: Db): Promise<void> {
       PRIMARY KEY (color_variant_id, size)
     )
   `);
+}
+
+/** Ejecuta migraciones idempotentes una sola vez por proceso (no en cada lectura). */
+export async function ensureProductVariantsSchema(db: Db): Promise<void> {
+  if (!schemaReady) {
+    schemaReady = runProductVariantsSchemaMigrations(db).catch((err) => {
+      schemaReady = null;
+      throw err;
+    });
+  }
+  await schemaReady;
 }

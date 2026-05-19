@@ -1,6 +1,7 @@
 import type { CatalogProduct } from "@/lib/catalog-product";
 import { CATALOG_SIZE_ORDER } from "@/lib/catalog-sizes";
 import { getPool } from "@/lib/db";
+import { sanitizeProductImagePaths } from "@/lib/product-image-url";
 import { ensureProductVariantsSchema } from "@/lib/product-variants-schema";
 import { unstable_cache } from "next/cache";
 import type { QueryResultRow } from "pg";
@@ -105,10 +106,10 @@ function rowToProduct(row: ProductRow): CatalogProduct {
     id: row.id,
     code: row.id,
     name: row.name,
-    price,
+    price: Number.isFinite(price) ? price : 0,
     oldPrice: parseOldPrice(row.old_price),
     color: row.color,
-    images: parseJsonArray(row.images),
+    images: sanitizeProductImagePaths(parseJsonArray(row.images)),
     stockBySize,
     sizes,
     colors: parseJsonArray(row.colors),
@@ -152,13 +153,20 @@ async function getColorVariantsForProduct(productId: number) {
     [productId]
   );
 
-  return rows.map((row) => ({
-    label: row.label,
-    images: parseJsonArray(row.images).length > 0
-      ? parseJsonArray(row.images)
-      : [row.image_path].filter(Boolean),
-    stockBySize: parseStock(row.stock_by_size),
-  }));
+  return rows
+    .map((row) => {
+      const fromGallery = sanitizeProductImagePaths(parseJsonArray(row.images));
+      const images =
+        fromGallery.length > 0
+          ? fromGallery
+          : sanitizeProductImagePaths([row.image_path]);
+      return {
+        label: row.label,
+        images,
+        stockBySize: parseStock(row.stock_by_size),
+      };
+    })
+    .filter((row) => row.images.length > 0);
 }
 
 function rowToCatalogGridProduct(row: CatalogGridRow): CatalogProduct {
@@ -301,7 +309,7 @@ export const getNewDrops = unstable_cache(fetchNewDrops, ["catalog-new-drops"], 
   tags: ["catalog"],
 });
 
-export async function getProductById(
+async function fetchProductById(
   id: number,
   opts?: { includeUnpublished?: boolean }
 ): Promise<CatalogProduct | null> {
@@ -332,16 +340,40 @@ export async function getProductById(
      ORDER BY v.sort_order, vp.id`,
     [id]
   );
+  const colorVariants = await getColorVariantsForProduct(id);
+  const sizes =
+    product.sizes.length > 0
+      ? product.sizes
+      : normalizeSizes([], product.stockBySize);
   return {
     ...product,
+    sizes,
     variants: variants.map((v) => ({
       id: v.id,
       name: v.name,
       color: v.color,
-      image: v.image ?? "",
+      image: v.image?.trim() ?? "",
     })),
-    colorVariants: await getColorVariantsForProduct(id),
+    colorVariants,
   };
+}
+
+function getCachedStorefrontProductById(id: number) {
+  return unstable_cache(
+    () => fetchProductById(id),
+    ["catalog-product-detail", String(id)],
+    { revalidate: 60, tags: ["catalog", `product-${id}`] }
+  )();
+}
+
+export async function getProductById(
+  id: number,
+  opts?: { includeUnpublished?: boolean }
+): Promise<CatalogProduct | null> {
+  if (opts?.includeUnpublished) {
+    return fetchProductById(id, opts);
+  }
+  return getCachedStorefrontProductById(id);
 }
 
 export type AdminProductRow = CatalogProduct & {

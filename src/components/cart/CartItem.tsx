@@ -1,11 +1,11 @@
 "use client";
 
+import { ProductImage } from "@/components/products/ProductImage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCartStore } from "@/store/cart";
 import { motion } from "framer-motion";
 import { Minus, Plus, Trash2 } from "lucide-react";
-import Image from "next/image";
 
 interface CartItemProps {
   product: {
@@ -43,6 +43,7 @@ const CartItem = ({
   const discountedPrice = product.discount 
     ? product.price * (1 - product.discount)
     : product.price;
+  const cartImage = product.images?.find((img) => img.trim()) ?? "";
 
   return (
     <motion.div 
@@ -59,13 +60,19 @@ const CartItem = ({
           whileHover={{ scale: 1.05 }}
           transition={{ duration: 0.2 }}
         >
-          <Image
-            src={product.images[0]}
-            alt={product.name}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-            sizes="96px"
-          />
+          {cartImage ? (
+            <ProductImage
+              src={cartImage}
+              alt={product.name}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              sizes="96px"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-muted text-[10px] text-muted-foreground">
+              Sin imagen
+            </div>
+          )}
         </motion.div>
         
         <div className="flex-1">

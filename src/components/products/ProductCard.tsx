@@ -1,5 +1,6 @@
 "use client";
 
+import { ProductImage } from "@/components/products/ProductImage";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -45,11 +46,12 @@ export const ProductCard = ({ product, className }: ProductProps) => {
           <CardContent className="p-0 flex flex-col cursor-pointer">
             <div className="relative w-full h-[360px] sm:h-[300px] md:h-[350px] lg:h-[400px] overflow-hidden bg-muted">
               {hasImage ? (
-                <Image
+                <ProductImage
                   src={mainImage}
                   alt={product.name}
                   fill
                   className="object-cover"
+                  sizes="(max-width: 640px) 100vw, 400px"
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground px-4 text-center">

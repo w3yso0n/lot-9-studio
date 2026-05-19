@@ -1,12 +1,28 @@
 "use client";
 
 import { poppins } from "@/app/fonts";
+import { ProductImage } from "@/components/products/ProductImage";
 import { Button } from "@/components/ui/button";
 import type { CatalogProduct } from "@/lib/catalog-product";
+import { CATALOG_SIZE_ORDER } from "@/lib/catalog-sizes";
+import { sanitizeProductImagePaths } from "@/lib/product-image-url";
 import { useCartStore } from "@/store/cart";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+
+function formatPrice(value: number): string {
+  return Number.isFinite(value) ? value.toFixed(2) : "0.00";
+}
+
+function sizesForStock(stock: Record<string, number>, fallback: string[]): string[] {
+  if (fallback.length > 0) return fallback;
+  const keys = Object.keys(stock);
+  return [
+    ...CATALOG_SIZE_ORDER.filter((s) => keys.includes(s)),
+    ...keys.filter((k) => !(CATALOG_SIZE_ORDER as readonly string[]).includes(k)),
+  ];
+}
 
 type Props = { product: CatalogProduct };
 
@@ -18,13 +34,16 @@ export function ProductDetailClient({ product }: Props) {
 
   const withQty = {
     ...product,
-    images: product.images || [],
+    images: sanitizeProductImagePaths(product.images ?? []),
     quantity: 1,
   } as LocalProduct;
 
   const initialColorVariant = withQty.colorVariants?.[0];
-  const initialImages =
-    initialColorVariant?.images?.length ? initialColorVariant.images : withQty.images;
+  const initialImages = sanitizeProductImagePaths(
+    initialColorVariant?.images?.length
+      ? initialColorVariant.images
+      : withQty.images
+  );
   const initialColorLabel =
     initialColorVariant?.label || withQty.color || "Color principal";
   const initialStockBySize =
@@ -40,6 +59,10 @@ export function ProductDetailClient({ product }: Props) {
   );
   const [activeStockBySize, setActiveStockBySize] = useState(
     initialStockBySize
+  );
+  const displaySizes = useMemo(
+    () => sizesForStock(activeStockBySize, withQty.sizes),
+    [activeStockBySize, withQty.sizes]
   );
   const [selectedSize, setSelectedSize] = useState<
     keyof LocalProduct["stockBySize"] | null
@@ -102,11 +125,12 @@ export function ProductDetailClient({ product }: Props) {
               className="relative w-20 h-20 md:w-24 md:h-24 cursor-pointer"
               onClick={() => setMainImage(img)}
             >
-              <Image
+              <ProductImage
                 src={img}
                 alt={`${withQty.name} - Imagen ${index + 1}`}
                 fill
                 className="rounded-lg object-cover border border-gray-200 hover:border-gray-400 transition"
+                sizes="96px"
               />
             </div>
           ))}
@@ -114,13 +138,19 @@ export function ProductDetailClient({ product }: Props) {
 
         <div className="relative w-full max-w-md h-[500px] order-1 md:order-2 p-4">
           {mainImage ? (
-            <Image
+            <ProductImage
               src={mainImage}
               alt={withQty.name}
               fill
               className="rounded-lg object-cover"
+              sizes="(max-width: 768px) 100vw, 448px"
+              priority
             />
-          ) : null}
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-muted text-sm text-muted-foreground">
+              Sin imagen
+            </div>
+          )}
 
           {isOutOfStock && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/50">
@@ -142,12 +172,12 @@ export function ProductDetailClient({ product }: Props) {
           <div className="flex items-center gap-2 mb-1">
             {showOldPrice && (
               <span className="text-sm font-medium text-gray-500 line-through">
-                ${withQty.oldPrice?.toFixed(2)}
+                ${formatPrice(withQty.oldPrice ?? 0)}
               </span>
             )}
 
             <span className="text-gray-900 text-xl font-bold">
-              ${withQty.price.toFixed(2)}
+              ${formatPrice(withQty.price)}
             </span>
           </div>
 
@@ -164,9 +194,10 @@ export function ProductDetailClient({ product }: Props) {
                       onClick={() => {
                         setActiveColorId(variant.id);
                         setActiveColorLabel(variant.label);
-                        setActiveImages(variant.images);
+                        const nextImages = sanitizeProductImagePaths(variant.images);
+                        setActiveImages(nextImages);
                         setActiveStockBySize(variant.stockBySize);
-                        setMainImage(variant.images[0] ?? variant.image);
+                        setMainImage(nextImages[0] ?? variant.image);
                         setSelectedSize(null);
                       }}
                       className={`relative block h-16 w-16 overflow-hidden border bg-white transition ${
@@ -178,13 +209,12 @@ export function ProductDetailClient({ product }: Props) {
                       aria-label={variant.label}
                       aria-pressed={selected}
                     >
-                      <Image
+                      <ProductImage
                         src={variant.image}
                         alt={variant.label}
                         fill
                         className="object-contain p-1"
                         sizes="64px"
-                        unoptimized
                       />
                     </button>
                   );
@@ -205,13 +235,12 @@ export function ProductDetailClient({ product }: Props) {
                       title={variant.color || variant.name}
                     >
                       {variant.image ? (
-                        <Image
+                        <ProductImage
                           src={variant.image}
                           alt={variant.color || variant.name}
                           fill
                           className="object-contain p-1"
                           sizes="64px"
-                          unoptimized
                         />
                       ) : (
                         <span className="flex h-full items-center justify-center px-1 text-center text-[10px] text-gray-500">
@@ -238,7 +267,7 @@ export function ProductDetailClient({ product }: Props) {
           <div className="mt-6">
             <h2 className="text-xl font-semibold mb-2">Tamaños disponibles</h2>
             <div className="flex gap-2">
-              {withQty.sizes.map((size) => {
+              {displaySizes.map((size) => {
                 const key = size as keyof typeof withQty.stockBySize;
                 const isSizeOutOfStock = (activeStockBySize[key] ?? 0) === 0;
 

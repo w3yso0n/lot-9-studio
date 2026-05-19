@@ -55,12 +55,15 @@ async function persistProductImageFromBuffer(buf: Buffer, mimeType: string): Pro
   return `${PRODUCT_UPLOAD_WEB_PREFIX}/${name}`;
 }
 
-function revalidateCatalog() {
+function revalidateCatalog(productId?: number) {
   revalidatePath("/");
   revalidatePath("/products");
   revalidatePath("/products/[id]", "page");
   revalidatePath("/admin/dashboard");
   revalidateTag("catalog");
+  if (productId != null) {
+    revalidateTag(`product-${productId}`);
+  }
 }
 
 export type SaveProductState = { error?: string } | null;
@@ -170,13 +173,15 @@ export async function saveProductAction(
 
   const inputWithImages: typeof input = { ...input, imagePaths, colorVariants };
 
+  let savedProductId: number | undefined;
   try {
     if (idRaw) {
       const id = Number(idRaw);
       if (!Number.isFinite(id)) return { error: "ID de producto inválido." };
       await updateProduct(id, inputWithImages);
+      savedProductId = id;
     } else {
-      await insertProduct(inputWithImages);
+      savedProductId = await insertProduct(inputWithImages);
     }
   } catch (e) {
     if (!idRaw && (pendingFiles.length > 0 || uploadedVariantImages.length > 0)) {
@@ -187,7 +192,7 @@ export async function saveProductAction(
     return { error: toUserFacingProductSaveError(e) };
   }
   try {
-    revalidateCatalog();
+    revalidateCatalog(savedProductId);
   } catch {
     return {
       error:
@@ -246,7 +251,7 @@ export async function deleteProductImageAction(
   if (isOwnedUploadPath(path)) {
     await deletePanelUploadFile(path);
   }
-  revalidateCatalog();
+  revalidateCatalog(productId);
   revalidatePath(`/admin/dashboard/products/${productId}`);
   return { ok: true };
 }
@@ -281,6 +286,6 @@ export async function deleteProductAction(formData: FormData) {
       await deletePanelUploadFile(p);
     }
   }
-  revalidateCatalog();
+  revalidateCatalog(id);
   redirect("/admin/dashboard");
 }
