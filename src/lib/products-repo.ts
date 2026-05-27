@@ -284,6 +284,20 @@ const productSelectList = `
 
 const productSelect = `SELECT ${productSelectList} FROM products p`;
 
+const firstColorVariantImageSql = `
+    (SELECT COALESCE(pcvi.image_path, pcv.image_path)
+     FROM product_color_variants pcv
+     LEFT JOIN LATERAL (
+       SELECT image_path
+       FROM product_color_variant_images pcvi
+       WHERE pcvi.color_variant_id = pcv.id
+       ORDER BY pcvi.sort_order, pcvi.id
+       LIMIT 1
+     ) pcvi ON true
+     WHERE pcv.product_id = p.id
+     ORDER BY pcv.sort_order, pcv.id
+     LIMIT 1)`;
+
 const catalogGridSql = `
   SELECT
     p.id,
@@ -291,11 +305,14 @@ const catalogGridSql = `
     p.price,
     p.old_price,
     p.variant_label AS color,
-    (SELECT pi.path
-     FROM product_images pi
-     WHERE pi.product_id = p.id
-     ORDER BY pi.sort_order, pi.id
-     LIMIT 1) AS cover_image,
+    COALESCE(
+      ${firstColorVariantImageSql},
+      (SELECT pi.path
+       FROM product_images pi
+       WHERE pi.product_id = p.id
+       ORDER BY pi.sort_order, pi.id
+       LIMIT 1)
+    ) AS cover_image,
     EXISTS (
       SELECT 1 FROM product_stock ps
       WHERE ps.product_id = p.id AND ps.quantity > 0
@@ -312,8 +329,26 @@ const newDropsSql = `
     p.old_price,
     p.variant_label AS color,
     COALESCE(
-      (SELECT json_agg(pi.path ORDER BY pi.sort_order, pi.id)
-       FROM product_images pi WHERE pi.product_id = p.id),
+      CASE
+        WHEN EXISTS (SELECT 1 FROM product_color_variants pcv WHERE pcv.product_id = p.id)
+        THEN (
+          SELECT json_agg(pcvi.image_path ORDER BY pcvi.sort_order, pcvi.id)
+          FROM product_color_variants pcv
+          INNER JOIN product_color_variant_images pcvi ON pcvi.color_variant_id = pcv.id
+          WHERE pcv.product_id = p.id
+            AND pcv.id = (
+              SELECT pcv_first.id
+              FROM product_color_variants pcv_first
+              WHERE pcv_first.product_id = p.id
+              ORDER BY pcv_first.sort_order, pcv_first.id
+              LIMIT 1
+            )
+        )
+        ELSE (
+          SELECT json_agg(pi.path ORDER BY pi.sort_order, pi.id)
+          FROM product_images pi WHERE pi.product_id = p.id
+        )
+      END,
       '[]'::json
     ) AS images,
     EXISTS (
@@ -520,11 +555,14 @@ export async function getAdminProductList(): Promise<AdminProductListItem[]> {
        p.variant_label AS color,
        p.is_published,
        (SELECT nd.sort_order FROM new_drop_items nd WHERE nd.product_id = p.id LIMIT 1) AS new_drop_sort,
-       (SELECT pi.path
-        FROM product_images pi
-        WHERE pi.product_id = p.id
-        ORDER BY pi.sort_order, pi.id
-        LIMIT 1) AS cover_image
+       COALESCE(
+         ${firstColorVariantImageSql},
+         (SELECT pi.path
+          FROM product_images pi
+          WHERE pi.product_id = p.id
+          ORDER BY pi.sort_order, pi.id
+          LIMIT 1)
+       ) AS cover_image
      FROM products p
      ORDER BY p.id DESC`
   );

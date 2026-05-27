@@ -65,6 +65,8 @@ type ColorVariantDraft = {
   stockBySize: Record<string, number>;
 };
 
+const SUGGESTED_COLOR_NAMES = ["Negra", "Blanca", "Hueso", "Gris"] as const;
+
 type Props = {
   initial?: AdminProductRow | null;
   /** Vista previa en columna (recomendado en “Nuevo producto”). */
@@ -152,14 +154,14 @@ function appendColorVariantImages(
     );
   }
 
-  const newVariants: ColorVariantDraft[] = newImages.map((image, index) => ({
+  const newVariant: ColorVariantDraft = {
     id: crypto.randomUUID(),
-    label: `Color ${prev.length + index + 1}`,
-    images: [image],
+    label: `Color ${prev.length + 1}`,
+    images: newImages,
     stockBySize: initStockMap(initial),
-  }));
+  };
 
-  return [...prev, ...newVariants];
+  return [...prev, newVariant];
 }
 
 export function ProductEditorForm({
@@ -464,6 +466,18 @@ export function ProductEditorForm({
     colorVariantFileRef.current?.click();
   }
 
+  function addColorVariant() {
+    setColorVariants((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        label: "",
+        images: [],
+        stockBySize: initStockMap(initial),
+      },
+    ]);
+  }
+
   function updateColorVariantLabel(id: string, label: string) {
     setColorVariants((prev) =>
       prev.map((variant) =>
@@ -532,7 +546,6 @@ export function ProductEditorForm({
             images: variant.images.filter((image) => image.id !== imageId),
           };
         })
-        .filter((variant) => variant.images.length > 0)
     );
   }
 
@@ -736,6 +749,11 @@ export function ProductEditorForm({
             guardan en Cloudinary. La primera imagen del primer color es la
             portada en el catálogo.
           </p>
+          <datalist id="suggested-color-names">
+            {SUGGESTED_COLOR_NAMES.map((name) => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
         </div>
 
         <div className="space-y-3 rounded-lg border bg-background p-3">
@@ -808,11 +826,11 @@ export function ProductEditorForm({
           type="button"
           variant="secondary"
           disabled={imgPending || pending}
-          onClick={() => pickColorVariantImage()}
+          onClick={addColorVariant}
         >
           {imgPending
             ? "Subiendo…"
-            : "Añadir colores (varias fotos = varios colores)"}
+            : "Añadir colores"}
         </Button>
 
         {colorVariants.length > 0 ? (
@@ -829,6 +847,7 @@ export function ProductEditorForm({
                       updateColorVariantLabel(variant.id, e.target.value)
                     }
                     placeholder="Nombre del color"
+                    list="suggested-color-names"
                     className="h-9 sm:max-w-xs"
                   />
 
@@ -840,7 +859,7 @@ export function ProductEditorForm({
                       disabled={imgPending || pending}
                       onClick={() => pickColorVariantImage(variant.id)}
                     >
-                      Añadir foto
+                      Subir fotos
                     </Button>
 
                     <button
@@ -887,6 +906,11 @@ export function ProductEditorForm({
                     );
                   })}
                 </ul>
+                {variant.images.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Sube una o varias imágenes para este color.
+                  </p>
+                ) : null}
 
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {sortSizesSelected(selectedSizes).map((size) => (

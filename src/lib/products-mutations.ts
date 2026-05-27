@@ -258,7 +258,16 @@ export async function listProductImagePaths(productId: number): Promise<string[]
   const pool = getPool();
 
   const { rows } = await pool.query<{ path: string }>(
-    `SELECT path FROM product_images WHERE product_id = $1`,
+    `SELECT path FROM product_images WHERE product_id = $1
+     UNION
+     SELECT pcv.image_path AS path
+     FROM product_color_variants pcv
+     WHERE pcv.product_id = $1
+     UNION
+     SELECT pcvi.image_path AS path
+     FROM product_color_variant_images pcvi
+     INNER JOIN product_color_variants pcv ON pcv.id = pcvi.color_variant_id
+     WHERE pcv.product_id = $1`,
     [productId]
   );
 
@@ -396,7 +405,8 @@ export function parseProductForm(form: FormData): ProductMutationInput {
         label,
         imagePaths: (colorVariantImages[index] ?? "")
           .split("|")
-          .map((s) => (s.trim() === "__pending__" ? "" : s.trim())),
+          .map((s) => (s.trim() === "__pending__" ? "" : s.trim()))
+          .filter(Boolean),
         stockBySize: variantStockBySize,
       };
     })
