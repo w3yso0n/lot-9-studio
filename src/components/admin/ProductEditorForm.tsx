@@ -28,7 +28,6 @@ import {
   useMemo,
   useRef,
   useState,
-  useTransition,
 } from "react";
 
 const IMAGE_OK_TYPES = [
@@ -54,6 +53,10 @@ type ColorVariantImageDraft = {
   imagePath: string;
   preview?: string;
   file?: File;
+};
+type UploadingPreview = {
+  id: string;
+  preview: string;
 };
 type ColorVariantDraft = {
   id: string;
@@ -202,10 +205,12 @@ export function ProductEditorForm({
     initial?.new_drop_sort != null
   );
   const [uploadMsg, setUploadMsg] = useState<string | null>(null);
-  const [imgPending, startImgTransition] = useTransition();
+  const [imgPending, setImgPending] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState<UploadingPreview[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
   const colorVariantFileRef = useRef<HTMLInputElement>(null);
   const colorVariantUploadTargetRef = useRef<string | null>(null);
+  const uploadingImagesRef = useRef<UploadingPreview[]>([]);
   const colorVariantsRef = useRef<ColorVariantDraft[]>([]);
 
   const productId = initial?.id;
@@ -227,8 +232,8 @@ export function ProductEditorForm({
       .filter(Boolean);
     if (fromVariant && fromVariant.length > 0) return fromVariant;
     if (imagePaths.length > 0) return imagePaths;
-    return [];
-  }, [colorVariants, imagePaths]);
+    return uploadingImages.map((image) => image.preview);
+  }, [colorVariants, imagePaths, uploadingImages]);
   const previewStockBySize = CATALOG_SIZE_ORDER.reduce<Record<string, number>>(
     (acc, size) => {
       acc[size] =
@@ -242,10 +247,14 @@ export function ProductEditorForm({
     },
     {}
   );
+  uploadingImagesRef.current = uploadingImages;
   colorVariantsRef.current = colorVariants;
 
   useEffect(() => {
     return () => {
+      for (const image of uploadingImagesRef.current) {
+        URL.revokeObjectURL(image.preview);
+      }
       for (const variant of colorVariantsRef.current) {
         for (const image of variant.images) {
           if (image.preview) URL.revokeObjectURL(image.preview);
@@ -265,6 +274,7 @@ export function ProductEditorForm({
     setColorVariants(initColorVariants(initial));
     setIsPublished(initial?.is_published ?? true);
     setIsNewDrop(initial?.new_drop_sort != null);
+    setUploadingImages([]);
   }, [
     initial?.id,
     initial?.name,
@@ -323,9 +333,17 @@ export function ProductEditorForm({
       }
     }
 
-    startImgTransition(async () => {
+    const previews = files.map((file) => ({
+      id: crypto.randomUUID(),
+      preview: URL.createObjectURL(file),
+    }));
+    setUploadingImages((prev) => [...prev, ...previews]);
+    setImgPending(true);
+    void (async () => {
         try {
-          for (const file of files) {
+          for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const preview = previews[i];
             const fd = new FormData();
             fd.append("file", file);
             const res = await uploadProductImageAction(fd);
@@ -335,6 +353,10 @@ export function ProductEditorForm({
             }
             if (res.path) {
               setImagePaths((prev) => [...prev, res.path!]);
+              setUploadingImages((prev) =>
+                prev.filter((image) => image.id !== preview.id)
+              );
+              URL.revokeObjectURL(preview.preview);
             }
           }
         } catch {
@@ -342,14 +364,24 @@ export function ProductEditorForm({
             "No se pudo subir la imagen (fallo de red o del servidor). Comprueba la conexión e inténtalo de nuevo."
           );
         }
-    });
+        finally {
+        setUploadingImages((prev) =>
+          prev.filter(
+            (image) => !previews.some((preview) => preview.id === image.id)
+          )
+        );
+        for (const preview of previews) URL.revokeObjectURL(preview.preview);
+        setImgPending(false);
+      }
+    })();
 
   }
 
   function removeImage(path: string) {
     setUploadMsg(null);
 
-    startImgTransition(async () => {
+    setImgPending(true);
+    void (async () => {
       try {
         if (productId != null) {
           const r = await deleteProductImageAction(productId, path);
@@ -371,7 +403,10 @@ export function ProductEditorForm({
       } catch {
           setUploadMsg("No se pudo quitar la imagen. Inténtalo de nuevo.");
         }
-    });
+      finally {
+        setImgPending(false);
+      }
+    })();
   }
 
   function onPickColorVariantFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -392,7 +427,8 @@ export function ProductEditorForm({
     const targetId = colorVariantUploadTargetRef.current;
     colorVariantUploadTargetRef.current = null;
 
-    startImgTransition(async () => {
+    setImgPending(true);
+    void (async () => {
         try {
           const uploaded: ColorVariantImageDraft[] = [];
           for (const file of files) {
@@ -417,7 +453,10 @@ export function ProductEditorForm({
         } catch {
           setUploadMsg("No se pudo subir la imagen. Inténtalo de nuevo.");
         }
-    });
+      finally {
+        setImgPending(false);
+      }
+    })();
   }
 
   function pickColorVariantImage(variantId?: string) {
@@ -609,7 +648,7 @@ export function ProductEditorForm({
                 : "Añadir imágenes"}
           </Button>
 
-          {imagePaths.length > 0 ? (
+          {imagePaths.length > 0 || uploadingImages.length > 0 ? (
             <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {imagePaths.map((src) => (
                 <li
@@ -633,6 +672,24 @@ export function ProductEditorForm({
                     Quitar
                   </button>
                   <input type="hidden" name="images" value={src} />
+                </li>
+              ))}
+              {uploadingImages.map((image) => (
+                <li
+                  key={image.id}
+                  className="relative aspect-square rounded-lg border bg-background overflow-hidden"
+                >
+                  <Image
+                    src={image.preview}
+                    alt=""
+                    fill
+                    className="object-contain p-1 opacity-70"
+                    sizes="200px"
+                    unoptimized
+                  />
+                  <span className="absolute inset-x-2 bottom-2 rounded bg-black/70 px-2 py-1 text-center text-xs text-white">
+                    Subiendo...
+                  </span>
                 </li>
               ))}
             </ul>
