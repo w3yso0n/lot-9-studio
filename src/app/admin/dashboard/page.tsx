@@ -39,9 +39,14 @@ export default async function AdminDashboardPage() {
             {loadError ? "—" : `${rows.length} ${rows.length === 1 ? "producto" : "productos"}`}
           </p>
         </div>
-        <Button asChild size="lg" className="shrink-0 w-full sm:w-auto">
-          <Link href="/admin/dashboard/products/new">+ Nuevo producto</Link>
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button asChild variant="outline" size="lg" className="shrink-0 w-full sm:w-auto">
+            <Link href="/admin/dashboard/home-settings">Configuración Home</Link>
+          </Button>
+          <Button asChild size="lg" className="shrink-0 w-full sm:w-auto">
+            <Link href="/admin/dashboard/products/new">+ Nuevo producto</Link>
+          </Button>
+        </div>
       </div>
 
       {loadError ? (

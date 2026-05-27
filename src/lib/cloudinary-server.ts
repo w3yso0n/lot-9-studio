@@ -2,6 +2,8 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { isCloudinaryPanelUrl } from "@/lib/product-upload-paths";
 
+type CloudinaryResourceType = "image" | "video";
+
 type CloudinaryEnv = {
   cloudName: string;
   apiKey: string;
@@ -38,7 +40,8 @@ function sign(params: Record<string, string | number>, apiSecret: string): strin
 export async function uploadToCloudinary(
   fileBuffer: Buffer,
   mimeType: string,
-  publicIdBase: string
+  publicIdBase: string,
+  resourceType: CloudinaryResourceType = "image"
 ): Promise<string> {
   const env = readCloudinaryEnv();
   if (!env) {
@@ -59,10 +62,13 @@ export async function uploadToCloudinary(
   form.append("folder", env.folder);
   form.append("public_id", publicIdBase);
   form.append("signature", signature);
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${env.cloudName}/image/upload`, {
-    method: "POST",
-    body: form,
-  });
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${env.cloudName}/${resourceType}/upload`,
+    {
+      method: "POST",
+      body: form,
+    }
+  );
   const data = (await res.json()) as { secure_url?: string; error?: { message?: string } };
   if (!res.ok || !data.secure_url) {
     const reason = data.error?.message || "Upload rechazado por Cloudinary.";

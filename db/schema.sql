@@ -97,6 +97,19 @@ CREATE TABLE IF NOT EXISTS product_color_variant_stock (
   PRIMARY KEY (color_variant_id, size)
 );
 
+CREATE TABLE IF NOT EXISTS home_settings (
+  id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+  hero_title TEXT NOT NULL DEFAULT '',
+  hero_subtitle TEXT NOT NULL DEFAULT '',
+  hero_button_text TEXT NOT NULL DEFAULT '',
+  hero_button_href TEXT NOT NULL DEFAULT '/products',
+  hero_image_url TEXT,
+  featured_video_url TEXT,
+  is_hero_enabled BOOLEAN NOT NULL DEFAULT true,
+  is_video_enabled BOOLEAN NOT NULL DEFAULT true,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 UPDATE products p
 SET cover_image_path = COALESCE(
   (
