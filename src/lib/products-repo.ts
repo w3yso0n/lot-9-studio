@@ -14,6 +14,7 @@ type ProductRow = QueryResultRow & {
   price: string | number;
   old_price?: string | number | null;
   color: string;
+  cover_image?: string | null;
   product_desc: string;
   images: unknown;
   stock_by_size: unknown;
@@ -37,6 +38,7 @@ type NewDropRow = QueryResultRow & {
   price: string | number;
   old_price?: string | number | null;
   color: string;
+  cover_image: string | null;
   images: unknown;
   in_stock: boolean;
 };
@@ -99,6 +101,7 @@ function rowToProduct(row: ProductRow): CatalogProduct {
   const stockBySize = parseStock(row.stock_by_size);
   const sizes = normalizeSizes(parseJsonArray(row.sizes), stockBySize);
   const price = typeof row.price === "string" ? parseFloat(row.price) : row.price;
+  const cover = sanitizeProductImagePaths([row.cover_image ?? ""])[0] ?? null;
   return {
     id: row.id,
     code: row.id,
@@ -107,11 +110,19 @@ function rowToProduct(row: ProductRow): CatalogProduct {
     oldPrice: parseOldPrice(row.old_price),
     color: row.color,
     images: sanitizeProductImagePaths(parseJsonArray(row.images)),
+    coverImage: cover,
     stockBySize,
     sizes,
     colors: parseJsonArray(row.colors),
     desc: row.product_desc ?? "",
   };
+}
+
+function prioritizeCoverImage(images: string[], coverImage?: string | null): string[] {
+  const sanitized = sanitizeProductImagePaths(images);
+  const cover = sanitizeProductImagePaths([coverImage ?? ""])[0];
+  if (!cover) return sanitized;
+  return [cover, ...sanitized.filter((image) => image !== cover)];
 }
 
 function parseOldPrice(value: unknown): number | undefined {
@@ -227,6 +238,7 @@ function rowToCatalogGridProduct(row: CatalogGridRow): CatalogProduct {
     oldPrice: parseOldPrice(row.old_price),
     color: row.color,
     images: sanitizeProductImagePaths(cover ? [cover] : []),
+    coverImage: cover || null,
     stockBySize: {},
     sizes: [],
     colors: [],
@@ -237,6 +249,7 @@ function rowToCatalogGridProduct(row: CatalogGridRow): CatalogProduct {
 
 function rowToNewDropProduct(row: NewDropRow): CatalogProduct {
   const price = typeof row.price === "string" ? parseFloat(row.price) : row.price;
+  const cover = row.cover_image == null ? "" : String(row.cover_image);
   return {
     id: row.id,
     code: row.id,
@@ -244,7 +257,8 @@ function rowToNewDropProduct(row: NewDropRow): CatalogProduct {
     price: Number.isFinite(price) ? price : 0,
     oldPrice: parseOldPrice(row.old_price),
     color: row.color,
-    images: sanitizeProductImagePaths(parseJsonArray(row.images)),
+    images: prioritizeCoverImage(parseJsonArray(row.images), cover),
+    coverImage: cover || null,
     stockBySize: {},
     sizes: [],
     colors: [],
@@ -259,6 +273,7 @@ const productSelectList = `
   p.price,
   p.old_price,
   p.variant_label AS color,
+  p.cover_image_path AS cover_image,
   COALESCE(p.description, '') AS product_desc,
   COALESCE(
     (SELECT json_agg(pi.path ORDER BY pi.sort_order, pi.id)
@@ -298,6 +313,17 @@ const firstColorVariantImageSql = `
      ORDER BY pcv.sort_order, pcv.id
      LIMIT 1)`;
 
+const fallbackProductCoverSql = `
+    COALESCE(
+      NULLIF(p.cover_image_path, ''),
+      ${firstColorVariantImageSql},
+      (SELECT pi.path
+       FROM product_images pi
+       WHERE pi.product_id = p.id
+       ORDER BY pi.sort_order, pi.id
+       LIMIT 1)
+    )`;
+
 const catalogGridSql = `
   SELECT
     p.id,
@@ -305,14 +331,7 @@ const catalogGridSql = `
     p.price,
     p.old_price,
     p.variant_label AS color,
-    COALESCE(
-      ${firstColorVariantImageSql},
-      (SELECT pi.path
-       FROM product_images pi
-       WHERE pi.product_id = p.id
-       ORDER BY pi.sort_order, pi.id
-       LIMIT 1)
-    ) AS cover_image,
+    ${fallbackProductCoverSql} AS cover_image,
     EXISTS (
       SELECT 1 FROM product_stock ps
       WHERE ps.product_id = p.id AND ps.quantity > 0
@@ -328,6 +347,7 @@ const newDropsSql = `
     p.price,
     p.old_price,
     p.variant_label AS color,
+    ${fallbackProductCoverSql} AS cover_image,
     COALESCE(
       CASE
         WHEN EXISTS (SELECT 1 FROM product_color_variants pcv WHERE pcv.product_id = p.id)
@@ -398,6 +418,7 @@ const productDetailSelectList = `
   p.price,
   p.old_price,
   p.variant_label AS color,
+  p.cover_image_path AS cover_image,
   COALESCE(p.description, '') AS product_desc,
   COALESCE(
   CASE
@@ -555,14 +576,7 @@ export async function getAdminProductList(): Promise<AdminProductListItem[]> {
        p.variant_label AS color,
        p.is_published,
        (SELECT nd.sort_order FROM new_drop_items nd WHERE nd.product_id = p.id LIMIT 1) AS new_drop_sort,
-       COALESCE(
-         ${firstColorVariantImageSql},
-         (SELECT pi.path
-          FROM product_images pi
-          WHERE pi.product_id = p.id
-          ORDER BY pi.sort_order, pi.id
-          LIMIT 1)
-       ) AS cover_image
+       ${fallbackProductCoverSql} AS cover_image
      FROM products p
      ORDER BY p.id DESC`
   );

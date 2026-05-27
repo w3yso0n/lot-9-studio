@@ -17,6 +17,7 @@ export type AdminStorefrontPreviewProps = {
   name: string;
   price: number;
   images: string[];
+  coverImage?: string;
   variantLabel: string;
   description: string;
   sizes: string[];
@@ -46,6 +47,7 @@ export function AdminStorefrontPreview({
   name,
   price,
   images,
+  coverImage = "",
   variantLabel,
   description,
   sizes,
@@ -96,7 +98,7 @@ export function AdminStorefrontPreview({
   const activeLabel = active?.label ?? variantLabel;
   const activeStock = active?.stockBySize ?? stockBySize;
 
-  const catalogCover = options[0]?.images[0] ?? images[0] ?? "";
+  const catalogCover = coverImage || options[0]?.images[0] || images[0] || "";
   const catalogStock = aggregateStock(options, sizes, stockBySize);
   const catalogHasStock = sizes.some((size) => (catalogStock[size] ?? 0) > 0);
   const activeHasStock = sizes.some((size) => (activeStock[size] ?? 0) > 0);

@@ -13,6 +13,7 @@ export type ProductMutationInput = {
   description: string;
   isPublished: boolean;
   imagePaths: string[];
+  coverImagePath: string;
   colorFilters: string[];
   sizeOrder: string[];
   stockBySize: Record<string, number>;
@@ -128,6 +129,29 @@ async function replaceChildRows(
   }
 }
 
+function firstProductImage(input: ProductMutationInput): string {
+  return (
+    input.colorVariants
+      .flatMap((variant) => variant.imagePaths)
+      .map((path) => path.trim())
+      .find(Boolean) ??
+    input.imagePaths.map((path) => path.trim()).find(Boolean) ??
+    ""
+  );
+}
+
+function resolveCoverImagePath(input: ProductMutationInput): string | null {
+  const allImages = new Set([
+    ...input.imagePaths.map((path) => path.trim()).filter(Boolean),
+    ...input.colorVariants.flatMap((variant) =>
+      variant.imagePaths.map((path) => path.trim()).filter(Boolean)
+    ),
+  ]);
+  const requested = input.coverImagePath.trim();
+  if (requested && allImages.has(requested)) return requested;
+  return firstProductImage(input) || null;
+}
+
 export async function insertProduct(input: ProductMutationInput): Promise<number> {
   const pool = getPool();
   const client = await pool.connect();
@@ -141,16 +165,18 @@ export async function insertProduct(input: ProductMutationInput): Promise<number
         price,
         old_price,
         variant_label,
+        cover_image_path,
         description,
         is_published
       )
-       VALUES ($1, $2, $3, $4, $5, $6)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING id`,
       [
         input.name,
         input.price,
         input.oldPrice,
         input.variantLabel,
+        resolveCoverImagePath(input),
         input.description,
         input.isPublished,
       ]
@@ -212,15 +238,17 @@ export async function updateProduct(id: number, input: ProductMutationInput): Pr
         price = $2,
         old_price = $3,
         variant_label = $4,
-        description = $5,
-        is_published = $6,
+        cover_image_path = $5,
+        description = $6,
+        is_published = $7,
         updated_at = now()
-       WHERE id = $7`,
+       WHERE id = $8`,
       [
         input.name,
         input.price,
         input.oldPrice,
         input.variantLabel,
+        resolveCoverImagePath(input),
         input.description,
         input.isPublished,
         id,
@@ -286,6 +314,37 @@ export async function deleteProductImageRow(
     [productId, imagePath]
   );
 
+  if ((rowCount ?? 0) > 0) {
+    await pool.query(
+      `UPDATE products p
+       SET cover_image_path = COALESCE(
+         (
+           SELECT pi.path
+           FROM product_images pi
+           WHERE pi.product_id = p.id
+           ORDER BY pi.sort_order, pi.id
+           LIMIT 1
+         ),
+         (
+           SELECT COALESCE(pcvi.image_path, pcv.image_path)
+           FROM product_color_variants pcv
+           LEFT JOIN LATERAL (
+             SELECT image_path
+             FROM product_color_variant_images pcvi
+             WHERE pcvi.color_variant_id = pcv.id
+             ORDER BY pcvi.sort_order, pcvi.id
+             LIMIT 1
+           ) pcvi ON true
+           WHERE pcv.product_id = p.id
+           ORDER BY pcv.sort_order, pcv.id
+           LIMIT 1
+         )
+       )
+       WHERE p.id = $1 AND p.cover_image_path = $2`,
+      [productId, imagePath]
+    );
+  }
+
   return (rowCount ?? 0) > 0;
 }
 
@@ -303,6 +362,7 @@ export function parseProductForm(form: FormData): ProductMutationInput {
       : oldPriceNumber;
 
   const variantLabel = String(form.get("variant_label") ?? "").trim();
+  const coverImagePath = String(form.get("cover_image_path") ?? "").trim();
   const description = String(form.get("description") ?? "").trim();
 
   const isPublished =
@@ -433,6 +493,7 @@ export function parseProductForm(form: FormData): ProductMutationInput {
     description,
     isPublished,
     imagePaths,
+    coverImagePath,
     colorFilters,
     sizeOrder,
     stockBySize: aggregateStockBySize,

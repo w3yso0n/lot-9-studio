@@ -13,6 +13,7 @@ interface ProductProps {
     oldPrice?: number | null;
     code?: string | number;
     images: string[];
+    coverImage?: string | null;
     stockBySize: { [size: string]: number };
     sizes: string[];
     colors: string[];
@@ -22,7 +23,7 @@ interface ProductProps {
 }
 
 export const ProductCard = ({ product, className }: ProductProps) => {
-  const mainImage = product.images[0];
+  const mainImage = product.coverImage || product.images[0];
   const hasImage = Boolean(mainImage?.trim());
   const oldPrice = product.oldPrice;
 

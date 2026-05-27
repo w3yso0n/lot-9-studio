@@ -7,6 +7,7 @@ export type CatalogProduct = {
   code?: string | number;
   color: string;
   images: string[];
+  coverImage?: string | null;
   stockBySize: Record<string, number>;
   sizes: string[];
   colors: string[];

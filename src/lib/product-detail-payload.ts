@@ -16,6 +16,7 @@ export function slimProductForDetailPage(
     desc: product.desc,
     sizes: product.sizes,
     images: hasColorVariants ? [] : product.images,
+    coverImage: product.coverImage,
     stockBySize: hasColorVariants ? {} : product.stockBySize,
     colors: [],
     colorVariants: hasColorVariants ? colorVariants : undefined,

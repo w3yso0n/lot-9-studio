@@ -10,11 +10,15 @@ CREATE TABLE IF NOT EXISTS products (
   price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),
   old_price NUMERIC(10, 2) CHECK (old_price IS NULL OR old_price >= 0),
   variant_label VARCHAR(255) NOT NULL,
+  cover_image_path TEXT,
   description TEXT NOT NULL DEFAULT '',
   is_published BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS cover_image_path TEXT;
 
 CREATE TABLE IF NOT EXISTS product_images (
   id SERIAL PRIMARY KEY,
@@ -92,6 +96,32 @@ CREATE TABLE IF NOT EXISTS product_color_variant_stock (
   quantity INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
   PRIMARY KEY (color_variant_id, size)
 );
+
+UPDATE products p
+SET cover_image_path = COALESCE(
+  (
+    SELECT pi.path
+    FROM product_images pi
+    WHERE pi.product_id = p.id
+    ORDER BY pi.sort_order, pi.id
+    LIMIT 1
+  ),
+  (
+    SELECT COALESCE(pcvi.image_path, pcv.image_path)
+    FROM product_color_variants pcv
+    LEFT JOIN LATERAL (
+      SELECT image_path
+      FROM product_color_variant_images pcvi
+      WHERE pcvi.color_variant_id = pcv.id
+      ORDER BY pcvi.sort_order, pcvi.id
+      LIMIT 1
+    ) pcvi ON true
+    WHERE pcv.product_id = p.id
+    ORDER BY pcv.sort_order, pcv.id
+    LIMIT 1
+  )
+)
+WHERE p.cover_image_path IS NULL;
 
 -- Listados tienda: filtro publicados + orden por id
 CREATE INDEX IF NOT EXISTS idx_products_published_id ON products (is_published, id DESC);

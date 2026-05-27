@@ -164,6 +164,15 @@ function appendColorVariantImages(
   return [...prev, newVariant];
 }
 
+function moveArrayItem<T>(items: T[], fromIndex: number, toIndex: number): T[] {
+  if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return items;
+  const next = [...items];
+  const [item] = next.splice(fromIndex, 1);
+  if (!item) return items;
+  next.splice(toIndex, 0, item);
+  return next;
+}
+
 export function ProductEditorForm({
   initial,
   showLivePreview = false,
@@ -187,6 +196,9 @@ export function ProductEditorForm({
   const [description, setDescription] = useState(initial?.desc ?? "");
   const [imagePaths, setImagePaths] = useState<string[]>(
     () => initial?.images ?? []
+  );
+  const [coverImagePath, setCoverImagePath] = useState(
+    () => initial?.coverImage ?? ""
   );
   const [selectedSizes, setSelectedSizes] = useState<string[]>(() =>
     deriveInitialSelectedSizes(initial)
@@ -236,6 +248,17 @@ export function ProductEditorForm({
     if (imagePaths.length > 0) return imagePaths;
     return uploadingImages.map((image) => image.preview);
   }, [colorVariants, imagePaths, uploadingImages]);
+  const allProductImagePaths = useMemo(
+    () => [
+      ...imagePaths,
+      ...colorVariants.flatMap((variant) =>
+        variant.images.map((image) => image.imagePath).filter(Boolean)
+      ),
+    ],
+    [colorVariants, imagePaths]
+  );
+  const fallbackCoverImagePath = allProductImagePaths[0] ?? "";
+  const effectiveCoverImagePath = coverImagePath || fallbackCoverImagePath;
   const previewStockBySize = CATALOG_SIZE_ORDER.reduce<Record<string, number>>(
     (acc, size) => {
       acc[size] =
@@ -273,6 +296,7 @@ export function ProductEditorForm({
     setOldPriceStr(oldPrice != null ? String(oldPrice) : "");
     setDescription(initial?.desc ?? "");
     setImagePaths(initial?.images ?? []);
+    setCoverImagePath(initial?.coverImage ?? "");
     setColorVariants(initColorVariants(initial));
     setIsPublished(initial?.is_published ?? true);
     setIsNewDrop(initial?.new_drop_sort != null);
@@ -284,9 +308,17 @@ export function ProductEditorForm({
     getInitialOldPrice(initial),
     initial?.desc,
     initial?.images?.join("|"),
+    initial?.coverImage,
     initial?.is_published,
     initial?.new_drop_sort,
   ]);
+
+  useEffect(() => {
+    if (!coverImagePath) return;
+    if (!allProductImagePaths.includes(coverImagePath)) {
+      setCoverImagePath("");
+    }
+  }, [allProductImagePaths, coverImagePath]);
 
   useEffect(() => {
     setSelectedSizes(deriveInitialSelectedSizes(initial));
@@ -381,6 +413,7 @@ export function ProductEditorForm({
 
   function removeImage(path: string) {
     setUploadMsg(null);
+    if (coverImagePath === path) setCoverImagePath("");
 
     setImgPending(true);
     void (async () => {
@@ -512,9 +545,12 @@ export function ProductEditorForm({
     const savedImages = new Set(
       (initial?.colorVariants ?? []).flatMap((variant) => variant.images)
     );
+    const item = colorVariants.find((variant) => variant.id === id);
+    if (item?.images.some((image) => image.imagePath === coverImagePath)) {
+      setCoverImagePath("");
+    }
 
     setColorVariants((prev) => {
-      const item = prev.find((variant) => variant.id === id);
       for (const image of item?.images ?? []) {
         if (image.preview) URL.revokeObjectURL(image.preview);
         if (image.imagePath && !savedImages.has(image.imagePath)) {
@@ -531,6 +567,10 @@ export function ProductEditorForm({
     const savedImages = new Set(
       (initial?.colorVariants ?? []).flatMap((variant) => variant.images)
     );
+    const selectedImage = colorVariants
+      .find((variant) => variant.id === variantId)
+      ?.images.find((image) => image.id === imageId);
+    if (selectedImage?.imagePath === coverImagePath) setCoverImagePath("");
 
     setColorVariants((prev) =>
       prev
@@ -547,6 +587,53 @@ export function ProductEditorForm({
           };
         })
     );
+  }
+
+  function reorderColorVariantImage(
+    variantId: string,
+    fromImageId: string,
+    toImageId: string
+  ) {
+    setColorVariants((prev) =>
+      prev.map((variant) => {
+        if (variant.id !== variantId) return variant;
+        const fromIndex = variant.images.findIndex((image) => image.id === fromImageId);
+        const toIndex = variant.images.findIndex((image) => image.id === toImageId);
+        return {
+          ...variant,
+          images: moveArrayItem(variant.images, fromIndex, toIndex),
+        };
+      })
+    );
+  }
+
+  function onColorVariantImageDragStart(
+    e: React.DragEvent,
+    variantId: string,
+    imageId: string
+  ) {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData(
+      "application/x-lot9-color-image",
+      JSON.stringify({ variantId, imageId })
+    );
+  }
+
+  function onColorVariantImageDrop(
+    e: React.DragEvent,
+    targetVariantId: string,
+    targetImageId: string
+  ) {
+    e.preventDefault();
+    const raw = e.dataTransfer.getData("application/x-lot9-color-image");
+    if (!raw) return;
+    try {
+      const source = JSON.parse(raw) as { variantId?: string; imageId?: string };
+      if (source.variantId !== targetVariantId || !source.imageId) return;
+      reorderColorVariantImage(targetVariantId, source.imageId, targetImageId);
+    } catch {
+      return;
+    }
   }
 
   const formInner = (
@@ -582,6 +669,7 @@ export function ProductEditorForm({
       </div>
 
       <input type="hidden" name="variant_label" value={variantLabelForSubmit} />
+      <input type="hidden" name="cover_image_path" value={coverImagePath} />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
@@ -684,6 +772,15 @@ export function ProductEditorForm({
                   >
                     Quitar
                   </button>
+                  <label className="absolute left-1 bottom-1 flex items-center gap-1 rounded-md bg-white/90 px-2 py-1 text-xs font-medium text-black shadow-sm">
+                    <input
+                      type="radio"
+                      name="cover_image_picker"
+                      checked={effectiveCoverImagePath === src}
+                      onChange={() => setCoverImagePath(src)}
+                    />
+                    Portada
+                  </label>
                   <input type="hidden" name="images" value={src} />
                 </li>
               ))}
@@ -880,7 +977,15 @@ export function ProductEditorForm({
                     return (
                       <li
                         key={image.id}
-                        className="relative aspect-square overflow-hidden rounded-md border bg-muted"
+                        draggable
+                        onDragStart={(e) =>
+                          onColorVariantImageDragStart(e, variant.id, image.id)
+                        }
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) =>
+                          onColorVariantImageDrop(e, variant.id, image.id)
+                        }
+                        className="relative aspect-square cursor-move overflow-hidden rounded-md border bg-muted"
                       >
                         {src ? (
                           <AdminPreviewImage
@@ -902,6 +1007,16 @@ export function ProductEditorForm({
                         >
                           Quitar
                         </button>
+                        <label className="absolute left-1 bottom-1 flex items-center gap-1 rounded-md bg-white/90 px-2 py-1 text-xs font-medium text-black shadow-sm">
+                          <input
+                            type="radio"
+                            name="cover_image_picker"
+                            checked={effectiveCoverImagePath === image.imagePath}
+                            onChange={() => setCoverImagePath(image.imagePath)}
+                            disabled={!image.imagePath}
+                          />
+                          Portada
+                        </label>
                       </li>
                     );
                   })}
@@ -1029,6 +1144,7 @@ export function ProductEditorForm({
         name={name}
         price={previewPrice}
         images={previewImages}
+        coverImage={effectiveCoverImagePath}
         variantLabel={variantLabelForSubmit}
         description={description}
         sizes={previewSizes}
