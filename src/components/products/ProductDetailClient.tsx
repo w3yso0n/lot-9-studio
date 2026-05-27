@@ -290,7 +290,7 @@ export function ProductDetailClient({ product }: Props) {
             </div>
           ) : null}
 
-          <div className="relative w-full flex-1 aspect-[3/4] max-h-[min(75vh,560px)] min-h-[280px] rounded-lg bg-muted overflow-hidden">
+          <div className="relative w-full max-w-[560px] flex-none aspect-square min-h-[280px] rounded-lg bg-muted overflow-hidden sm:mx-auto lg:mx-0">
             {mainDisplaySrc ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -301,7 +301,7 @@ export function ProductDetailClient({ product }: Props) {
                 fetchPriority={
                   safeColorIndex === 0 && safeMainIndex === 0 ? "high" : "auto"
                 }
-                className="absolute inset-0 h-full w-full object-contain p-2 sm:p-3"
+                className="absolute inset-0 h-full w-full object-contain p-1 sm:p-2"
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
