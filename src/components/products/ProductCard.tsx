@@ -42,67 +42,25 @@ export const ProductCard = ({ product, className }: ProductProps) => {
     product.inStock ??
     product.sizes.some((size) => (product.stockBySize[size] ?? 0) > 0);
 
-  const showOldPrice =
-    oldPrice !== undefined &&
-    oldPrice !== null &&
-    oldPrice > 1 &&
-    oldPrice > product.price;
-
   return (
     <div className={`w-full ${className ?? ""}`}>
       <Card className="w-full shadow-lg rounded-xl bg-white dark:bg-gray-800 overflow-hidden">
         <CardContent className="p-0 flex flex-col">
-          {hoverImage ? (
-            <button
-              type="button"
-              aria-label={`Alternar imagen de ${product.name}`}
-              onMouseEnter={() => setShowHoverImage(true)}
-              onMouseLeave={() => setShowHoverImage(false)}
-              onClick={() => setShowHoverImage((value) => !value)}
-              className="block w-full text-left"
-            >
-              <div className="relative w-full h-[360px] sm:h-[300px] md:h-[350px] lg:h-[400px] overflow-hidden bg-muted">
-                {hasImage ? (
-                  <ProductImage
-                    key={displayImage}
-                    src={displayImage}
-                    alt={product.name}
-                    fill
-                    className="object-cover transition-all duration-300 hover:scale-[1.03]"
-                    sizes="(max-width: 640px) 100vw, 400px"
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground px-4 text-center">
-                    Sin imagen
-                  </div>
-                )}
-
-                {!hasStock && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                    <Image
-                      src="/images/sold_out.png"
-                      alt="Agotado"
-                      width={200}
-                      height={200}
-                      className="opacity-90"
-                    />
-                  </div>
-                )}
-              </div>
-            </button>
-          ) : (
-            <Link
-              href={`/products/${product.id}`}
-              aria-label={`Ver producto ${product.name}`}
-              className="block"
-            >
-              <div className="relative w-full h-[360px] sm:h-[300px] md:h-[350px] lg:h-[400px] overflow-hidden bg-muted">
+          <Link
+            href={`/products/${product.id}`}
+            aria-label={`Ver producto ${product.name}`}
+            className="block w-full text-left"
+            onMouseEnter={hoverImage ? () => setShowHoverImage(true) : undefined}
+            onMouseLeave={hoverImage ? () => setShowHoverImage(false) : undefined}
+          >
+            <div className="relative w-full h-[360px] sm:h-[300px] md:h-[350px] lg:h-[400px] overflow-hidden bg-muted">
               {hasImage ? (
                 <ProductImage
-                  src={mainImage}
+                  key={displayImage}
+                  src={displayImage}
                   alt={product.name}
                   fill
-                  className="object-cover transition-transform duration-300 hover:scale-[1.03]"
+                  className="object-cover transition-all duration-300 hover:scale-[1.03]"
                   sizes="(max-width: 640px) 100vw, 400px"
                 />
               ) : (
@@ -122,20 +80,18 @@ export const ProductCard = ({ product, className }: ProductProps) => {
                   />
                 </div>
               )}
-              </div>
-            </Link>
-          )}
+            </div>
+          </Link>
 
           <div className="p-4 space-y-4">
-            <Link href={`/products/${product.id}`} className="block">
+            <Link href={`/products/${product.id}`} className="block text-center">
               <h3 className="text-base sm:text-base md:text-lg font-bold text-center text-gray-900 dark:text-white">
                 {product.name}
               </h3>
+              <div className="flex flex-col items-center justify-center gap-1 pt-2">
+                <ProductPrice price={product.price} oldPrice={product.oldPrice} />
+              </div>
             </Link>
-
-            <div className="flex flex-col items-center justify-center gap-1">
-              <ProductPrice price={product.price} oldPrice={product.oldPrice} />
-            </div>
 
             {hasStock ? (
               <Button

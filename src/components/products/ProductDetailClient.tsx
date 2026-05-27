@@ -330,8 +330,8 @@ export function ProductDetailClient({ product }: Props) {
             <h1 className="text-3xl font-bold">{product.name}</h1>
             <p className="text-gray-500 text-sm mt-1">{activeLabel}</p>
 
-            <div className="mt-2">
-              <ProductPrice price={product.price} oldPrice={product.oldPrice} />
+            <div className="mt-2 max-w-[20rem]">
+              <ProductPrice price={product.price} oldPrice={product.oldPrice} align="left" />
             </div>
           </div>
 
