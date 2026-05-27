@@ -333,7 +333,7 @@ const catalogGridSql = `
     p.price,
     p.old_price,
     p.variant_label AS color,
-    COALESCE(NULLIF(nd.selected_image_path, ''), ${fallbackProductCoverSql}) AS cover_image,
+    ${fallbackProductCoverSql} AS cover_image,
     EXISTS (
       SELECT 1 FROM product_stock ps
       WHERE ps.product_id = p.id AND ps.quantity > 0
@@ -349,7 +349,7 @@ const newDropsSql = `
     p.price,
     p.old_price,
     p.variant_label AS color,
-    ${fallbackProductCoverSql} AS cover_image,
+    COALESCE(NULLIF(nd.selected_image_path, ''), ${fallbackProductCoverSql}) AS cover_image,
     COALESCE(
       CASE
         WHEN EXISTS (SELECT 1 FROM product_color_variants pcv WHERE pcv.product_id = p.id)
