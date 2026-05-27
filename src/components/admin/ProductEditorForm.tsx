@@ -23,7 +23,6 @@ import { cn } from "@/lib/utils";
 import { AdminPreviewImage } from "@/components/admin/AdminPreviewImage";
 import Image from "next/image";
 import {
-  startTransition,
   useActionState,
   useEffect,
   useMemo,
@@ -56,7 +55,6 @@ type ColorVariantImageDraft = {
   preview?: string;
   file?: File;
 };
-type PendingUpload = { id: string; file: File; preview: string };
 type ColorVariantDraft = {
   id: string;
   label: string;
@@ -135,15 +133,6 @@ function initColorVariants(initial?: AdminProductRow | null): ColorVariantDraft[
   }));
 }
 
-function draftImagesFromFiles(files: File[]): ColorVariantImageDraft[] {
-  return files.map((file) => ({
-    id: crypto.randomUUID(),
-    imagePath: "",
-    preview: URL.createObjectURL(file),
-    file,
-  }));
-}
-
 function appendColorVariantImages(
   prev: ColorVariantDraft[],
   targetId: string | null,
@@ -213,12 +202,10 @@ export function ProductEditorForm({
     initial?.new_drop_sort != null
   );
   const [uploadMsg, setUploadMsg] = useState<string | null>(null);
-  const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
   const [imgPending, startImgTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
   const colorVariantFileRef = useRef<HTMLInputElement>(null);
   const colorVariantUploadTargetRef = useRef<string | null>(null);
-  const pendingUploadsRef = useRef<PendingUpload[]>([]);
   const colorVariantsRef = useRef<ColorVariantDraft[]>([]);
 
   const productId = initial?.id;
@@ -240,8 +227,8 @@ export function ProductEditorForm({
       .filter(Boolean);
     if (fromVariant && fromVariant.length > 0) return fromVariant;
     if (imagePaths.length > 0) return imagePaths;
-    return pendingUploads.map((p) => p.preview);
-  }, [colorVariants, imagePaths, pendingUploads]);
+    return [];
+  }, [colorVariants, imagePaths]);
   const previewStockBySize = CATALOG_SIZE_ORDER.reduce<Record<string, number>>(
     (acc, size) => {
       acc[size] =
@@ -255,18 +242,10 @@ export function ProductEditorForm({
     },
     {}
   );
-  const hasPendingColorVariantUploads = colorVariants.some((variant) =>
-    variant.images.some((image) => image.file)
-  );
-
-  pendingUploadsRef.current = pendingUploads;
   colorVariantsRef.current = colorVariants;
 
   useEffect(() => {
     return () => {
-      for (const p of pendingUploadsRef.current) {
-        URL.revokeObjectURL(p.preview);
-      }
       for (const variant of colorVariantsRef.current) {
         for (const image of variant.images) {
           if (image.preview) URL.revokeObjectURL(image.preview);
@@ -286,8 +265,6 @@ export function ProductEditorForm({
     setColorVariants(initColorVariants(initial));
     setIsPublished(initial?.is_published ?? true);
     setIsNewDrop(initial?.new_drop_sort != null);
-
-    if (!initial?.id) setPendingUploads([]);
   }, [
     initial?.id,
     initial?.name,
@@ -346,8 +323,7 @@ export function ProductEditorForm({
       }
     }
 
-    if (productId != null) {
-      startImgTransition(async () => {
+    startImgTransition(async () => {
         try {
           for (const file of files) {
             const fd = new FormData();
@@ -366,34 +342,16 @@ export function ProductEditorForm({
             "No se pudo subir la imagen (fallo de red o del servidor). Comprueba la conexión e inténtalo de nuevo."
           );
         }
-      });
-      return;
-    }
-
-    const next = files.map((file) => ({
-      id: crypto.randomUUID(),
-      file,
-      preview: URL.createObjectURL(file),
-    }));
-    setPendingUploads((prev) => [...prev, ...next]);
-  }
-
-  function removePendingUpload(id: string) {
-    setUploadMsg(null);
-
-    setPendingUploads((prev) => {
-      const item = prev.find((p) => p.id === id);
-      if (item) URL.revokeObjectURL(item.preview);
-      return prev.filter((p) => p.id !== id);
     });
+
   }
 
   function removeImage(path: string) {
     setUploadMsg(null);
 
-    if (productId != null) {
-      startImgTransition(async () => {
-        try {
+    startImgTransition(async () => {
+      try {
+        if (productId != null) {
           const r = await deleteProductImageAction(productId, path);
 
           if (r.error) {
@@ -401,11 +359,19 @@ export function ProductEditorForm({
           } else {
             setImagePaths((prev) => prev.filter((x) => x !== path));
           }
-        } catch {
+          return;
+        }
+
+        const r = await deleteOrphanUploadAction(path);
+        if (r.error) {
+          setUploadMsg(r.error);
+        } else {
+          setImagePaths((prev) => prev.filter((x) => x !== path));
+        }
+      } catch {
           setUploadMsg("No se pudo quitar la imagen. Inténtalo de nuevo.");
         }
-      });
-    }
+    });
   }
 
   function onPickColorVariantFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -426,8 +392,7 @@ export function ProductEditorForm({
     const targetId = colorVariantUploadTargetRef.current;
     colorVariantUploadTargetRef.current = null;
 
-    if (productId != null) {
-      startImgTransition(async () => {
+    startImgTransition(async () => {
         try {
           const uploaded: ColorVariantImageDraft[] = [];
           for (const file of files) {
@@ -452,14 +417,7 @@ export function ProductEditorForm({
         } catch {
           setUploadMsg("No se pudo subir la imagen. Inténtalo de nuevo.");
         }
-      });
-      return;
-    }
-
-    const drafts = draftImagesFromFiles(files);
-    setColorVariants((prev) =>
-      appendColorVariantImages(prev, targetId, drafts, initial)
-    );
+    });
   }
 
   function pickColorVariantImage(variantId?: string) {
@@ -506,7 +464,7 @@ export function ProductEditorForm({
       const item = prev.find((variant) => variant.id === id);
       for (const image of item?.images ?? []) {
         if (image.preview) URL.revokeObjectURL(image.preview);
-        if (productId != null && image.imagePath && !savedImages.has(image.imagePath)) {
+        if (image.imagePath && !savedImages.has(image.imagePath)) {
           void deleteOrphanUploadAction(image.imagePath);
         }
       }
@@ -527,7 +485,7 @@ export function ProductEditorForm({
           if (variant.id !== variantId) return variant;
           const item = variant.images.find((image) => image.id === imageId);
           if (item?.preview) URL.revokeObjectURL(item.preview);
-          if (productId != null && item?.imagePath && !savedImages.has(item.imagePath)) {
+          if (item?.imagePath && !savedImages.has(item.imagePath)) {
             void deleteOrphanUploadAction(item.imagePath);
           }
           return {
@@ -542,29 +500,6 @@ export function ProductEditorForm({
   const formInner = (
     <form
       action={formAction}
-      onSubmit={(e) => {
-        if (productId != null) return;
-
-        e.preventDefault();
-
-        const fd = new FormData(e.currentTarget);
-
-        for (const p of pendingUploads) {
-          fd.append("pending_images", p.file);
-        }
-
-        for (const variant of colorVariants) {
-          for (const image of variant.images) {
-            if (image.file) {
-              fd.append("pending_color_variant_images", image.file);
-            }
-          }
-        }
-
-        startTransition(() => {
-          void formAction(fd);
-        });
-      }}
       className={cn("space-y-8 min-w-0", !showLivePreview && "max-w-3xl")}
     >
       {productId != null ? (
@@ -664,7 +599,7 @@ export function ProductEditorForm({
           <Button
             type="button"
             variant="secondary"
-            disabled={(productId != null ? imgPending : false) || pending}
+            disabled={imgPending || pending}
             onClick={() => fileRef.current?.click()}
           >
             {imgPending
@@ -674,7 +609,7 @@ export function ProductEditorForm({
                 : "Añadir imágenes"}
           </Button>
 
-          {productId != null && imagePaths.length > 0 ? (
+          {imagePaths.length > 0 ? (
             <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {imagePaths.map((src) => (
                 <li
@@ -698,32 +633,6 @@ export function ProductEditorForm({
                     Quitar
                   </button>
                   <input type="hidden" name="images" value={src} />
-                </li>
-              ))}
-            </ul>
-          ) : productId == null && pendingUploads.length > 0 ? (
-            <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {pendingUploads.map((p) => (
-                <li
-                  key={p.id}
-                  className="relative aspect-square rounded-lg border bg-background overflow-hidden"
-                >
-                  <Image
-                    src={p.preview}
-                    alt=""
-                    fill
-                    className="object-contain p-1"
-                    sizes="200px"
-                    unoptimized
-                  />
-                  <button
-                    type="button"
-                    className="absolute top-1 right-1 rounded-md bg-black/70 text-white text-xs px-2 py-1 hover:bg-black"
-                    disabled={pending}
-                    onClick={() => removePendingUpload(p.id)}
-                  >
-                    Quitar
-                  </button>
                 </li>
               ))}
             </ul>
@@ -841,7 +750,7 @@ export function ProductEditorForm({
         <Button
           type="button"
           variant="secondary"
-          disabled={(productId != null ? imgPending : false) || pending}
+          disabled={imgPending || pending}
           onClick={() => pickColorVariantImage()}
         >
           {imgPending
@@ -871,7 +780,7 @@ export function ProductEditorForm({
                       type="button"
                       variant="secondary"
                       size="sm"
-                      disabled={(productId != null ? imgPending : false) || pending}
+                      disabled={imgPending || pending}
                       onClick={() => pickColorVariantImage(variant.id)}
                     >
                       Añadir foto
@@ -1021,9 +930,6 @@ export function ProductEditorForm({
         <Button type="submit" disabled={pending || imgPending}>
           {pending
             ? "Guardando…"
-            : productId == null &&
-              (pendingUploads.length > 0 || hasPendingColorVariantUploads)
-            ? "Guardar y subir a Cloudinary"
             : "Guardar"}
         </Button>
       </div>
