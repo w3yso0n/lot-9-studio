@@ -257,7 +257,9 @@ function rowToNewDropProduct(row: NewDropRow): CatalogProduct {
     price: Number.isFinite(price) ? price : 0,
     oldPrice: parseOldPrice(row.old_price),
     color: row.color,
-    images: prioritizeCoverImage(parseJsonArray(row.images), cover),
+    images: cover
+      ? sanitizeProductImagePaths([cover])
+      : prioritizeCoverImage(parseJsonArray(row.images), cover),
     coverImage: cover || null,
     stockBySize: {},
     sizes: [],
@@ -331,7 +333,7 @@ const catalogGridSql = `
     p.price,
     p.old_price,
     p.variant_label AS color,
-    ${fallbackProductCoverSql} AS cover_image,
+    COALESCE(NULLIF(nd.selected_image_path, ''), ${fallbackProductCoverSql}) AS cover_image,
     EXISTS (
       SELECT 1 FROM product_stock ps
       WHERE ps.product_id = p.id AND ps.quantity > 0

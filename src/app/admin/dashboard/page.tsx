@@ -41,6 +41,9 @@ export default async function AdminDashboardPage() {
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button asChild variant="outline" size="lg" className="shrink-0 w-full sm:w-auto">
+            <Link href="/admin/dashboard/new-drops">New Drops</Link>
+          </Button>
+          <Button asChild variant="outline" size="lg" className="shrink-0 w-full sm:w-auto">
             <Link href="/admin/dashboard/home-settings">Configuración Home</Link>
           </Button>
           <Button asChild size="lg" className="shrink-0 w-full sm:w-auto">

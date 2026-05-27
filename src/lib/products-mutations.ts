@@ -17,8 +17,6 @@ export type ProductMutationInput = {
   colorFilters: string[];
   sizeOrder: string[];
   stockBySize: Record<string, number>;
-  isNewDrop: boolean;
-  newDropSort: number;
   variantProductIds: number[];
   colorVariants: {
     label: string;
@@ -61,14 +59,6 @@ async function replaceChildRows(
     await client.query(
       `INSERT INTO product_sizes (product_id, size, sort_order) VALUES ($1, $2, $3)`,
       [productId, input.sizeOrder[i], i]
-    );
-  }
-
-  await client.query(`DELETE FROM new_drop_items WHERE product_id = $1`, [productId]);
-  if (input.isNewDrop) {
-    await client.query(
-      `INSERT INTO new_drop_items (product_id, sort_order) VALUES ($1, $2)`,
-      [productId, input.newDropSort]
     );
   }
 
@@ -435,11 +425,6 @@ export function parseProductForm(form: FormData): ProductMutationInput {
     }
   }
 
-  const isNewDrop =
-    form.get("is_new_drop") === "on" || form.get("is_new_drop") === "true";
-
-  const newDropSort = Math.floor(Number(form.get("new_drop_sort") ?? "0"));
-
   const variantProductIds = form
     .getAll("variant_product_ids")
     .map((v) => Number(v))
@@ -497,8 +482,6 @@ export function parseProductForm(form: FormData): ProductMutationInput {
     colorFilters,
     sizeOrder,
     stockBySize: aggregateStockBySize,
-    isNewDrop,
-    newDropSort,
     variantProductIds,
     colorVariants,
   };

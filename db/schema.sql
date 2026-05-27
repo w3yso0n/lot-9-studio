@@ -53,8 +53,12 @@ CREATE TABLE IF NOT EXISTS product_sizes (
 
 CREATE TABLE IF NOT EXISTS new_drop_items (
   product_id INTEGER PRIMARY KEY REFERENCES products (id) ON DELETE CASCADE,
+  selected_image_path TEXT,
   sort_order INTEGER NOT NULL DEFAULT 0
 );
+
+ALTER TABLE new_drop_items
+  ADD COLUMN IF NOT EXISTS selected_image_path TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_new_drop_sort ON new_drop_items (sort_order);
 

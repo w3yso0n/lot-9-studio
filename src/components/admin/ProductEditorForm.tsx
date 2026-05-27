@@ -21,6 +21,7 @@ import {
 import { CATALOG_SIZE_ORDER, sortSizesSelected } from "@/lib/catalog-sizes";
 import { cn } from "@/lib/utils";
 import { AdminPreviewImage } from "@/components/admin/AdminPreviewImage";
+import { GripVertical } from "lucide-react";
 import Image from "next/image";
 import {
   useActionState,
@@ -215,9 +216,6 @@ export function ProductEditorForm({
   const [isPublished, setIsPublished] = useState(
     initial?.is_published ?? true
   );
-  const [isNewDrop, setIsNewDrop] = useState(
-    initial?.new_drop_sort != null
-  );
   const [uploadMsg, setUploadMsg] = useState<string | null>(null);
   const [imgPending, setImgPending] = useState(false);
   const [uploadingImages, setUploadingImages] = useState<UploadingPreview[]>([]);
@@ -299,7 +297,6 @@ export function ProductEditorForm({
     setCoverImagePath(initial?.coverImage ?? "");
     setColorVariants(initColorVariants(initial));
     setIsPublished(initial?.is_published ?? true);
-    setIsNewDrop(initial?.new_drop_sort != null);
     setUploadingImages([]);
   }, [
     initial?.id,
@@ -310,7 +307,6 @@ export function ProductEditorForm({
     initial?.images?.join("|"),
     initial?.coverImage,
     initial?.is_published,
-    initial?.new_drop_sort,
   ]);
 
   useEffect(() => {
@@ -607,11 +603,41 @@ export function ProductEditorForm({
     );
   }
 
+  function reorderColorVariant(fromVariantId: string, toVariantId: string) {
+    setColorVariants((prev) => {
+      const fromIndex = prev.findIndex((variant) => variant.id === fromVariantId);
+      const toIndex = prev.findIndex((variant) => variant.id === toVariantId);
+      return moveArrayItem(prev, fromIndex, toIndex);
+    });
+  }
+
+  function onColorVariantDragStart(e: React.DragEvent, variantId: string) {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData(
+      "application/x-lot9-color-variant",
+      JSON.stringify({ variantId })
+    );
+  }
+
+  function onColorVariantDrop(e: React.DragEvent, targetVariantId: string) {
+    e.preventDefault();
+    const raw = e.dataTransfer.getData("application/x-lot9-color-variant");
+    if (!raw) return;
+    try {
+      const source = JSON.parse(raw) as { variantId?: string };
+      if (!source.variantId || source.variantId === targetVariantId) return;
+      reorderColorVariant(source.variantId, targetVariantId);
+    } catch {
+      return;
+    }
+  }
+
   function onColorVariantImageDragStart(
     e: React.DragEvent,
     variantId: string,
     imageId: string
   ) {
+    e.stopPropagation();
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData(
       "application/x-lot9-color-image",
@@ -625,6 +651,7 @@ export function ProductEditorForm({
     targetImageId: string
   ) {
     e.preventDefault();
+    e.stopPropagation();
     const raw = e.dataTransfer.getData("application/x-lot9-color-image");
     if (!raw) return;
     try {
@@ -935,18 +962,41 @@ export function ProductEditorForm({
             {colorVariants.map((variant, variantIndex) => (
               <li
                 key={variant.id}
+                onDragOver={(e) => {
+                  if (
+                    e.dataTransfer.types.includes(
+                      "application/x-lot9-color-variant"
+                    )
+                  ) {
+                    e.preventDefault();
+                  }
+                }}
+                onDrop={(e) => onColorVariantDrop(e, variant.id)}
                 className="space-y-3 rounded-lg border bg-background p-3"
               >
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <Input
-                    value={variant.label}
-                    onChange={(e) =>
-                      updateColorVariantLabel(variant.id, e.target.value)
-                    }
-                    placeholder="Nombre del color"
-                    list="suggested-color-names"
-                    className="h-9 sm:max-w-xs"
-                  />
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <button
+                      type="button"
+                      draggable
+                      onDragStart={(e) => onColorVariantDragStart(e, variant.id)}
+                      className="inline-flex h-9 w-9 shrink-0 cursor-grab items-center justify-center rounded-md border bg-muted/60 text-muted-foreground hover:bg-muted active:cursor-grabbing"
+                      aria-label={`Arrastrar ${variant.label || `color ${variantIndex + 1}`}`}
+                      title="Arrastrar color"
+                    >
+                      <GripVertical className="h-4 w-4" aria-hidden />
+                    </button>
+
+                    <Input
+                      value={variant.label}
+                      onChange={(e) =>
+                        updateColorVariantLabel(variant.id, e.target.value)
+                      }
+                      placeholder="Nombre del color"
+                      list="suggested-color-names"
+                      className="h-9 sm:max-w-xs"
+                    />
+                  </div>
 
                   <div className="flex gap-2">
                     <Button
@@ -981,7 +1031,10 @@ export function ProductEditorForm({
                         onDragStart={(e) =>
                           onColorVariantImageDragStart(e, variant.id, image.id)
                         }
-                        onDragOver={(e) => e.preventDefault()}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
                         onDrop={(e) =>
                           onColorVariantImageDrop(e, variant.id, image.id)
                         }
@@ -1093,33 +1146,6 @@ export function ProductEditorForm({
           Publicado en la tienda
         </label>
 
-        <input
-          type="hidden"
-          name="is_new_drop"
-          value={isNewDrop ? "true" : "false"}
-        />
-
-        <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            checked={isNewDrop}
-            onChange={(e) => setIsNewDrop(e.target.checked)}
-            className="h-4 w-4"
-          />
-          Mostrar en carrusel &quot;Nuevos Drops&quot;
-        </label>
-
-        <div className="space-y-2 max-w-xs">
-          <Label htmlFor="new_drop_sort">
-            Orden en Nuevos Drops (menor = primero)
-          </Label>
-          <Input
-            id="new_drop_sort"
-            name="new_drop_sort"
-            type="number"
-            defaultValue={initial?.new_drop_sort ?? 0}
-          />
-        </div>
       </div>
 
       <div className="flex gap-3">
@@ -1157,7 +1183,6 @@ export function ProductEditorForm({
           stockBySize: variant.stockBySize,
         }))}
         isPublished={isPublished}
-        isNewDrop={isNewDrop}
       />
     </div>
   );

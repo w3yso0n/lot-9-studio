@@ -24,7 +24,6 @@ export type AdminStorefrontPreviewProps = {
   stockBySize: Record<string, number>;
   colorVariants?: AdminPreviewColorVariant[];
   isPublished: boolean;
-  isNewDrop: boolean;
 };
 
 function aggregateStock(
@@ -54,7 +53,6 @@ export function AdminStorefrontPreview({
   stockBySize,
   colorVariants = [],
   isPublished,
-  isNewDrop,
 }: AdminStorefrontPreviewProps) {
   const displayName = name.trim() || "Nombre del producto";
 
@@ -125,7 +123,6 @@ export function AdminStorefrontPreview({
         ) : (
           <Badge variant="secondary">Publicado</Badge>
         )}
-        {isNewDrop ? <Badge>Nuevo drop</Badge> : null}
         {options.length > 1 ? (
           <Badge variant="outline">{options.length} colores</Badge>
         ) : null}
