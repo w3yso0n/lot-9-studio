@@ -15,6 +15,7 @@ type ProductRow = QueryResultRow & {
   old_price?: string | number | null;
   color: string;
   cover_image?: string | null;
+  hover_image?: string | null;
   product_desc: string;
   images: unknown;
   stock_by_size: unknown;
@@ -29,6 +30,7 @@ type CatalogGridRow = QueryResultRow & {
   old_price?: string | number | null;
   color: string;
   cover_image: string | null;
+  hover_image: string | null;
   in_stock: boolean;
 };
 
@@ -39,6 +41,7 @@ type NewDropRow = QueryResultRow & {
   old_price?: string | number | null;
   color: string;
   cover_image: string | null;
+  hover_image: string | null;
   images: unknown;
   in_stock: boolean;
 };
@@ -102,6 +105,7 @@ function rowToProduct(row: ProductRow): CatalogProduct {
   const sizes = normalizeSizes(parseJsonArray(row.sizes), stockBySize);
   const price = typeof row.price === "string" ? parseFloat(row.price) : row.price;
   const cover = sanitizeProductImagePaths([row.cover_image ?? ""])[0] ?? null;
+  const hover = sanitizeProductImagePaths([row.hover_image ?? ""])[0] ?? null;
   return {
     id: row.id,
     code: row.id,
@@ -111,6 +115,7 @@ function rowToProduct(row: ProductRow): CatalogProduct {
     color: row.color,
     images: sanitizeProductImagePaths(parseJsonArray(row.images)),
     coverImage: cover,
+    hoverImage: hover,
     stockBySize,
     sizes,
     colors: parseJsonArray(row.colors),
@@ -230,6 +235,10 @@ async function getColorVariantsForProduct(
 function rowToCatalogGridProduct(row: CatalogGridRow): CatalogProduct {
   const price = typeof row.price === "string" ? parseFloat(row.price) : row.price;
   const cover = row.cover_image == null ? "" : String(row.cover_image);
+  const hover = row.hover_image == null ? "" : String(row.hover_image);
+  const images = sanitizeProductImagePaths(
+    [cover, hover].filter((image, index, arr) => image && arr.indexOf(image) === index)
+  );
   return {
     id: row.id,
     code: row.id,
@@ -237,8 +246,9 @@ function rowToCatalogGridProduct(row: CatalogGridRow): CatalogProduct {
     price: Number.isFinite(price) ? price : 0,
     oldPrice: parseOldPrice(row.old_price),
     color: row.color,
-    images: sanitizeProductImagePaths(cover ? [cover] : []),
+    images,
     coverImage: cover || null,
+    hoverImage: hover || null,
     stockBySize: {},
     sizes: [],
     colors: [],
@@ -250,6 +260,7 @@ function rowToCatalogGridProduct(row: CatalogGridRow): CatalogProduct {
 function rowToNewDropProduct(row: NewDropRow): CatalogProduct {
   const price = typeof row.price === "string" ? parseFloat(row.price) : row.price;
   const cover = row.cover_image == null ? "" : String(row.cover_image);
+  const hover = row.hover_image == null ? "" : String(row.hover_image);
   return {
     id: row.id,
     code: row.id,
@@ -261,6 +272,7 @@ function rowToNewDropProduct(row: NewDropRow): CatalogProduct {
       ? sanitizeProductImagePaths([cover])
       : prioritizeCoverImage(parseJsonArray(row.images), cover),
     coverImage: cover || null,
+    hoverImage: hover || null,
     stockBySize: {},
     sizes: [],
     colors: [],
@@ -276,6 +288,7 @@ const productSelectList = `
   p.old_price,
   p.variant_label AS color,
   p.cover_image_path AS cover_image,
+  p.hover_image_path AS hover_image,
   COALESCE(p.description, '') AS product_desc,
   COALESCE(
     (SELECT json_agg(pi.path ORDER BY pi.sort_order, pi.id)
@@ -326,6 +339,31 @@ const fallbackProductCoverSql = `
        LIMIT 1)
     )`;
 
+const fallbackProductHoverSql = `
+    COALESCE(
+      NULLIF(p.hover_image_path, ''),
+      (SELECT pcvi.image_path
+       FROM product_color_variants pcv
+       INNER JOIN product_color_variant_images pcvi ON pcvi.color_variant_id = pcv.id
+       WHERE pcv.product_id = p.id
+         AND pcv.id = (
+           SELECT pcv_first.id
+           FROM product_color_variants pcv_first
+           WHERE pcv_first.product_id = p.id
+           ORDER BY pcv_first.sort_order, pcv_first.id
+           LIMIT 1
+         )
+       ORDER BY pcvi.sort_order, pcvi.id
+       OFFSET 1
+       LIMIT 1),
+      (SELECT pi.path
+       FROM product_images pi
+       WHERE pi.product_id = p.id
+       ORDER BY pi.sort_order, pi.id
+       OFFSET 1
+       LIMIT 1)
+    )`;
+
 const catalogGridSql = `
   SELECT
     p.id,
@@ -334,6 +372,7 @@ const catalogGridSql = `
     p.old_price,
     p.variant_label AS color,
     ${fallbackProductCoverSql} AS cover_image,
+    ${fallbackProductHoverSql} AS hover_image,
     EXISTS (
       SELECT 1 FROM product_stock ps
       WHERE ps.product_id = p.id AND ps.quantity > 0
@@ -350,6 +389,7 @@ const newDropsSql = `
     p.old_price,
     p.variant_label AS color,
     COALESCE(NULLIF(nd.selected_image_path, ''), ${fallbackProductCoverSql}) AS cover_image,
+    ${fallbackProductHoverSql} AS hover_image,
     COALESCE(
       CASE
         WHEN EXISTS (SELECT 1 FROM product_color_variants pcv WHERE pcv.product_id = p.id)
@@ -421,6 +461,7 @@ const productDetailSelectList = `
   p.old_price,
   p.variant_label AS color,
   p.cover_image_path AS cover_image,
+  p.hover_image_path AS hover_image,
   COALESCE(p.description, '') AS product_desc,
   COALESCE(
   CASE

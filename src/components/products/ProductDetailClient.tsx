@@ -13,6 +13,7 @@ import { useCartStore } from "@/store/cart";
 import Image from "next/image";
 import Link from "next/link";
 import { memo, useMemo, useReducer } from "react";
+import { ProductPrice } from "@/components/products/ProductPrice";
 
 /** Evita montar decenas de miniaturas a la vez en productos con muchas fotos. */
 const MAX_THUMBNAILS = 20;
@@ -263,12 +264,12 @@ export function ProductDetailClient({ product }: Props) {
     <section
       className={cn("container mx-auto py-12 px-4 sm:px-6 lg:px-8", poppins.className)}
     >
-      <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] xl:gap-10">
         {/* Galería: miniaturas a la izquierda + foto grande (como el resto de productos) */}
-        <div className="flex flex-col-reverse sm:flex-row gap-4 lg:flex-1 lg:min-w-0">
+        <div className="grid min-w-0 gap-4 xl:grid-cols-[96px_minmax(0,1fr)] xl:items-start">
           {thumbIndices.length > 0 ? (
             <div
-              className="flex flex-row sm:flex-col gap-3 sm:gap-4 overflow-x-auto sm:overflow-y-auto sm:max-h-[min(70vh,520px)] p-1 shrink-0"
+              className="order-2 flex gap-3 overflow-x-auto p-1 xl:order-1 xl:flex-col xl:overflow-x-visible xl:overflow-y-auto xl:max-h-[min(76vh,640px)]"
               aria-label="Miniaturas"
             >
               {thumbIndices.map((imageIndex) => (
@@ -283,14 +284,14 @@ export function ProductDetailClient({ product }: Props) {
                 />
               ))}
               {hiddenThumbCount > 0 ? (
-                <p className="text-xs text-muted-foreground self-center px-1 sm:max-w-[5rem] sm:text-center">
+                <p className="shrink-0 self-center px-1 text-xs text-muted-foreground xl:max-w-[5rem] xl:text-center">
                   +{hiddenThumbCount} fotos más
                 </p>
               ) : null}
             </div>
           ) : null}
 
-          <div className="relative w-full max-w-[560px] flex-none aspect-square min-h-[280px] rounded-lg bg-muted overflow-hidden sm:mx-auto lg:mx-0">
+          <div className="order-1 relative mx-auto w-full max-w-[min(100%,620px)] aspect-[4/5] min-h-[260px] overflow-hidden rounded-lg bg-muted xl:order-2 xl:max-w-none xl:min-h-0">
             {mainDisplaySrc ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -324,20 +325,13 @@ export function ProductDetailClient({ product }: Props) {
         </div>
 
         {/* Información del producto */}
-        <div className="w-full lg:w-[380px] lg:shrink-0 space-y-6">
+        <div className="w-full max-w-2xl mx-auto space-y-6 xl:mx-0 xl:max-w-[420px] xl:self-start xl:sticky xl:top-24">
           <div>
             <h1 className="text-3xl font-bold">{product.name}</h1>
             <p className="text-gray-500 text-sm mt-1">{activeLabel}</p>
 
-            <div className="flex items-center gap-2 mt-2">
-              {showOldPrice && (
-                <span className="text-sm font-medium text-gray-500 line-through">
-                  ${formatPrice(product.oldPrice ?? 0)}
-                </span>
-              )}
-              <span className="text-gray-900 text-xl font-bold">
-                ${formatPrice(product.price)}
-              </span>
+            <div className="mt-2">
+              <ProductPrice price={product.price} oldPrice={product.oldPrice} />
             </div>
           </div>
 

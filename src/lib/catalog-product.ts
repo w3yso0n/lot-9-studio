@@ -8,6 +8,7 @@ export type CatalogProduct = {
   color: string;
   images: string[];
   coverImage?: string | null;
+  hoverImage?: string | null;
   stockBySize: Record<string, number>;
   sizes: string[];
   colors: string[];

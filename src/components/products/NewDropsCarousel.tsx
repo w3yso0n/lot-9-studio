@@ -55,6 +55,7 @@ const NewDropsCarousel = ({ newDrops }: Props) => {
                 ...product,
                 images: slideImage ? [slideImage] : [],
                 coverImage: slideImage || product.coverImage,
+                hoverImage: null,
               };
 
               return (

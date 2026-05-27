@@ -1,9 +1,12 @@
 "use client";
 
 import { ProductImage } from "@/components/products/ProductImage";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ProductPrice } from "@/components/products/ProductPrice";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 
 interface ProductProps {
   product: {
@@ -14,6 +17,7 @@ interface ProductProps {
     code?: string | number;
     images: string[];
     coverImage?: string | null;
+    hoverImage?: string | null;
     stockBySize: { [size: string]: number };
     sizes: string[];
     colors: string[];
@@ -24,6 +28,13 @@ interface ProductProps {
 
 export const ProductCard = ({ product, className }: ProductProps) => {
   const mainImage = product.coverImage || product.images[0];
+  const configuredHoverImage = product.hoverImage || product.images[1] || "";
+  const hoverImage =
+    configuredHoverImage && configuredHoverImage !== mainImage
+      ? configuredHoverImage
+      : "";
+  const [showHoverImage, setShowHoverImage] = useState(false);
+  const displayImage = showHoverImage && hoverImage ? hoverImage : mainImage;
   const hasImage = Boolean(mainImage?.trim());
   const oldPrice = product.oldPrice;
 
@@ -40,15 +51,58 @@ export const ProductCard = ({ product, className }: ProductProps) => {
   return (
     <div className={`w-full ${className ?? ""}`}>
       <Card className="w-full shadow-lg rounded-xl bg-white dark:bg-gray-800 overflow-hidden">
-        <Link href={`/products/${product.id}`}>
-          <CardContent className="p-0 flex flex-col cursor-pointer">
-            <div className="relative w-full h-[360px] sm:h-[300px] md:h-[350px] lg:h-[400px] overflow-hidden bg-muted">
+        <CardContent className="p-0 flex flex-col">
+          {hoverImage ? (
+            <button
+              type="button"
+              aria-label={`Alternar imagen de ${product.name}`}
+              onMouseEnter={() => setShowHoverImage(true)}
+              onMouseLeave={() => setShowHoverImage(false)}
+              onClick={() => setShowHoverImage((value) => !value)}
+              className="block w-full text-left"
+            >
+              <div className="relative w-full h-[360px] sm:h-[300px] md:h-[350px] lg:h-[400px] overflow-hidden bg-muted">
+                {hasImage ? (
+                  <ProductImage
+                    key={displayImage}
+                    src={displayImage}
+                    alt={product.name}
+                    fill
+                    className="object-cover transition-all duration-300 hover:scale-[1.03]"
+                    sizes="(max-width: 640px) 100vw, 400px"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground px-4 text-center">
+                    Sin imagen
+                  </div>
+                )}
+
+                {!hasStock && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                    <Image
+                      src="/images/sold_out.png"
+                      alt="Agotado"
+                      width={200}
+                      height={200}
+                      className="opacity-90"
+                    />
+                  </div>
+                )}
+              </div>
+            </button>
+          ) : (
+            <Link
+              href={`/products/${product.id}`}
+              aria-label={`Ver producto ${product.name}`}
+              className="block"
+            >
+              <div className="relative w-full h-[360px] sm:h-[300px] md:h-[350px] lg:h-[400px] overflow-hidden bg-muted">
               {hasImage ? (
                 <ProductImage
                   src={mainImage}
                   alt={product.name}
                   fill
-                  className="object-cover"
+                  className="object-cover transition-transform duration-300 hover:scale-[1.03]"
                   sizes="(max-width: 640px) 100vw, 400px"
                 />
               ) : (
@@ -68,27 +122,39 @@ export const ProductCard = ({ product, className }: ProductProps) => {
                   />
                 </div>
               )}
-            </div>
+              </div>
+            </Link>
+          )}
 
-            <div className="p-4 space-y-3">
+          <div className="p-4 space-y-4">
+            <Link href={`/products/${product.id}`} className="block">
               <h3 className="text-base sm:text-base md:text-lg font-bold text-center text-gray-900 dark:text-white">
                 {product.name}
               </h3>
+            </Link>
 
-              <div className="flex flex-col items-center justify-center gap-1">
-                {showOldPrice && (
-                  <span className="text-sm sm:text-base font-medium text-gray-500 dark:text-gray-400 line-through">
-                    ${oldPrice.toFixed(2)}
-                  </span>
-                )}
-
-                <span className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                  ${product.price.toFixed(2)}
-                </span>
-              </div>
+            <div className="flex flex-col items-center justify-center gap-1">
+              <ProductPrice price={product.price} oldPrice={product.oldPrice} />
             </div>
-          </CardContent>
-        </Link>
+
+            {hasStock ? (
+              <Button
+                asChild
+                className="h-11 w-full rounded-md bg-black text-xs font-semibold uppercase tracking-[0.14em] text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-zinc-900 hover:shadow-lg dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+              >
+                <Link href={`/products/${product.id}`}>Comprar ahora</Link>
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                disabled
+                className="h-11 w-full rounded-md bg-zinc-800 text-xs font-semibold uppercase tracking-[0.14em] text-zinc-300 opacity-100 disabled:pointer-events-none disabled:opacity-100 dark:bg-zinc-700 dark:text-zinc-300"
+              >
+                Agotado
+              </Button>
+            )}
+          </div>
+        </CardContent>
       </Card>
     </div>
   );

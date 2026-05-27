@@ -14,6 +14,7 @@ export type ProductMutationInput = {
   isPublished: boolean;
   imagePaths: string[];
   coverImagePath: string;
+  hoverImagePath: string;
   colorFilters: string[];
   sizeOrder: string[];
   stockBySize: Record<string, number>;
@@ -142,6 +143,21 @@ function resolveCoverImagePath(input: ProductMutationInput): string | null {
   return firstProductImage(input) || null;
 }
 
+function allProductImages(input: ProductMutationInput): Set<string> {
+  return new Set([
+    ...input.imagePaths.map((path) => path.trim()).filter(Boolean),
+    ...input.colorVariants.flatMap((variant) =>
+      variant.imagePaths.map((path) => path.trim()).filter(Boolean)
+    ),
+  ]);
+}
+
+function resolveHoverImagePath(input: ProductMutationInput): string | null {
+  const requested = input.hoverImagePath.trim();
+  if (!requested) return null;
+  return allProductImages(input).has(requested) ? requested : null;
+}
+
 export async function insertProduct(input: ProductMutationInput): Promise<number> {
   const pool = getPool();
   const client = await pool.connect();
@@ -156,10 +172,11 @@ export async function insertProduct(input: ProductMutationInput): Promise<number
         old_price,
         variant_label,
         cover_image_path,
+        hover_image_path,
         description,
         is_published
       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING id`,
       [
         input.name,
@@ -167,6 +184,7 @@ export async function insertProduct(input: ProductMutationInput): Promise<number
         input.oldPrice,
         input.variantLabel,
         resolveCoverImagePath(input),
+        resolveHoverImagePath(input),
         input.description,
         input.isPublished,
       ]
@@ -229,16 +247,18 @@ export async function updateProduct(id: number, input: ProductMutationInput): Pr
         old_price = $3,
         variant_label = $4,
         cover_image_path = $5,
-        description = $6,
-        is_published = $7,
+        hover_image_path = $6,
+        description = $7,
+        is_published = $8,
         updated_at = now()
-       WHERE id = $8`,
+       WHERE id = $9`,
       [
         input.name,
         input.price,
         input.oldPrice,
         input.variantLabel,
         resolveCoverImagePath(input),
+        resolveHoverImagePath(input),
         input.description,
         input.isPublished,
         id,
@@ -333,6 +353,12 @@ export async function deleteProductImageRow(
        WHERE p.id = $1 AND p.cover_image_path = $2`,
       [productId, imagePath]
     );
+    await pool.query(
+      `UPDATE products
+       SET hover_image_path = NULL
+       WHERE id = $1 AND hover_image_path = $2`,
+      [productId, imagePath]
+    );
   }
 
   return (rowCount ?? 0) > 0;
@@ -353,6 +379,7 @@ export function parseProductForm(form: FormData): ProductMutationInput {
 
   const variantLabel = String(form.get("variant_label") ?? "").trim();
   const coverImagePath = String(form.get("cover_image_path") ?? "").trim();
+  const hoverImagePath = String(form.get("hover_image_path") ?? "").trim();
   const description = String(form.get("description") ?? "").trim();
 
   const isPublished =
@@ -479,6 +506,7 @@ export function parseProductForm(form: FormData): ProductMutationInput {
     isPublished,
     imagePaths,
     coverImagePath,
+    hoverImagePath,
     colorFilters,
     sizeOrder,
     stockBySize: aggregateStockBySize,

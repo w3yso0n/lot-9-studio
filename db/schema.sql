@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS products (
   old_price NUMERIC(10, 2) CHECK (old_price IS NULL OR old_price >= 0),
   variant_label VARCHAR(255) NOT NULL,
   cover_image_path TEXT,
+  hover_image_path TEXT,
   description TEXT NOT NULL DEFAULT '',
   is_published BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -19,6 +20,9 @@ CREATE TABLE IF NOT EXISTS products (
 
 ALTER TABLE products
   ADD COLUMN IF NOT EXISTS cover_image_path TEXT;
+
+ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS hover_image_path TEXT;
 
 CREATE TABLE IF NOT EXISTS product_images (
   id SERIAL PRIMARY KEY,

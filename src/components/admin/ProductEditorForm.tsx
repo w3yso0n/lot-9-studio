@@ -201,6 +201,9 @@ export function ProductEditorForm({
   const [coverImagePath, setCoverImagePath] = useState(
     () => initial?.coverImage ?? ""
   );
+  const [hoverImagePath, setHoverImagePath] = useState(
+    () => initial?.hoverImage ?? ""
+  );
   const [selectedSizes, setSelectedSizes] = useState<string[]>(() =>
     deriveInitialSelectedSizes(initial)
   );
@@ -295,6 +298,7 @@ export function ProductEditorForm({
     setDescription(initial?.desc ?? "");
     setImagePaths(initial?.images ?? []);
     setCoverImagePath(initial?.coverImage ?? "");
+    setHoverImagePath(initial?.hoverImage ?? "");
     setColorVariants(initColorVariants(initial));
     setIsPublished(initial?.is_published ?? true);
     setUploadingImages([]);
@@ -306,6 +310,7 @@ export function ProductEditorForm({
     initial?.desc,
     initial?.images?.join("|"),
     initial?.coverImage,
+    initial?.hoverImage,
     initial?.is_published,
   ]);
 
@@ -315,6 +320,13 @@ export function ProductEditorForm({
       setCoverImagePath("");
     }
   }, [allProductImagePaths, coverImagePath]);
+
+  useEffect(() => {
+    if (!hoverImagePath) return;
+    if (!allProductImagePaths.includes(hoverImagePath)) {
+      setHoverImagePath("");
+    }
+  }, [allProductImagePaths, hoverImagePath]);
 
   useEffect(() => {
     setSelectedSizes(deriveInitialSelectedSizes(initial));
@@ -410,6 +422,7 @@ export function ProductEditorForm({
   function removeImage(path: string) {
     setUploadMsg(null);
     if (coverImagePath === path) setCoverImagePath("");
+    if (hoverImagePath === path) setHoverImagePath("");
 
     setImgPending(true);
     void (async () => {
@@ -545,6 +558,9 @@ export function ProductEditorForm({
     if (item?.images.some((image) => image.imagePath === coverImagePath)) {
       setCoverImagePath("");
     }
+    if (item?.images.some((image) => image.imagePath === hoverImagePath)) {
+      setHoverImagePath("");
+    }
 
     setColorVariants((prev) => {
       for (const image of item?.images ?? []) {
@@ -567,6 +583,7 @@ export function ProductEditorForm({
       .find((variant) => variant.id === variantId)
       ?.images.find((image) => image.id === imageId);
     if (selectedImage?.imagePath === coverImagePath) setCoverImagePath("");
+    if (selectedImage?.imagePath === hoverImagePath) setHoverImagePath("");
 
     setColorVariants((prev) =>
       prev
@@ -697,6 +714,7 @@ export function ProductEditorForm({
 
       <input type="hidden" name="variant_label" value={variantLabelForSubmit} />
       <input type="hidden" name="cover_image_path" value={coverImagePath} />
+      <input type="hidden" name="hover_image_path" value={hoverImagePath} />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
@@ -807,6 +825,15 @@ export function ProductEditorForm({
                       onChange={() => setCoverImagePath(src)}
                     />
                     Portada
+                  </label>
+                  <label className="absolute right-1 bottom-1 flex items-center gap-1 rounded-md bg-white/90 px-2 py-1 text-xs font-medium text-black shadow-sm">
+                    <input
+                      type="radio"
+                      name="hover_image_picker"
+                      checked={hoverImagePath === src}
+                      onChange={() => setHoverImagePath(src)}
+                    />
+                    Hover/Tap
                   </label>
                   <input type="hidden" name="images" value={src} />
                 </li>
@@ -1069,6 +1096,16 @@ export function ProductEditorForm({
                             disabled={!image.imagePath}
                           />
                           Portada
+                        </label>
+                        <label className="absolute right-1 bottom-1 flex items-center gap-1 rounded-md bg-white/90 px-2 py-1 text-xs font-medium text-black shadow-sm">
+                          <input
+                            type="radio"
+                            name="hover_image_picker"
+                            checked={hoverImagePath === image.imagePath}
+                            onChange={() => setHoverImagePath(image.imagePath)}
+                            disabled={!image.imagePath}
+                          />
+                          Hover/Tap
                         </label>
                       </li>
                     );
