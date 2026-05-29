@@ -58,6 +58,11 @@ async function uploadHomeFile(
   return uploadToCloudinary(buf, file.type, `home-${randomUUID()}${ext}`.replace(/\.[^.]+$/, ""), resourceType);
 }
 
+function numberFromForm(formData: FormData, key: string, fallback: number): number {
+  const raw = Number(String(formData.get(key) ?? ""));
+  return Number.isFinite(raw) ? raw : fallback;
+}
+
 export async function saveHomeSettingsAction(
   _prev: SaveHomeSettingsState,
   formData: FormData
@@ -117,6 +122,13 @@ export async function saveHomeSettingsAction(
       String(formData.get("hero_button_href") ?? "")
     ),
     heroImageUrl,
+    heroCropX: numberFromForm(formData, "hero_crop_x", DEFAULT_HOME_SETTINGS.heroCropX),
+    heroCropY: numberFromForm(formData, "hero_crop_y", DEFAULT_HOME_SETTINGS.heroCropY),
+    heroCropZoom: numberFromForm(
+      formData,
+      "hero_crop_zoom",
+      DEFAULT_HOME_SETTINGS.heroCropZoom
+    ),
     featuredVideoUrl,
     isHeroEnabled: formData.get("is_hero_enabled") === "true",
     isVideoEnabled: formData.get("is_video_enabled") === "true",
@@ -130,6 +142,7 @@ export async function saveHomeSettingsAction(
   }
 
   revalidateTag("home-settings");
+  revalidateTag("home-sections");
   revalidatePath("/");
   revalidatePath("/admin/dashboard/home-settings");
   return { ok: true, settings: nextSettings };

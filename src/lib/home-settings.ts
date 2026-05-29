@@ -4,6 +4,9 @@ export type HomeSettings = {
   heroButtonText: string;
   heroButtonHref: string;
   heroImageUrl: string;
+  heroCropX: number;
+  heroCropY: number;
+  heroCropZoom: number;
   featuredVideoUrl: string;
   isHeroEnabled: boolean;
   isVideoEnabled: boolean;
@@ -16,6 +19,9 @@ export const DEFAULT_HOME_SETTINGS: HomeSettings = {
   heroButtonText: "Descubre la colección",
   heroButtonHref: "/products#catalogo",
   heroImageUrl: "/images/background.png",
+  heroCropX: 50,
+  heroCropY: 50,
+  heroCropZoom: 1,
   featuredVideoUrl: "/video1.mp4",
   isHeroEnabled: true,
   isVideoEnabled: true,

@@ -4,6 +4,7 @@ import {
   saveHomeSettingsAction,
   type SaveHomeSettingsState,
 } from "@/app/admin/dashboard/home-settings/actions";
+import { HeroCropTool } from "@/components/admin/HeroCropTool";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -50,6 +51,9 @@ export function HomeSettingsForm({ initial }: Props) {
   const [heroSubtitle, setHeroSubtitle] = useState(initial.heroSubtitle);
   const [heroButtonText, setHeroButtonText] = useState(initial.heroButtonText);
   const [heroButtonHref, setHeroButtonHref] = useState(initial.heroButtonHref);
+  const [cropX, setCropX] = useState(initial.heroCropX);
+  const [cropY, setCropY] = useState(initial.heroCropY);
+  const [cropZoom, setCropZoom] = useState(initial.heroCropZoom);
   const [videoUrl, setVideoUrl] = useState(initial.featuredVideoUrl);
   const [heroPreview, setHeroPreview] = useState<string | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
@@ -71,6 +75,9 @@ export function HomeSettingsForm({ initial }: Props) {
     setHeroSubtitle(state.settings.heroSubtitle);
     setHeroButtonText(state.settings.heroButtonText);
     setHeroButtonHref(state.settings.heroButtonHref);
+    setCropX(state.settings.heroCropX);
+    setCropY(state.settings.heroCropY);
+    setCropZoom(state.settings.heroCropZoom);
     setVideoUrl(state.settings.featuredVideoUrl);
     clearHeroFile();
     clearVideoFile();
@@ -103,6 +110,9 @@ export function HomeSettingsForm({ initial }: Props) {
     setHeroSubtitle(active.heroSubtitle);
     setHeroButtonText(active.heroButtonText);
     setHeroButtonHref(active.heroButtonHref);
+    setCropX(active.heroCropX);
+    setCropY(active.heroCropY);
+    setCropZoom(active.heroCropZoom);
     setVideoUrl(active.featuredVideoUrl);
     clearHeroFile();
     clearVideoFile();
@@ -121,13 +131,30 @@ export function HomeSettingsForm({ initial }: Props) {
       return;
     }
     if (file.size > MAX_IMAGE_BYTES) {
-      setClientError(`La imagen supera el limite de ${formatBytes(MAX_IMAGE_BYTES)}.`);
+      setClientError(`La imagen supera el límite de ${formatBytes(MAX_IMAGE_BYTES)}.`);
       clearHeroFile();
       return;
     }
     if (heroPreview) URL.revokeObjectURL(heroPreview);
     setHeroPreview(URL.createObjectURL(file));
+    resetCrop();
   }
+
+  function clampPercent(value: number): number {
+    return Math.min(100, Math.max(0, value));
+  }
+
+  function resetCrop() {
+    setCropX(50);
+    setCropY(50);
+    setCropZoom(1);
+  }
+
+  const heroImageStyle = {
+    objectPosition: `${cropX}% ${cropY}%`,
+    transform: `scale(${cropZoom})`,
+    transformOrigin: `${cropX}% ${cropY}%`,
+  };
 
   function onVideoFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     setClientError(null);
@@ -142,7 +169,7 @@ export function HomeSettingsForm({ initial }: Props) {
       return;
     }
     if (file.size > MAX_VIDEO_BYTES) {
-      setClientError(`El video supera el limite de ${formatBytes(MAX_VIDEO_BYTES)}.`);
+      setClientError(`El video supera el límite de ${formatBytes(MAX_VIDEO_BYTES)}.`);
       clearVideoFile();
       return;
     }
@@ -179,6 +206,9 @@ export function HomeSettingsForm({ initial }: Props) {
         name="is_video_enabled"
         value={isVideoEnabled ? "true" : "false"}
       />
+      <input type="hidden" name="hero_crop_x" value={cropX.toFixed(2)} />
+      <input type="hidden" name="hero_crop_y" value={cropY.toFixed(2)} />
+      <input type="hidden" name="hero_crop_zoom" value={cropZoom.toFixed(3)} />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-6">
@@ -214,7 +244,7 @@ export function HomeSettingsForm({ initial }: Props) {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="hero_subtitle">Subtitulo</Label>
+                  <Label htmlFor="hero_subtitle">Subtítulo</Label>
                   <Input
                     id="hero_subtitle"
                     name="hero_subtitle"
@@ -224,7 +254,7 @@ export function HomeSettingsForm({ initial }: Props) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="hero_button_text">Texto del boton</Label>
+                  <Label htmlFor="hero_button_text">Texto del botón</Label>
                   <Input
                     id="hero_button_text"
                     name="hero_button_text"
@@ -235,7 +265,7 @@ export function HomeSettingsForm({ initial }: Props) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="hero_button_href">Link del boton</Label>
+                <Label htmlFor="hero_button_href">Link del botón</Label>
                 <Input
                   id="hero_button_href"
                   name="hero_button_href"
@@ -260,6 +290,7 @@ export function HomeSettingsForm({ initial }: Props) {
                       alt=""
                       fill
                       className="object-cover"
+                      style={heroImageStyle}
                       sizes="220px"
                       unoptimized
                     />
@@ -282,7 +313,7 @@ export function HomeSettingsForm({ initial }: Props) {
                       onChange={onHeroFileChange}
                     />
                     <p className="text-xs text-muted-foreground">
-                      JPG, PNG o WebP. Maximo {formatBytes(MAX_IMAGE_BYTES)}.
+                      JPG, PNG o WebP. Máximo {formatBytes(MAX_IMAGE_BYTES)}.
                     </p>
                   </div>
 
@@ -304,6 +335,21 @@ export function HomeSettingsForm({ initial }: Props) {
                     </Button>
                   ) : null}
                 </div>
+              </div>
+
+              <div className="space-y-3 border-t pt-4">
+                <HeroCropTool
+                  imageUrl={previewHeroImage}
+                  cropX={cropX}
+                  cropY={cropY}
+                  cropZoom={cropZoom}
+                  onCropChange={(x, y, z) => {
+                    setCropX(x);
+                    setCropY(y);
+                    setCropZoom(z);
+                  }}
+                  onReset={resetCrop}
+                />
               </div>
             </CardContent>
           </Card>
@@ -346,7 +392,7 @@ export function HomeSettingsForm({ initial }: Props) {
                     onChange={onVideoFileChange}
                   />
                   <p className="text-xs text-muted-foreground">
-                    MP4 o WebM. Maximo {formatBytes(MAX_VIDEO_BYTES)}.
+                    MP4 o WebM. Máximo {formatBytes(MAX_VIDEO_BYTES)}.
                   </p>
                 </div>
 
@@ -389,6 +435,7 @@ export function HomeSettingsForm({ initial }: Props) {
                       alt=""
                       fill
                       className="object-cover"
+                      style={heroImageStyle}
                       sizes="360px"
                       unoptimized
                     />
