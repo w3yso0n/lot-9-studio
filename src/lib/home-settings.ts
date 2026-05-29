@@ -11,10 +11,10 @@ export type HomeSettings = {
 };
 
 export const DEFAULT_HOME_SETTINGS: HomeSettings = {
-  heroTitle: "NO\nTODOS\nLO\nENTENDERAN",
+  heroTitle: "NO TODOS\nLO ENTENDERÁN",
   heroSubtitle: "LOT9_STUDIO_GUADALAJARA",
   heroButtonText: "Descubre la colección",
-  heroButtonHref: "#catalogo",
+  heroButtonHref: "/products#catalogo",
   heroImageUrl: "/images/background.png",
   featuredVideoUrl: "/video1.mp4",
   isHeroEnabled: true,

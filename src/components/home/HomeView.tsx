@@ -19,13 +19,13 @@ export default function HomeView({
   dbError,
 }: Props) {
   return (
-    <div className="min-h-screen flex flex-col">
-      <main className="flex flex-col items-center px-2 sm:px-4 md:px-8 lg:px-16">
+    <div className="min-h-screen">
+      <main className="flex flex-col items-center">
         {homeSettings.isHeroEnabled ? (
           <HeroBanner settings={homeSettings} />
         ) : null}
 
-        <section className="mt-6 sm:mt-8 md:mt-12 w-full max-w-6xl">
+        <section className="w-full max-w-6xl">
           <AllProducts
             products={products}
             newDrops={newDrops}

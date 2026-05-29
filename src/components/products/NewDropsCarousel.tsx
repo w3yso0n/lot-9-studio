@@ -2,8 +2,10 @@
 
 import { ProductCard } from "@/components/products/ProductCard";
 import { ProductImage } from "@/components/products/ProductImage";
+import { Button } from "@/components/ui/button";
 import type { CatalogProduct } from "@/lib/catalog-product";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 type Props = { newDrops: CatalogProduct[] };
@@ -14,6 +16,34 @@ const NewDropsCarousel = ({ newDrops }: Props) => {
 
   if (newDrops.length === 0) {
     return null;
+  }
+
+  if (newDrops.length === 1) {
+    return (
+      <section
+        id="nuevos-drops"
+        className="relative mx-auto w-full py-4 scroll-mt-24 sm:py-6"
+      >
+        <div className="mb-4 flex items-end justify-between gap-4">
+          <div>
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+              New Drop
+            </span>
+            <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+              Compra ahora
+            </h2>
+          </div>
+
+          <Button asChild variant="outline" className="hidden rounded-none sm:inline-flex">
+            <Link href="/products#catalogo">Ver productos</Link>
+          </Button>
+        </div>
+
+        <div className="max-w-sm">
+          <ProductCard product={newDrops[0]} />
+        </div>
+      </section>
+    );
   }
 
   const nextSlide = () => {
@@ -27,18 +57,21 @@ const NewDropsCarousel = ({ newDrops }: Props) => {
   return (
     <section
       id="nuevos-drops"
-      className="relative container mx-auto py-8 sm:py-12 md:py-16 px-3 sm:px-4 scroll-mt-24"
+      className="relative mx-auto w-full px-0 py-6 scroll-mt-24 sm:py-8"
     >
-      <div className="text-center mb-8 sm:mb-12">
-        <span className="text-sm font-medium tracking-widest text-primary mb-2 block">
-          COLECCIÓN EXCLUSIVA
-        </span>
-        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4">
-          Nuevos Drops
-        </h2>
-        <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-          Descubre nuestras últimos diseños
-        </p>
+      <div className="mb-5 flex items-end justify-between gap-4 sm:mb-6">
+        <div>
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+            Colección exclusiva
+          </span>
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Nuevos Drops
+          </h2>
+        </div>
+
+        <Button asChild variant="outline" className="hidden rounded-none sm:inline-flex">
+          <Link href="/products#catalogo">Ver productos</Link>
+        </Button>
       </div>
 
       <div className="relative">
@@ -59,12 +92,12 @@ const NewDropsCarousel = ({ newDrops }: Props) => {
               };
 
               return (
-                <div key={product.id} className="w-full shrink-0 px-2 relative">
-                  <div className="max-w-sm mx-auto pb-20 space-y-12">
+                <div key={product.id} className="relative w-full shrink-0 px-2">
+                  <div className="mx-auto max-w-sm space-y-8 pb-16">
                     <ProductCard product={mainProduct} />
 
                     {product.images.length > 1 && (
-                      <div className="absolute bottom-2 left-0 right-0 flex gap-2 justify-center px-4 pb-6">
+                      <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-2 px-4 pb-4">
                         {product.images.map((img, imgIndex) => (
                           <button
                             key={imgIndex}
@@ -75,17 +108,17 @@ const NewDropsCarousel = ({ newDrops }: Props) => {
                                 [product.id]: imgIndex,
                               }))
                             }
-                            className={`relative w-12 h-12 sm:w-16 sm:h-16 overflow-hidden border transition-colors ${
+                            className={`relative h-12 w-12 overflow-hidden border transition-colors sm:h-16 sm:w-16 ${
                               currentImageIndex === imgIndex
                                 ? "border-black dark:border-white"
-                                : "border-gray-200 dark:border-gray-700 hover:border-gray-400"
+                                : "border-gray-200 hover:border-gray-400 dark:border-gray-700"
                             }`}
                           >
                             <ProductImage
                               src={img}
                               alt={`${product.name} - Imagen ${imgIndex + 1}`}
                               fill
-                              className="object-contain bg-neutral-100 p-1 dark:bg-zinc-900"
+                              className="bg-neutral-100 object-contain p-1 dark:bg-zinc-900"
                               sizes="64px"
                             />
                           </button>
@@ -99,14 +132,14 @@ const NewDropsCarousel = ({ newDrops }: Props) => {
           </div>
         </div>
 
-        <div className="flex justify-center items-center mt-6 sm:mt-8 gap-4">
+        <div className="mt-4 flex items-center justify-center gap-4">
           <button
             type="button"
             onClick={prevSlide}
-            className="bg-white/90 dark:bg-gray-800/90 p-2 sm:p-3 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 hover:bg-primary hover:text-white transition-colors"
+            className="border border-gray-200 bg-white/90 p-2 transition-colors hover:bg-black hover:text-white dark:border-gray-700 dark:bg-gray-800/90"
             aria-label="Anterior"
           >
-            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
 
           <div className="flex gap-2">
@@ -115,8 +148,8 @@ const NewDropsCarousel = ({ newDrops }: Props) => {
                 key={index}
                 type="button"
                 onClick={() => setCurrentIndex(index)}
-                className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-colors ${
-                  currentIndex === index ? "bg-primary" : "bg-gray-300 dark:bg-gray-600"
+                className={`h-2 w-2 rounded-full transition-colors sm:h-3 sm:w-3 ${
+                  currentIndex === index ? "bg-black dark:bg-white" : "bg-gray-300 dark:bg-gray-600"
                 }`}
                 aria-label={`Ir al slide ${index + 1}`}
               />
@@ -126,14 +159,14 @@ const NewDropsCarousel = ({ newDrops }: Props) => {
           <button
             type="button"
             onClick={nextSlide}
-            className="bg-white/90 dark:bg-gray-800/90 p-2 sm:p-3 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 hover:bg-primary hover:text-white transition-colors"
+            className="border border-gray-200 bg-white/90 p-2 transition-colors hover:bg-black hover:text-white dark:border-gray-700 dark:bg-gray-800/90"
             aria-label="Siguiente"
           >
-            <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+            <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
         </div>
 
-        <p className="text-center mt-4 text-sm text-muted-foreground">
+        <p className="mt-3 text-center text-xs text-muted-foreground">
           {currentIndex + 1} de {newDrops.length}
         </p>
       </div>

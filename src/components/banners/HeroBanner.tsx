@@ -9,18 +9,23 @@ type Props = {
   settings: HomeSettings;
 };
 
-const FALLBACK_TITLE_LINES = ["NO", "TODOS", "LO", "ENTENDERAN"];
+const FALLBACK_TITLE_LINES = ["NO TODOS", "LO ENTENDERÁN"];
 
 const HeroBanner = ({ settings }: Props) => {
   const titleLines = settings.heroTitle
+    .replace(/\\n/g, "\n")
+    .replace(/\bENTENDERAN\b/gi, "ENTENDERÁN")
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
-  const buttonHref = settings.heroButtonHref || "#catalogo";
+  const buttonHref =
+    !settings.heroButtonHref || settings.heroButtonHref === "#catalogo"
+      ? "/products#catalogo"
+      : settings.heroButtonHref;
   const isExternal = /^https?:\/\//i.test(buttonHref);
 
   return (
-    <section className="relative w-full h-[400px] sm:h-[500px] md:h-[600px] lg:h-[700px] flex items-center justify-center bg-gray-100 dark:bg-gray-900 overflow-hidden">
+    <section className="relative flex h-[50vh] min-h-[360px] max-h-[620px] w-full items-center justify-center overflow-hidden bg-gray-100 sm:h-[52vh] md:h-[56vh] lg:h-[60vh] dark:bg-gray-900">
       <motion.div
         className="absolute inset-0 z-0"
         initial={{ scale: 1.1 }}
@@ -38,15 +43,15 @@ const HeroBanner = ({ settings }: Props) => {
       </motion.div>
 
       <motion.div
-        className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/60 z-0"
+        className="absolute inset-0 z-0 bg-gradient-to-b from-black/15 via-black/35 to-black/60"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1, delay: 0.5 }}
       />
 
-      <div className="relative z-10 text-center text-white px-4 sm:px-6 max-w-4xl mx-auto">
+      <div className="relative z-10 mx-auto max-w-4xl px-4 text-center text-white sm:px-6">
         <motion.h1
-          className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold drop-shadow-lg leading-tight"
+          className="text-3xl font-bold leading-[0.95] drop-shadow-lg sm:text-4xl md:text-5xl lg:text-6xl"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.8, ease: "easeOut" }}
@@ -67,7 +72,7 @@ const HeroBanner = ({ settings }: Props) => {
         </motion.h1>
 
         <motion.p
-          className={`mt-4 sm:mt-6 text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl drop-shadow-md ${poppins.className} tracking-wider`}
+          className={`mt-3 text-xs tracking-[0.28em] drop-shadow-md sm:mt-4 sm:text-sm md:text-base ${poppins.className}`}
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 2.2 }}
@@ -76,7 +81,7 @@ const HeroBanner = ({ settings }: Props) => {
         </motion.p>
 
         <motion.div
-          className="mt-6 sm:mt-8"
+          className="mt-5 sm:mt-6"
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 2.6 }}
@@ -85,7 +90,7 @@ const HeroBanner = ({ settings }: Props) => {
             href={buttonHref}
             target={isExternal ? "_blank" : undefined}
             rel={isExternal ? "noreferrer" : undefined}
-            className="inline-flex px-4 sm:px-6 md:px-8 py-2 sm:py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full text-white font-medium hover:bg-white/20 transition-all duration-300 text-sm sm:text-base"
+            className="inline-flex border border-white/30 bg-white px-5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-black transition-all duration-300 hover:bg-white/85 sm:px-6 sm:py-2.5"
             whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.2)" }}
             whileTap={{ scale: 0.95 }}
           >
@@ -94,44 +99,6 @@ const HeroBanner = ({ settings }: Props) => {
         </motion.div>
       </div>
 
-      <motion.div
-        className="hidden sm:block absolute top-20 left-10 w-2 h-2 bg-white/30 rounded-full"
-        animate={{
-          y: [0, -20, 0],
-          opacity: [0.3, 0.8, 0.3],
-        }}
-        transition={{
-          duration: 3,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
-      <motion.div
-        className="hidden md:block absolute top-40 right-20 w-1 h-1 bg-white/40 rounded-full"
-        animate={{
-          y: [0, -15, 0],
-          opacity: [0.4, 0.9, 0.4],
-        }}
-        transition={{
-          duration: 2.5,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: 1,
-        }}
-      />
-      <motion.div
-        className="hidden lg:block absolute bottom-32 left-20 w-1.5 h-1.5 bg-white/20 rounded-full"
-        animate={{
-          y: [0, -25, 0],
-          opacity: [0.2, 0.7, 0.2],
-        }}
-        transition={{
-          duration: 4,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: 0.5,
-        }}
-      />
     </section>
   );
 };
