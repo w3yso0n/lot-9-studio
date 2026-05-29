@@ -44,9 +44,6 @@ export default async function AdminDashboardPage() {
             <Link href="/admin/dashboard/new-drops">New Drops</Link>
           </Button>
           <Button asChild variant="outline" size="lg" className="shrink-0 w-full sm:w-auto">
-            <Link href="/admin/dashboard/home-settings">Configuración Home</Link>
-          </Button>
-          <Button asChild variant="outline" size="lg" className="shrink-0 w-full sm:w-auto">
             <Link href="/admin/dashboard/home-builder">Constructor Home</Link>
           </Button>
           <Button asChild size="lg" className="shrink-0 w-full sm:w-auto">
