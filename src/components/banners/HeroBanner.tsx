@@ -1,5 +1,6 @@
 import type { HomeSettings } from "@/lib/home-settings";
 import { getProductImageDisplayUrl } from "@/lib/product-image-url";
+import { cloudinaryImageAttributes } from "@/lib/product-upload-paths";
 
 type Props = {
   settings: HomeSettings;
@@ -28,6 +29,7 @@ const HeroBanner = ({ settings }: Props) => {
   const cropZoom = clamp(Number(settings.heroCropZoom) || 1, 1, 3);
   const heroSrc = settings.heroImageUrl?.trim() || "/images/background.png";
   const heroDisplaySrc = getProductImageDisplayUrl(heroSrc, "hero") || heroSrc;
+  const cloudinaryAttrs = cloudinaryImageAttributes(heroSrc);
 
   return (
     <section className="relative flex h-[50vh] min-h-[360px] max-h-[620px] w-full items-center justify-center overflow-hidden bg-muted sm:h-[52vh] md:h-[56vh] lg:h-[60vh]">
@@ -41,6 +43,7 @@ const HeroBanner = ({ settings }: Props) => {
         width={1920}
         height={1200}
         className="absolute inset-0 z-0 h-full w-full object-cover"
+        {...cloudinaryAttrs}
         style={{
           objectPosition: `${cropX}% ${cropY}%`,
           transform: `scale(${cropZoom})`,

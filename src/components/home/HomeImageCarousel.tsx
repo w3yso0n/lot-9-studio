@@ -1,6 +1,7 @@
 "use client";
 
 import { getProductImageDisplayUrl } from "@/lib/product-image-url";
+import { cloudinaryImageAttributes } from "@/lib/product-upload-paths";
 import Link from "next/link";
 import {
   useCallback,
@@ -65,6 +66,7 @@ function CarouselSlide({
       fetchPriority={eagerLoad ? "auto" : "low"}
       className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover"
       aria-hidden={image.isDuplicate || undefined}
+      {...cloudinaryImageAttributes(image.url)}
     />
   );
 

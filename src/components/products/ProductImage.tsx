@@ -6,7 +6,7 @@ import {
   shouldUnoptimizeProductImage,
   type ProductImageDisplaySize,
 } from "@/lib/product-image-url";
-import { isCloudinaryPanelUrl } from "@/lib/product-upload-paths";
+import { isCloudinaryPanelUrl, cloudinaryImageAttributes } from "@/lib/product-upload-paths";
 import Image, { type ImageProps } from "next/image";
 
 type ProductImageProps = Omit<ImageProps, "src"> & {
@@ -35,6 +35,7 @@ export function ProductImage({ src, alt, displaySize, sizes, ...rest }: ProductI
       alt={alt}
       sizes={sizes}
       unoptimized={shouldUnoptimizeProductImage(src)}
+      {...cloudinaryImageAttributes(src)}
       {...rest}
     />
   );

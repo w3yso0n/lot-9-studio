@@ -13,6 +13,15 @@ export function isCloudinaryPanelUrl(webPath: string): boolean {
   return /^https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/.+/i.test(p);
 }
 
+/** Petición de imagen sin cookies ni referrer hacia Cloudinary. */
+export function cloudinaryImageAttributes(src: string): {
+  crossOrigin?: "anonymous";
+  referrerPolicy?: "no-referrer";
+} {
+  if (!isCloudinaryPanelUrl(src)) return {};
+  return { crossOrigin: "anonymous", referrerPolicy: "no-referrer" };
+}
+
 /** Subida propia del panel: se puede borrar al quitar imagen o producto. */
 export function isOwnedUploadPath(webPath: string): boolean {
   return isLocalPanelUploadPath(webPath) || isCloudinaryPanelUrl(webPath);

@@ -10,6 +10,7 @@ import {
   getProductImageDisplayUrl,
   shouldUnoptimizeProductImage,
 } from "@/lib/product-image-url";
+import { cloudinaryImageAttributes } from "@/lib/product-upload-paths";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -205,6 +206,7 @@ export function HomeSectionRenderer({
                 className="object-cover"
                 sizes="(max-width: 1152px) 100vw, 1152px"
                 unoptimized={shouldUnoptimizeProductImage(url)}
+                {...cloudinaryImageAttributes(url)}
               />
               {section.title || section.subtitle ? (
                 <div className="absolute inset-x-6 bottom-6 text-white drop-shadow">
