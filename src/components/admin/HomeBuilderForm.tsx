@@ -88,11 +88,6 @@ function numberContent(section: DraftSection, key: string, fallback: number): nu
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
-function booleanContent(section: DraftSection, key: string, fallback: boolean): boolean {
-  const value = section.content[key];
-  return typeof value === "boolean" ? value : fallback;
-}
-
 function carouselDirectionContent(section: DraftSection): CarouselDirection {
   return stringContent(section, "direction") === "right" ? "right" : "left";
 }
@@ -803,20 +798,10 @@ function SectionFields({
 
   if (section.type === "carousel") {
     const images = imagesContent(section);
-    const autoplay = booleanContent(section, "autoplay", true);
     const direction = carouselDirectionContent(section);
     return (
       <div className="space-y-3">
-        <div className="grid gap-3 rounded-md border bg-neutral-50 p-3 md:grid-cols-3">
-          <label className="flex items-end gap-2 pb-2 text-sm">
-            <input
-              type="checkbox"
-              checked={autoplay}
-              onChange={(event) => updateContent(section.localId, "autoplay", event.target.checked)}
-              className="accent-black"
-            />
-            Autoplay continuo
-          </label>
+        <div className="grid gap-3 rounded-md border bg-neutral-50 p-3 md:grid-cols-2">
           <NumberField
             label="Velocidad (segundos)"
             value={numberContent(section, "speed", 35)}

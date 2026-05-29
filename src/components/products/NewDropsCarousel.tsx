@@ -6,13 +6,23 @@ import { Button } from "@/components/ui/button";
 import type { CatalogProduct } from "@/lib/catalog-product";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Props = { newDrops: CatalogProduct[] };
 
 const NewDropsCarousel = ({ newDrops }: Props) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedImageIndex, setSelectedImageIndex] = useState<Record<number, number>>({});
+
+  useEffect(() => {
+    if (newDrops.length <= 1) return;
+
+    const timer = window.setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % newDrops.length);
+    }, 3500);
+
+    return () => window.clearInterval(timer);
+  }, [newDrops.length]);
 
   if (newDrops.length === 0) {
     return null;
