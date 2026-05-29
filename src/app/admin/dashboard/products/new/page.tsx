@@ -1,9 +1,12 @@
 import { NewProductPageClient } from "@/components/admin/NewProductPageClient";
 import { Button } from "@/components/ui/button";
+import { getProductBadges } from "@/lib/products-repo";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
-export default function NewProductPage() {
+export default async function NewProductPage() {
+  const badges = await getProductBadges();
+
   return (
     <div className="mx-auto w-full max-w-3xl lg:max-w-none">
       <header className="mb-6 space-y-4">
@@ -27,7 +30,7 @@ export default function NewProductPage() {
           </p>
         </div>
       </header>
-      <NewProductPageClient />
+      <NewProductPageClient badges={badges} />
     </div>
   );
 }

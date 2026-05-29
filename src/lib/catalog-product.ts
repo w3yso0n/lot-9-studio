@@ -15,8 +15,16 @@ export type CatalogProduct = {
   desc: string;
   /** En listados: evita agregar todo el stock por talla en SQL. */
   inStock?: boolean;
+  badge?: ProductBadge | null;
   variants?: CatalogProductVariant[];
   colorVariants?: CatalogProductColorVariant[];
+};
+
+export type ProductBadge = {
+  id: number;
+  label: string;
+  backgroundColor: string;
+  textColor: string;
 };
 
 export type CatalogProductVariant = {

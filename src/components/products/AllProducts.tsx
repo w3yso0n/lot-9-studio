@@ -46,14 +46,10 @@ const AllProducts = ({ products, newDrops, homeSettings, dbError }: Props) => {
 
       <div
         id="catalogo"
-        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 scroll-mt-24"
+        className="grid grid-cols-2 gap-x-3 gap-y-8 scroll-mt-24 sm:gap-x-5 md:grid-cols-3 lg:grid-cols-4 lg:gap-x-6 lg:gap-y-10"
       >
         {products.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            className="hover:scale-[1.02] transition-transform duration-200"
-          />
+          <ProductCard key={product.id} product={product} />
         ))}
       </div>
     </section>

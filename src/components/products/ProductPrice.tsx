@@ -26,32 +26,37 @@ export const ProductPrice = ({
   const priceText = `$${formatPrice(price)}`;
   const oldPriceText = oldPrice ? `$${formatPrice(oldPrice)}` : null;
 
-  const priceBoxSize = small ? "text-sm px-3 py-1" : "text-lg px-3 py-1";
-  const containerAlign = align === "left" ? "items-start text-left" : "items-center text-center";
+  const priceSize = small ? "text-sm" : "text-lg sm:text-xl";
+  const regularPriceSize = small ? "text-sm" : "text-xl sm:text-2xl";
+  const containerAlign =
+    align === "left" ? "justify-start text-left" : "justify-center text-center";
 
   if (!showOldPrice) {
     return (
-      <span className={`block text-xl sm:text-2xl font-bold text-gray-900 dark:text-white ${align === "left" ? "text-left" : "text-center"} ${className}`}>
+      <span
+        className={`block ${regularPriceSize} font-semibold text-gray-950 dark:text-white ${
+          align === "left" ? "text-left" : "text-center"
+        } ${className}`}
+      >
         {priceText}
       </span>
     );
   }
 
   return (
-    <div className={`flex flex-col ${containerAlign} ${className}`}>
-      <span className="text-sm font-medium text-gray-500 dark:text-gray-400 line-through">
+    <div
+      className={`flex flex-wrap items-baseline gap-x-2 gap-y-1 ${containerAlign} ${className}`}
+    >
+      <span className="text-xs font-medium text-gray-500 line-through dark:text-gray-400">
         {oldPriceText}
       </span>
 
-      <div className="mt-1">
-        <div
-          role="status"
-          className={`inline-flex items-center justify-center rounded-md ${priceBoxSize} font-extrabold text-white bg-red-600 dark:bg-red-500 border border-red-600 shadow-sm select-none`}
-          aria-hidden
-        >
-          {priceText}
-        </div>
-      </div>
+      <span
+        role="status"
+        className={`${priceSize} font-semibold text-red-700 dark:text-red-400`}
+      >
+        {priceText}
+      </span>
     </div>
   );
 };

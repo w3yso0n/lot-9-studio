@@ -1,6 +1,6 @@
 import { AdminProductEditorShell } from "@/components/admin/AdminProductEditorShell";
 import { deleteProductAction } from "@/app/admin/dashboard/actions";
-import { getAdminProductById } from "@/lib/products-repo";
+import { getAdminProductById, getProductBadges } from "@/lib/products-repo";
 import { Button } from "@/components/ui/button";
 import { notFound } from "next/navigation";
 
@@ -10,7 +10,10 @@ export default async function EditProductPage({ params }: Props) {
   const { id: idStr } = await params;
   const id = Number(idStr);
   if (!Number.isFinite(id)) notFound();
-  const product = await getAdminProductById(id);
+  const [product, badges] = await Promise.all([
+    getAdminProductById(id),
+    getProductBadges(),
+  ]);
   if (!product) notFound();
 
   return (
@@ -26,6 +29,7 @@ export default async function EditProductPage({ params }: Props) {
       </div>
       <AdminProductEditorShell
         initial={product}
+        badges={badges}
         key={`${product.id}-${(product.colorVariants ?? []).length}-${product.images.join("~")}`}
       />
     </div>

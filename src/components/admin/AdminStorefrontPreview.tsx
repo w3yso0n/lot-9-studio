@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import type { ProductBadge } from "@/lib/catalog-product";
 import { useMemo, useState } from "react";
 
 export type AdminPreviewColorVariant = {
@@ -22,6 +23,7 @@ export type AdminStorefrontPreviewProps = {
   description: string;
   sizes: string[];
   stockBySize: Record<string, number>;
+  badge?: ProductBadge | null;
   colorVariants?: AdminPreviewColorVariant[];
   isPublished: boolean;
 };
@@ -51,6 +53,7 @@ export function AdminStorefrontPreview({
   description,
   sizes,
   stockBySize,
+  badge,
   colorVariants = [],
   isPublished,
 }: AdminStorefrontPreviewProps) {
@@ -100,6 +103,20 @@ export function AdminStorefrontPreview({
   const catalogStock = aggregateStock(options, sizes, stockBySize);
   const catalogHasStock = sizes.some((size) => (catalogStock[size] ?? 0) > 0);
   const activeHasStock = sizes.some((size) => (activeStock[size] ?? 0) > 0);
+  const catalogBadge = !catalogHasStock
+    ? {
+        label: "SOLD OUT",
+        backgroundColor: "#000000",
+        textColor: "#FFFFFF",
+      }
+    : badge;
+  const activeBadge = !activeHasStock
+    ? {
+        label: "SOLD OUT",
+        backgroundColor: "#000000",
+        textColor: "#FFFFFF",
+      }
+    : badge;
 
   return (
     <aside className="w-full max-w-md mx-auto lg:mx-0 lg:max-w-none space-y-5 lg:sticky lg:top-24">
@@ -136,7 +153,7 @@ export function AdminStorefrontPreview({
                 src={catalogCover}
                 alt=""
                 fill
-                className="object-cover"
+                className="object-contain p-5"
                 sizes="400px"
               />
             ) : (
@@ -144,16 +161,16 @@ export function AdminStorefrontPreview({
                 Sin imagen
               </div>
             )}
-            {!catalogHasStock && catalogCover ? (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/45">
-                <AdminPreviewImage
-                  src="/images/sold_out.png"
-                  alt="Agotado"
-                  width={140}
-                  height={140}
-                  className="opacity-90"
-                />
-              </div>
+            {catalogBadge ? (
+              <span
+                className="absolute left-3 top-3 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]"
+                style={{
+                  backgroundColor: catalogBadge.backgroundColor,
+                  color: catalogBadge.textColor,
+                }}
+              >
+                {catalogBadge.label}
+              </span>
             ) : null}
           </div>
           <div className="p-4 space-y-2 text-center border-t bg-background/80">
@@ -200,7 +217,7 @@ export function AdminStorefrontPreview({
                   src={mainDetail}
                   alt=""
                   fill
-                  className="object-cover rounded-lg"
+                  className="object-contain rounded-lg p-4"
                   sizes="280px"
                 />
               ) : (
@@ -208,16 +225,16 @@ export function AdminStorefrontPreview({
                   Añade fotos a un color
                 </div>
               )}
-              {!activeHasStock && mainDetail ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
-                  <AdminPreviewImage
-                    src="/images/sold_out.png"
-                    alt="Agotado"
-                    width={100}
-                    height={100}
-                    className="opacity-90"
-                  />
-                </div>
+              {activeBadge ? (
+                <span
+                  className="absolute left-3 top-3 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]"
+                  style={{
+                    backgroundColor: activeBadge.backgroundColor,
+                    color: activeBadge.textColor,
+                  }}
+                >
+                  {activeBadge.label}
+                </span>
               ) : null}
             </div>
           </div>

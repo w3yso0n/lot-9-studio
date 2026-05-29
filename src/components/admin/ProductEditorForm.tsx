@@ -11,8 +11,15 @@ import { AdminStorefrontPreview } from "@/components/admin/AdminStorefrontPrevie
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import type { AdminProductRow } from "@/lib/products-repo";
+import type { AdminProductBadge, AdminProductRow } from "@/lib/products-repo";
 import {
   CATALOG_COLOR_FILTER_OPTIONS,
   COLOR_FILTER_LABELS,
@@ -70,6 +77,7 @@ const SUGGESTED_COLOR_NAMES = ["Negra", "Blanca", "Hueso", "Gris"] as const;
 
 type Props = {
   initial?: AdminProductRow | null;
+  badges: AdminProductBadge[];
   /** Vista previa en columna (recomendado en “Nuevo producto”). */
   showLivePreview?: boolean;
 };
@@ -176,6 +184,7 @@ function moveArrayItem<T>(items: T[], fromIndex: number, toIndex: number): T[] {
 
 export function ProductEditorForm({
   initial,
+  badges,
   showLivePreview = false,
 }: Props) {
   const [state, formAction, pending] = useActionState(
@@ -193,6 +202,16 @@ export function ProductEditorForm({
     const oldPrice = getInitialOldPrice(initial);
     return oldPrice != null ? String(oldPrice) : "";
   });
+  const [badgeSelect, setBadgeSelect] = useState(
+    initial?.badge ? String(initial.badge.id) : "none"
+  );
+  const [badgeLabel, setBadgeLabel] = useState(initial?.badge?.label ?? "");
+  const [badgeBgColor, setBadgeBgColor] = useState(
+    initial?.badge?.backgroundColor ?? "#000000"
+  );
+  const [badgeTextColor, setBadgeTextColor] = useState(
+    initial?.badge?.textColor ?? "#FFFFFF"
+  );
 
   const [description, setDescription] = useState(initial?.desc ?? "");
   const [imagePaths, setImagePaths] = useState<string[]>(
@@ -240,6 +259,21 @@ export function ProductEditorForm({
   const previewPrice = Number.parseFloat(priceStr.replace(",", ".")) || 0;
   const previewSizes = sortSizesSelected(selectedSizes);
   const usesColorVariants = colorVariants.length > 0;
+  const badgeOptions = useMemo(() => {
+    if (!initial?.badge || badges.some((badge) => badge.id === initial.badge?.id)) {
+      return badges;
+    }
+    return [...badges, initial.badge];
+  }, [badges, initial?.badge]);
+  const previewBadge =
+    badgeSelect === "none" || !badgeLabel.trim()
+      ? null
+      : {
+          id: badgeSelect === "new" ? 0 : Number(badgeSelect),
+          label: badgeLabel,
+          backgroundColor: badgeBgColor,
+          textColor: badgeTextColor,
+        };
 
   const previewImages = useMemo(() => {
     const fromVariant = colorVariants[0]?.images
@@ -295,6 +329,10 @@ export function ProductEditorForm({
     setName(initial?.name ?? "");
     setPriceStr(initial?.price != null ? String(initial.price) : "");
     setOldPriceStr(oldPrice != null ? String(oldPrice) : "");
+    setBadgeSelect(initial?.badge ? String(initial.badge.id) : "none");
+    setBadgeLabel(initial?.badge?.label ?? "");
+    setBadgeBgColor(initial?.badge?.backgroundColor ?? "#000000");
+    setBadgeTextColor(initial?.badge?.textColor ?? "#FFFFFF");
     setDescription(initial?.desc ?? "");
     setImagePaths(initial?.images ?? []);
     setCoverImagePath(initial?.coverImage ?? "");
@@ -307,6 +345,10 @@ export function ProductEditorForm({
     initial?.name,
     initial?.price,
     getInitialOldPrice(initial),
+    initial?.badge?.id,
+    initial?.badge?.label,
+    initial?.badge?.backgroundColor,
+    initial?.badge?.textColor,
     initial?.desc,
     initial?.images?.join("|"),
     initial?.coverImage,
@@ -680,6 +722,27 @@ export function ProductEditorForm({
     }
   }
 
+  function onBadgeSelect(value: string) {
+    setBadgeSelect(value);
+    if (value === "none") {
+      setBadgeLabel("");
+      setBadgeBgColor("#000000");
+      setBadgeTextColor("#FFFFFF");
+      return;
+    }
+    if (value === "new") {
+      setBadgeLabel("");
+      setBadgeBgColor("#000000");
+      setBadgeTextColor("#FFFFFF");
+      return;
+    }
+    const selected = badgeOptions.find((badge) => String(badge.id) === value);
+    if (!selected) return;
+    setBadgeLabel(selected.label);
+    setBadgeBgColor(selected.backgroundColor);
+    setBadgeTextColor(selected.textColor);
+  }
+
   const formInner = (
     <form
       action={formAction}
@@ -715,6 +778,11 @@ export function ProductEditorForm({
       <input type="hidden" name="variant_label" value={variantLabelForSubmit} />
       <input type="hidden" name="cover_image_path" value={coverImagePath} />
       <input type="hidden" name="hover_image_path" value={hoverImagePath} />
+      <input
+        type="hidden"
+        name="badge_id"
+        value={badgeSelect === "none" ? "" : badgeSelect}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
@@ -747,6 +815,88 @@ export function ProductEditorForm({
             Si lo dejas vacío, en 0 o menor a 1, no se mostrará precio tachado.
           </p>
         </div>
+      </div>
+
+      <div className="space-y-4 rounded-lg border bg-muted/15 p-4">
+        <div>
+          <Label className="text-base">Badge del producto</Label>
+          <p className="text-sm text-muted-foreground mt-1">
+            Si el producto se agota, la tienda mostrarÃ¡ SOLD OUT aunque tenga
+            otro badge manual.
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+          <div className="space-y-2">
+            <Label>Etiqueta</Label>
+            <Select value={badgeSelect} onValueChange={onBadgeSelect}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Sin badge" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sin badge</SelectItem>
+                <SelectItem value="new">Crear nueva etiqueta</SelectItem>
+                {badgeOptions.map((badge) => (
+                  <SelectItem key={badge.id} value={String(badge.id)}>
+                    {badge.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <span
+            className="inline-flex h-9 items-center justify-center px-3 text-[11px] font-semibold uppercase tracking-[0.16em]"
+            style={{ backgroundColor: badgeBgColor, color: badgeTextColor }}
+          >
+            {badgeLabel.trim() || "PREVIEW"}
+          </span>
+        </div>
+
+        {badgeSelect !== "none" ? (
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_140px_140px]">
+            <div className="space-y-2">
+              <Label htmlFor="badge_label">Texto del badge</Label>
+              <Input
+                id="badge_label"
+                name="badge_label"
+                value={badgeLabel}
+                placeholder="SALE, HOT DEAL, LIMITED..."
+                onChange={(e) => setBadgeLabel(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="badge_bg_color">Fondo</Label>
+              <Input
+                id="badge_bg_color"
+                name="badge_bg_color"
+                type="color"
+                value={badgeBgColor}
+                onChange={(e) => setBadgeBgColor(e.target.value)}
+                className="h-10 p-1"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="badge_text_color">Texto</Label>
+              <Input
+                id="badge_text_color"
+                name="badge_text_color"
+                type="color"
+                value={badgeTextColor}
+                onChange={(e) => setBadgeTextColor(e.target.value)}
+                className="h-10 p-1"
+              />
+            </div>
+          </div>
+        ) : (
+          <>
+            <input type="hidden" name="badge_label" value="" />
+            <input type="hidden" name="badge_bg_color" value="#000000" />
+            <input type="hidden" name="badge_text_color" value="#FFFFFF" />
+          </>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -1212,6 +1362,7 @@ export function ProductEditorForm({
         description={description}
         sizes={previewSizes}
         stockBySize={previewStockBySize}
+        badge={previewBadge}
         colorVariants={colorVariants.map((variant) => ({
           label: variant.label,
           images: variant.images

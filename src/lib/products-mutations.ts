@@ -1,4 +1,5 @@
 import { getPool } from "@/lib/db";
+import { ensureProductBadgesSchema } from "@/lib/product-badges-schema";
 import { isOwnedUploadPath } from "@/lib/upload-products";
 import { deletePanelUploadFile } from "@/lib/panel-upload-delete";
 import { CATALOG_COLOR_FILTER_OPTIONS } from "@/lib/catalog-color-filters";
@@ -9,6 +10,10 @@ export type ProductMutationInput = {
   name: string;
   price: number;
   oldPrice: number | null;
+  badgeId: number | null;
+  badgeLabel: string;
+  badgeBackgroundColor: string;
+  badgeTextColor: string;
   variantLabel: string;
   description: string;
   isPublished: boolean;
@@ -25,6 +30,43 @@ export type ProductMutationInput = {
     stockBySize: Record<string, number>;
   }[];
 };
+
+function normalizeHexColor(value: string, fallback: string): string {
+  const trimmed = value.trim();
+  return /^#[0-9a-f]{6}$/i.test(trimmed) ? trimmed.toUpperCase() : fallback;
+}
+
+async function resolveBadgeId(
+  client: PoolClient,
+  input: ProductMutationInput
+): Promise<number | null> {
+  const label = input.badgeLabel.trim().toUpperCase();
+  if (!label) return null;
+
+  const backgroundColor = normalizeHexColor(
+    input.badgeBackgroundColor,
+    "#000000"
+  );
+  const textColor = normalizeHexColor(input.badgeTextColor, "#FFFFFF");
+
+  if (input.badgeId != null) {
+    const { rowCount } = await client.query(
+      `UPDATE product_badges
+       SET label = $1, background_color = $2, text_color = $3, updated_at = now()
+       WHERE id = $4`,
+      [label, backgroundColor, textColor, input.badgeId]
+    );
+    return (rowCount ?? 0) > 0 ? input.badgeId : null;
+  }
+
+  const { rows } = await client.query<{ id: number }>(
+    `INSERT INTO product_badges (label, background_color, text_color)
+     VALUES ($1, $2, $3)
+     RETURNING id`,
+    [label, backgroundColor, textColor]
+  );
+  return rows[0].id;
+}
 
 async function replaceChildRows(
   client: PoolClient,
@@ -159,29 +201,33 @@ function resolveHoverImagePath(input: ProductMutationInput): string | null {
 }
 
 export async function insertProduct(input: ProductMutationInput): Promise<number> {
+  await ensureProductBadgesSchema();
   const pool = getPool();
   const client = await pool.connect();
 
   try {
     await client.query("BEGIN");
+    const badgeId = await resolveBadgeId(client, input);
 
     const { rows } = await client.query<{ id: number }>(
       `INSERT INTO products (
         name,
         price,
         old_price,
+        badge_id,
         variant_label,
         cover_image_path,
         hover_image_path,
         description,
         is_published
       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING id`,
       [
         input.name,
         input.price,
         input.oldPrice,
+        badgeId,
         input.variantLabel,
         resolveCoverImagePath(input),
         resolveHoverImagePath(input),
@@ -205,12 +251,14 @@ export async function insertProduct(input: ProductMutationInput): Promise<number
 }
 
 export async function updateProduct(id: number, input: ProductMutationInput): Promise<void> {
+  await ensureProductBadgesSchema();
   const pool = getPool();
   const client = await pool.connect();
   let pathsToUnlink: string[] = [];
 
   try {
     await client.query("BEGIN");
+    const badgeId = await resolveBadgeId(client, input);
 
     const { rows: prevImg } = await client.query<{ path: string }>(
       `SELECT path FROM product_images WHERE product_id = $1`,
@@ -245,17 +293,19 @@ export async function updateProduct(id: number, input: ProductMutationInput): Pr
         name = $1,
         price = $2,
         old_price = $3,
-        variant_label = $4,
-        cover_image_path = $5,
-        hover_image_path = $6,
-        description = $7,
-        is_published = $8,
+        badge_id = $4,
+        variant_label = $5,
+        cover_image_path = $6,
+        hover_image_path = $7,
+        description = $8,
+        is_published = $9,
         updated_at = now()
-       WHERE id = $9`,
+       WHERE id = $10`,
       [
         input.name,
         input.price,
         input.oldPrice,
+        badgeId,
         input.variantLabel,
         resolveCoverImagePath(input),
         resolveHoverImagePath(input),
@@ -376,6 +426,22 @@ export function parseProductForm(form: FormData): ProductMutationInput {
     oldPriceRaw === "" || !Number.isFinite(oldPriceNumber) || oldPriceNumber <= 1
       ? null
       : oldPriceNumber;
+
+  const badgeRaw = String(form.get("badge_id") ?? "").trim();
+  const badgeIdNumber = Number(badgeRaw);
+  const badgeId =
+    badgeRaw && badgeRaw !== "new" && Number.isFinite(badgeIdNumber)
+      ? badgeIdNumber
+      : null;
+  const badgeLabel = String(form.get("badge_label") ?? "").trim();
+  const badgeBackgroundColor = normalizeHexColor(
+    String(form.get("badge_bg_color") ?? ""),
+    "#000000"
+  );
+  const badgeTextColor = normalizeHexColor(
+    String(form.get("badge_text_color") ?? ""),
+    "#FFFFFF"
+  );
 
   const variantLabel = String(form.get("variant_label") ?? "").trim();
   const coverImagePath = String(form.get("cover_image_path") ?? "").trim();
@@ -501,6 +567,10 @@ export function parseProductForm(form: FormData): ProductMutationInput {
     name,
     price: Number.isFinite(price) ? price : 0,
     oldPrice,
+    badgeId,
+    badgeLabel,
+    badgeBackgroundColor,
+    badgeTextColor,
     variantLabel: resolvedVariantLabel,
     description,
     isPublished,

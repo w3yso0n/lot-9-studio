@@ -1,15 +1,16 @@
 "use client";
 
 import { ProductEditorForm } from "@/components/admin/ProductEditorForm";
-import type { AdminProductRow } from "@/lib/products-repo";
+import type { AdminProductBadge, AdminProductRow } from "@/lib/products-repo";
 import { useEffect, useState } from "react";
 
 type Props = {
   initial?: AdminProductRow | null;
+  badges: AdminProductBadge[];
 };
 
 /** Vista previa solo en desktop (evita duplicar imágenes en móvil). */
-export function AdminProductEditorShell({ initial }: Props) {
+export function AdminProductEditorShell({ initial, badges }: Props) {
   const [showLivePreview, setShowLivePreview] = useState(false);
 
   useEffect(() => {
@@ -21,6 +22,10 @@ export function AdminProductEditorShell({ initial }: Props) {
   }, []);
 
   return (
-    <ProductEditorForm initial={initial} showLivePreview={showLivePreview} />
+    <ProductEditorForm
+      initial={initial}
+      badges={badges}
+      showLivePreview={showLivePreview}
+    />
   );
 }

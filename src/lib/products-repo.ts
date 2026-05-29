@@ -1,9 +1,11 @@
 import type {
   CatalogProduct,
   CatalogProductColorVariant,
+  ProductBadge,
 } from "@/lib/catalog-product";
 import { CATALOG_SIZE_ORDER } from "@/lib/catalog-sizes";
 import { getPool } from "@/lib/db";
+import { ensureProductBadgesSchema } from "@/lib/product-badges-schema";
 import { sanitizeProductImagePaths } from "@/lib/product-image-url";
 import { unstable_cache } from "next/cache";
 import type { QueryResultRow } from "pg";
@@ -16,6 +18,10 @@ type ProductRow = QueryResultRow & {
   color: string;
   cover_image?: string | null;
   hover_image?: string | null;
+  badge_id?: number | null;
+  badge_label?: string | null;
+  badge_background_color?: string | null;
+  badge_text_color?: string | null;
   product_desc: string;
   images: unknown;
   stock_by_size: unknown;
@@ -31,6 +37,10 @@ type CatalogGridRow = QueryResultRow & {
   color: string;
   cover_image: string | null;
   hover_image: string | null;
+  badge_id?: number | null;
+  badge_label?: string | null;
+  badge_background_color?: string | null;
+  badge_text_color?: string | null;
   in_stock: boolean;
 };
 
@@ -42,6 +52,10 @@ type NewDropRow = QueryResultRow & {
   color: string;
   cover_image: string | null;
   hover_image: string | null;
+  badge_id?: number | null;
+  badge_label?: string | null;
+  badge_background_color?: string | null;
+  badge_text_color?: string | null;
   images: unknown;
   in_stock: boolean;
 };
@@ -72,6 +86,13 @@ type ProductColorVariantRow = QueryResultRow & {
   stock_by_size: unknown;
 };
 
+type ProductBadgeRow = QueryResultRow & {
+  id: number;
+  label: string;
+  background_color: string;
+  text_color: string;
+};
+
 function parseJsonArray(v: unknown): string[] {
   if (v == null) return [];
   if (Array.isArray(v)) return v.map(String);
@@ -86,6 +107,21 @@ function parseStock(v: unknown): Record<string, number> {
     if (!Number.isNaN(n)) out[k] = n;
   }
   return out;
+}
+
+function rowToBadge(row: {
+  badge_id?: number | null;
+  badge_label?: string | null;
+  badge_background_color?: string | null;
+  badge_text_color?: string | null;
+}): ProductBadge | null {
+  if (row.badge_id == null || !row.badge_label) return null;
+  return {
+    id: row.badge_id,
+    label: row.badge_label,
+    backgroundColor: row.badge_background_color || "#000000",
+    textColor: row.badge_text_color || "#FFFFFF",
+  };
 }
 
 function normalizeSizes(
@@ -116,6 +152,7 @@ function rowToProduct(row: ProductRow): CatalogProduct {
     images: sanitizeProductImagePaths(parseJsonArray(row.images)),
     coverImage: cover,
     hoverImage: hover,
+    badge: rowToBadge(row),
     stockBySize,
     sizes,
     colors: parseJsonArray(row.colors),
@@ -249,6 +286,7 @@ function rowToCatalogGridProduct(row: CatalogGridRow): CatalogProduct {
     images,
     coverImage: cover || null,
     hoverImage: hover || null,
+    badge: rowToBadge(row),
     stockBySize: {},
     sizes: [],
     colors: [],
@@ -273,6 +311,7 @@ function rowToNewDropProduct(row: NewDropRow): CatalogProduct {
       : prioritizeCoverImage(parseJsonArray(row.images), cover),
     coverImage: cover || null,
     hoverImage: hover || null,
+    badge: rowToBadge(row),
     stockBySize: {},
     sizes: [],
     colors: [],
@@ -289,6 +328,10 @@ const productSelectList = `
   p.variant_label AS color,
   p.cover_image_path AS cover_image,
   p.hover_image_path AS hover_image,
+  b.id AS badge_id,
+  b.label AS badge_label,
+  b.background_color AS badge_background_color,
+  b.text_color AS badge_text_color,
   COALESCE(p.description, '') AS product_desc,
   COALESCE(
     (SELECT json_agg(pi.path ORDER BY pi.sort_order, pi.id)
@@ -312,7 +355,7 @@ const productSelectList = `
   ) AS colors
 `;
 
-const productSelect = `SELECT ${productSelectList} FROM products p`;
+const productSelect = `SELECT ${productSelectList} FROM products p LEFT JOIN product_badges b ON b.id = p.badge_id`;
 
 const firstColorVariantImageSql = `
     (SELECT COALESCE(pcvi.image_path, pcv.image_path)
@@ -373,11 +416,16 @@ const catalogGridSql = `
     p.variant_label AS color,
     ${fallbackProductCoverSql} AS cover_image,
     ${fallbackProductHoverSql} AS hover_image,
+    b.id AS badge_id,
+    b.label AS badge_label,
+    b.background_color AS badge_background_color,
+    b.text_color AS badge_text_color,
     EXISTS (
       SELECT 1 FROM product_stock ps
       WHERE ps.product_id = p.id AND ps.quantity > 0
     ) AS in_stock
   FROM products p
+  LEFT JOIN product_badges b ON b.id = p.badge_id
   WHERE p.is_published = true
   ORDER BY p.id DESC`;
 
@@ -390,6 +438,10 @@ const newDropsSql = `
     p.variant_label AS color,
     COALESCE(NULLIF(nd.selected_image_path, ''), ${fallbackProductCoverSql}) AS cover_image,
     ${fallbackProductHoverSql} AS hover_image,
+    b.id AS badge_id,
+    b.label AS badge_label,
+    b.background_color AS badge_background_color,
+    b.text_color AS badge_text_color,
     COALESCE(
       CASE
         WHEN EXISTS (SELECT 1 FROM product_color_variants pcv WHERE pcv.product_id = p.id)
@@ -418,6 +470,7 @@ const newDropsSql = `
       WHERE ps.product_id = p.id AND ps.quantity > 0
     ) AS in_stock
   FROM products p
+  LEFT JOIN product_badges b ON b.id = p.badge_id
   INNER JOIN new_drop_items nd ON nd.product_id = p.id
   WHERE p.is_published = true
   ORDER BY nd.sort_order ASC, p.id DESC`;
@@ -429,6 +482,7 @@ export type StorefrontHomeData = {
 
 /** Una conexión, dos consultas en paralelo (home y /products). */
 async function fetchStorefrontHomeData(): Promise<StorefrontHomeData> {
+  await ensureProductBadgesSchema();
   const pool = getPool();
   const [grid, drops] = await Promise.all([
     pool.query<CatalogGridRow>(catalogGridSql),
@@ -462,6 +516,10 @@ const productDetailSelectList = `
   p.variant_label AS color,
   p.cover_image_path AS cover_image,
   p.hover_image_path AS hover_image,
+  b.id AS badge_id,
+  b.label AS badge_label,
+  b.background_color AS badge_background_color,
+  b.text_color AS badge_text_color,
   COALESCE(p.description, '') AS product_desc,
   COALESCE(
   CASE
@@ -519,6 +577,7 @@ async function fetchProductById(
   id: number,
   opts?: { includeUnpublished?: boolean }
 ): Promise<CatalogProduct | null> {
+  await ensureProductBadgesSchema();
   const pool = getPool();
   const pub = opts?.includeUnpublished ? "" : "AND p.is_published = true";
   const { rows } = await pool.query<
@@ -526,6 +585,7 @@ async function fetchProductById(
   >(
     `SELECT ${productDetailSelectList}, ${colorVariantsAggSql}
      FROM products p
+     LEFT JOIN product_badges b ON b.id = p.badge_id
      WHERE p.id = $1 ${pub}`,
     [id]
   );
@@ -596,6 +656,8 @@ export type AdminProductRow = CatalogProduct & {
   variantProductIds: number[];
 };
 
+export type AdminProductBadge = ProductBadge;
+
 /** Listado admin: solo datos de tarjeta (portada + precio + estado). */
 export type AdminProductListItem = {
   id: number;
@@ -609,6 +671,7 @@ export type AdminProductListItem = {
 };
 
 export async function getAdminProductList(): Promise<AdminProductListItem[]> {
+  await ensureProductBadgesSchema();
   const pool = getPool();
   const { rows } = await pool.query<AdminListRow>(
     `SELECT
@@ -646,6 +709,7 @@ export async function getAdminProductList(): Promise<AdminProductListItem[]> {
 }
 
 export async function getAdminProductById(id: number): Promise<AdminProductRow | null> {
+  await ensureProductBadgesSchema();
   const pool = getPool();
   const { rows } = await pool.query<
     ProductRow & { is_published: boolean; new_drop_sort: number | null }
@@ -654,6 +718,7 @@ export async function getAdminProductById(id: number): Promise<AdminProductRow |
       p.is_published,
       (SELECT nd.sort_order FROM new_drop_items nd WHERE nd.product_id = p.id) AS new_drop_sort
      FROM products p
+     LEFT JOIN product_badges b ON b.id = p.badge_id
      WHERE p.id = $1`,
     [id]
   );
@@ -676,4 +741,20 @@ export async function getAdminProductById(id: number): Promise<AdminProductRow |
     variantProductIds: variantRows.map((r) => r.variant_product_id),
     colorVariants,
   };
+}
+
+export async function getProductBadges(): Promise<AdminProductBadge[]> {
+  await ensureProductBadgesSchema();
+  const pool = getPool();
+  const { rows } = await pool.query<ProductBadgeRow>(
+    `SELECT id, label, background_color, text_color
+     FROM product_badges
+     ORDER BY label ASC, id ASC`
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    label: row.label,
+    backgroundColor: row.background_color,
+    textColor: row.text_color,
+  }));
 }

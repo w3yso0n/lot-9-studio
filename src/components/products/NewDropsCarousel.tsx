@@ -42,7 +42,7 @@ const NewDropsCarousel = ({ newDrops }: Props) => {
       </div>
 
       <div className="relative">
-        <div className="overflow-hidden rounded-xl">
+        <div className="overflow-hidden">
           <div
             className="flex transition-transform duration-500 ease-in-out"
             style={{ transform: `translateX(-${currentIndex * 100}%)` }}
@@ -61,7 +61,7 @@ const NewDropsCarousel = ({ newDrops }: Props) => {
               return (
                 <div key={product.id} className="w-full shrink-0 px-2 relative">
                   <div className="max-w-sm mx-auto pb-20 space-y-12">
-                    <ProductCard product={mainProduct} className="shadow-xl" />
+                    <ProductCard product={mainProduct} />
 
                     {product.images.length > 1 && (
                       <div className="absolute bottom-2 left-0 right-0 flex gap-2 justify-center px-4 pb-6">
@@ -75,9 +75,9 @@ const NewDropsCarousel = ({ newDrops }: Props) => {
                                 [product.id]: imgIndex,
                               }))
                             }
-                            className={`relative w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                            className={`relative w-12 h-12 sm:w-16 sm:h-16 overflow-hidden border transition-colors ${
                               currentImageIndex === imgIndex
-                                ? "border-primary"
+                                ? "border-black dark:border-white"
                                 : "border-gray-200 dark:border-gray-700 hover:border-gray-400"
                             }`}
                           >
@@ -85,7 +85,7 @@ const NewDropsCarousel = ({ newDrops }: Props) => {
                               src={img}
                               alt={`${product.name} - Imagen ${imgIndex + 1}`}
                               fill
-                              className="object-cover"
+                              className="object-contain bg-neutral-100 p-1 dark:bg-zinc-900"
                               sizes="64px"
                             />
                           </button>
