@@ -167,6 +167,55 @@
   .animate-glow {
     animation: glow 2s ease-in-out infinite;
   }
+
+  @keyframes home-marquee-left {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+    to {
+      transform: translate3d(-50%, 0, 0);
+    }
+  }
+
+  @keyframes home-marquee-right {
+    from {
+      transform: translate3d(-50%, 0, 0);
+    }
+    to {
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  .home-marquee {
+    scrollbar-width: none;
+  }
+
+  .home-marquee::-webkit-scrollbar {
+    display: none;
+  }
+
+  .home-marquee[data-autoplay="true"] .home-marquee-track {
+    animation: home-marquee-left var(--home-carousel-duration, 35s) linear infinite;
+  }
+
+  .home-marquee[data-autoplay="true"][data-direction="right"] .home-marquee-track {
+    animation-name: home-marquee-right;
+  }
+
+  .home-marquee[data-autoplay="false"] {
+    overflow-x: auto;
+  }
+
+  .home-marquee[data-autoplay="false"] .home-marquee-track {
+    padding-bottom: 0.5rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .home-marquee[data-autoplay="true"] .home-marquee-track {
+      animation: none;
+      transform: translate3d(0, 0, 0);
+    }
+  }
   
   /* Smooth scrolling */
   html {

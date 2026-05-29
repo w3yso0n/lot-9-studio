@@ -26,6 +26,7 @@ import Image from "next/image";
 import { useActionState, useMemo, useState, useTransition } from "react";
 
 type CarouselImage = { url: string; alt?: string; link?: string };
+type CarouselDirection = "left" | "right";
 type DraftSection = HomeSection & { localId: string };
 
 const SECTION_LABELS: Record<HomeSectionType, string> = {
@@ -55,7 +56,7 @@ function newSection(type: HomeSectionType, sortOrder = 0): DraftSection {
       type === "catalog"
         ? { limit: 8, showMore: true }
         : type === "carousel"
-          ? { images: [] }
+          ? { images: [], autoplay: true, speed: 35, direction: "left" }
           : {},
     sortOrder,
     isEnabled: true,
@@ -85,6 +86,15 @@ function stringContent(section: DraftSection, key: string): string {
 function numberContent(section: DraftSection, key: string, fallback: number): number {
   const value = section.content[key];
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function booleanContent(section: DraftSection, key: string, fallback: boolean): boolean {
+  const value = section.content[key];
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function carouselDirectionContent(section: DraftSection): CarouselDirection {
+  return stringContent(section, "direction") === "right" ? "right" : "left";
 }
 
 function imagesContent(section: DraftSection): CarouselImage[] {
@@ -611,7 +621,7 @@ export function HomeBuilderForm({ initialSections, homeSettings }: Props) {
                               event.target.value === "catalog"
                                 ? { limit: 8, showMore: true }
                                 : event.target.value === "carousel"
-                                  ? { images: [] }
+                                  ? { images: [], autoplay: true, speed: 35, direction: "left" }
                                   : {},
                           })
                         }
@@ -793,8 +803,39 @@ function SectionFields({
 
   if (section.type === "carousel") {
     const images = imagesContent(section);
+    const autoplay = booleanContent(section, "autoplay", true);
+    const direction = carouselDirectionContent(section);
     return (
       <div className="space-y-3">
+        <div className="grid gap-3 rounded-md border bg-neutral-50 p-3 md:grid-cols-3">
+          <label className="flex items-end gap-2 pb-2 text-sm">
+            <input
+              type="checkbox"
+              checked={autoplay}
+              onChange={(event) => updateContent(section.localId, "autoplay", event.target.checked)}
+              className="accent-black"
+            />
+            Autoplay continuo
+          </label>
+          <NumberField
+            label="Velocidad (segundos)"
+            value={numberContent(section, "speed", 35)}
+            onChange={(value) =>
+              updateContent(section.localId, "speed", Math.min(90, Math.max(18, value)))
+            }
+          />
+          <div className="space-y-1.5">
+            <Label>Dirección</Label>
+            <select
+              value={direction}
+              onChange={(event) => updateContent(section.localId, "direction", event.target.value)}
+              className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="left">Izquierda</option>
+              <option value="right">Derecha</option>
+            </select>
+          </div>
+        </div>
         <UploadField label="Agregar imagen al carrusel" accept="image/jpeg,image/png,image/webp" disabled={uploading} onFile={(file) => uploadAsset(section.localId, file, "image")} />
         {images.length === 0 ? (
           <div className="rounded-md border border-dashed bg-neutral-50 p-5 text-center text-sm text-muted-foreground">

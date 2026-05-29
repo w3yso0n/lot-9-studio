@@ -8,6 +8,7 @@ import type { HomeSection } from "@/lib/home-sections";
 import type { HomeSettings } from "@/lib/home-settings";
 import Image from "next/image";
 import Link from "next/link";
+import type { CSSProperties } from "react";
 
 type Props = {
   sections: HomeSection[];
@@ -26,6 +27,15 @@ function numberValue(value: unknown, fallback: number): number {
 
 function booleanValue(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
+}
+
+function carouselSpeedValue(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.min(90, Math.max(18, value));
+  }
+  if (value === "slow" || value === "lento") return 55;
+  if (value === "fast" || value === "rapido" || value === "rápido") return 24;
+  return 35;
 }
 
 function imagesValue(value: unknown): Array<{ url: string; alt?: string; link?: string }> {
@@ -230,32 +240,63 @@ export function HomeSectionRenderer({
         if (section.type === "carousel") {
           const images = imagesValue(section.content.images);
           if (images.length === 0) return null;
+          const autoplay = booleanValue(section.content.autoplay, true);
+          const speed = carouselSpeedValue(section.content.speed);
+          const direction = stringValue(section.content.direction) === "right" ? "right" : "left";
+          const loopImages = autoplay
+            ? [
+                ...images.map((image) => ({ ...image, isDuplicate: false })),
+                ...images.map((image) => ({ ...image, isDuplicate: true })),
+              ]
+            : images.map((image) => ({ ...image, isDuplicate: false }));
+          const marqueeStyle = {
+            "--home-carousel-duration": `${speed}s`,
+          } as CSSProperties;
+
           return (
             <section key={section.id} className="mx-auto w-full max-w-6xl px-3 py-8 sm:px-6">
               {section.title ? (
                 <h2 className="mb-5 text-2xl font-semibold">{section.title}</h2>
               ) : null}
-              <div className="flex snap-x gap-4 overflow-x-auto pb-2">
-                {images.map((image, index) => {
-                  const tile = (
-                    <div className="relative aspect-[4/5] w-[78vw] shrink-0 snap-start overflow-hidden bg-neutral-100 sm:w-[360px]">
-                      <Image
-                        src={image.url}
-                        alt={image.alt ?? section.title}
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
-                    </div>
-                  );
-                  return image.link ? (
-                    <Link key={`${image.url}-${index}`} href={image.link}>
-                      {tile}
-                    </Link>
-                  ) : (
-                    <div key={`${image.url}-${index}`}>{tile}</div>
-                  );
-                })}
+              <div
+                className="home-marquee overflow-hidden"
+                style={marqueeStyle}
+                data-autoplay={autoplay ? "true" : "false"}
+                data-direction={direction}
+              >
+                <div className="home-marquee-track flex w-max gap-4 will-change-transform">
+                  {loopImages.map((image, index) => {
+                    const tile = (
+                      <div className="relative aspect-[4/5] w-[76vw] shrink-0 overflow-hidden bg-neutral-100 sm:w-[42vw] lg:w-[28vw] xl:w-[340px]">
+                        <Image
+                          src={image.url}
+                          alt={image.isDuplicate ? "" : image.alt ?? section.title}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 76vw, (max-width: 1024px) 42vw, (max-width: 1280px) 28vw, 340px"
+                          unoptimized
+                        />
+                      </div>
+                    );
+                    const key = `${image.url}-${index}`;
+
+                    return image.link ? (
+                      <Link
+                        key={key}
+                        href={image.link}
+                        className="shrink-0"
+                        aria-hidden={image.isDuplicate}
+                        tabIndex={image.isDuplicate ? -1 : undefined}
+                      >
+                        {tile}
+                      </Link>
+                    ) : (
+                      <div key={key} className="shrink-0" aria-hidden={image.isDuplicate}>
+                        {tile}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </section>
           );
