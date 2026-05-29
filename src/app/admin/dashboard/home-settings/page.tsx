@@ -7,7 +7,7 @@ export default async function AdminHomeSettingsPage() {
   const settings = await getHomeSettingsForAdmin();
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
+    <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-col gap-4 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
@@ -17,7 +17,7 @@ export default async function AdminHomeSettingsPage() {
             Edita portada, textos y video destacado sin tocar el código.
           </p>
         </div>
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" className="rounded-none">
           <Link href="/admin/dashboard">Volver al catálogo</Link>
         </Button>
       </div>

@@ -3,6 +3,7 @@
 import { verifyAdminSession } from "@/lib/admin-session";
 import { hasCloudinaryConfig, uploadToCloudinary } from "@/lib/cloudinary-server";
 import { DEFAULT_HOME_SETTINGS } from "@/lib/home-settings";
+import type { HomeSettings } from "@/lib/home-settings";
 import { normalizeHomeHref, upsertHomeSettings } from "@/lib/home-settings-mutations";
 import { toUserFacingProductSaveError, toUserFacingUploadError } from "@/lib/user-facing-errors";
 import { randomUUID } from "node:crypto";
@@ -10,22 +11,21 @@ import { revalidatePath, revalidateTag } from "next/cache";
 
 const IMAGE_MIME_EXT: Record<string, string> = {
   "image/jpeg": ".jpg",
-  "image/jpg": ".jpg",
   "image/png": ".png",
   "image/webp": ".webp",
-  "image/gif": ".gif",
 };
 
 const VIDEO_MIME_EXT: Record<string, string> = {
   "video/mp4": ".mp4",
   "video/webm": ".webm",
-  "video/quicktime": ".mov",
 };
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 45 * 1024 * 1024;
 
-export type SaveHomeSettingsState = { ok?: boolean; error?: string } | null;
+export type SaveHomeSettingsState =
+  | { ok?: boolean; error?: string; settings?: HomeSettings }
+  | null;
 
 async function uploadHomeFile(
   file: File,
@@ -43,15 +43,15 @@ async function uploadHomeFile(
     throw new Error(
       resourceType === "video"
         ? "El video supera 45 MB."
-        : "La imagen supera 5 MB."
+        : "La imagen supera 10 MB."
     );
   }
   const ext = allowed[file.type];
   if (!ext) {
     throw new Error(
       resourceType === "video"
-        ? "Formato de video no permitido. Usa MP4, WebM o MOV."
-        : "Formato de imagen no permitido. Usa JPEG, PNG, WebP o GIF."
+        ? "Formato de video no permitido. Usa MP4 o WebM."
+        : "Formato de imagen no permitido. Usa JPG, PNG o WebP."
     );
   }
   const buf = Buffer.from(await file.arrayBuffer());
@@ -95,34 +95,42 @@ export async function saveHomeSettingsAction(
       );
     }
   } catch (e) {
+    console.error("[home-settings upload]", e);
+    if (e instanceof Error) {
+      return { error: e.message };
+    }
     return { error: toUserFacingUploadError(e) };
   }
 
+  const nextSettings: HomeSettings = {
+    heroTitle:
+      String(formData.get("hero_title") ?? "")
+        .replace(/\\n/g, "\n")
+        .trim() || DEFAULT_HOME_SETTINGS.heroTitle,
+    heroSubtitle:
+      String(formData.get("hero_subtitle") ?? "").trim() ||
+      DEFAULT_HOME_SETTINGS.heroSubtitle,
+    heroButtonText:
+      String(formData.get("hero_button_text") ?? "").trim() ||
+      DEFAULT_HOME_SETTINGS.heroButtonText,
+    heroButtonHref: normalizeHomeHref(
+      String(formData.get("hero_button_href") ?? "")
+    ),
+    heroImageUrl,
+    featuredVideoUrl,
+    isHeroEnabled: formData.get("is_hero_enabled") === "true",
+    isVideoEnabled: formData.get("is_video_enabled") === "true",
+  };
+
   try {
-    await upsertHomeSettings({
-      heroTitle:
-        String(formData.get("hero_title") ?? "").trim() ||
-        DEFAULT_HOME_SETTINGS.heroTitle,
-      heroSubtitle:
-        String(formData.get("hero_subtitle") ?? "").trim() ||
-        DEFAULT_HOME_SETTINGS.heroSubtitle,
-      heroButtonText:
-        String(formData.get("hero_button_text") ?? "").trim() ||
-        DEFAULT_HOME_SETTINGS.heroButtonText,
-      heroButtonHref: normalizeHomeHref(
-        String(formData.get("hero_button_href") ?? "")
-      ),
-      heroImageUrl,
-      featuredVideoUrl,
-      isHeroEnabled: formData.get("is_hero_enabled") === "true",
-      isVideoEnabled: formData.get("is_video_enabled") === "true",
-    });
+    await upsertHomeSettings(nextSettings);
   } catch (e) {
+    console.error("[home-settings save]", e);
     return { error: toUserFacingProductSaveError(e) };
   }
 
   revalidateTag("home-settings");
   revalidatePath("/");
   revalidatePath("/admin/dashboard/home-settings");
-  return { ok: true };
+  return { ok: true, settings: nextSettings };
 }
