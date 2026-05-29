@@ -23,6 +23,7 @@ export function HomeImageCarousel({ images, title, speed, direction }: Props) {
   const offsetRef = useRef(0);
   const dragRef = useRef({
     active: false,
+    moved: false,
     pointerId: 0,
     startX: 0,
     startOffset: 0,
@@ -79,6 +80,7 @@ export function HomeImageCarousel({ images, title, speed, direction }: Props) {
     loopWidthRef.current = track.scrollWidth / 2;
     dragRef.current = {
       active: true,
+      moved: false,
       pointerId: event.pointerId,
       startX: event.clientX,
       startOffset: offsetRef.current,
@@ -92,6 +94,7 @@ export function HomeImageCarousel({ images, title, speed, direction }: Props) {
     if (!drag.active || drag.pointerId !== event.pointerId || loopWidth <= 0) return;
 
     const delta = event.clientX - drag.startX;
+    if (Math.abs(delta) > 4) drag.moved = true;
     offsetRef.current =
       direction === "right" ? drag.startOffset + delta : drag.startOffset - delta;
     applyOffset();
@@ -107,6 +110,13 @@ export function HomeImageCarousel({ images, title, speed, direction }: Props) {
     }
   }
 
+  function onClickCapture(event: PointerEvent<HTMLDivElement>) {
+    if (!dragRef.current.moved) return;
+    event.preventDefault();
+    event.stopPropagation();
+    dragRef.current.moved = false;
+  }
+
   const loopImages = [
     ...images.map((image) => ({ ...image, isDuplicate: false })),
     ...images.map((image) => ({ ...image, isDuplicate: true })),
@@ -114,23 +124,27 @@ export function HomeImageCarousel({ images, title, speed, direction }: Props) {
 
   return (
     <div
-      className="home-marquee w-full cursor-grab overflow-hidden active:cursor-grabbing"
+      className="home-marquee w-full cursor-grab select-none overflow-hidden active:cursor-grabbing"
       data-home-image-carousel
+      style={{ touchAction: "pan-y" }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
       onPointerLeave={endDrag}
+      onClickCapture={onClickCapture}
+      onDragStart={(event) => event.preventDefault()}
     >
       <div ref={trackRef} className="flex w-max gap-4 will-change-transform">
         {loopImages.map((image, index) => {
           const tile = (
-            <div className="relative aspect-[4/5] w-[76vw] shrink-0 overflow-hidden bg-neutral-100 sm:w-[42vw] lg:w-[28vw] xl:w-[340px]">
+            <div className="relative aspect-[4/5] w-[76vw] shrink-0 select-none overflow-hidden bg-neutral-100 sm:w-[42vw] lg:w-[28vw] xl:w-[340px]">
               <Image
                 src={image.url}
                 alt={image.isDuplicate ? "" : image.alt ?? title}
                 fill
-                className="object-cover"
+                className="pointer-events-none select-none object-cover"
+                draggable={false}
                 sizes="(max-width: 640px) 76vw, (max-width: 1024px) 42vw, (max-width: 1280px) 28vw, 340px"
                 unoptimized
               />
