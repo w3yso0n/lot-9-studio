@@ -13,11 +13,9 @@ export function buildContentSecurityPolicy(nonce: string, isDev: boolean): strin
     scriptSrc.push("'unsafe-eval'");
   }
 
-  const styleSrc = ["'self'", `'nonce-${nonce}'`];
-  // inlineCss (experimental) puede emitir estilos sin nonce en algunos builds.
-  if (process.env.NODE_ENV === "production") {
-    styleSrc.push("'unsafe-inline'");
-  }
+  // Sin nonce en style-src: si hay nonce, el navegador ignora 'unsafe-inline' y bloquea
+  // style={{ ... }} de React, Framer Motion, etc.
+  const styleSrc = ["'self'", "'unsafe-inline'"];
 
   const connectSrc = ["'self'"];
   if (isDev) {
