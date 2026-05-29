@@ -3,7 +3,7 @@ import { HomeBodySkeleton } from "@/components/home/HomeBodySkeleton";
 import { HomeHero } from "@/components/home/HomeHero";
 import { DEFAULT_HOME_SETTINGS, type HomeSettings } from "@/lib/home-settings";
 import type { HomeSection } from "@/lib/home-sections";
-import { getHomeLcpImageUrl } from "@/lib/home-lcp";
+import { getHomeLcpPreloads } from "@/lib/home-lcp";
 import { getHomeSettings } from "@/lib/home-settings-repo";
 import { getHomeSections, isHomeBuilderConfigured } from "@/lib/home-sections-repo";
 import { Suspense } from "react";
@@ -27,13 +27,20 @@ export default async function Home() {
     usesHomeBuilder = false;
   }
 
-  const lcpImageUrl = getHomeLcpImageUrl(homeSettings, homeSections, usesHomeBuilder);
+  const lcpPreloads = getHomeLcpPreloads(homeSettings, homeSections, usesHomeBuilder);
 
   return (
     <div className="min-h-screen">
-      {lcpImageUrl ? (
-        <link rel="preload" as="image" href={lcpImageUrl} fetchPriority="high" />
-      ) : null}
+      {lcpPreloads.map((preload) => (
+        <link
+          key={`${preload.href}-${preload.media ?? "all"}`}
+          rel="preload"
+          as="image"
+          href={preload.href}
+          media={preload.media}
+          fetchPriority="high"
+        />
+      ))}
       <HomeHero
         homeSettings={homeSettings}
         homeSections={homeSections}

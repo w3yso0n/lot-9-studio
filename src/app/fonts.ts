@@ -15,12 +15,13 @@ export const geistMono = Geist_Mono({
 export const inter = Inter({
   subsets: ["latin"],
   variable: "--font-primary",
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "600"],
+  display: "swap",
 });
 
-// Fuente secundaria: Poppins (neutral pero con personalidad)
 export const poppins = Poppins({
   subsets: ["latin"],
   variable: "--font-secondary",
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "600"],
+  display: "swap",
 });

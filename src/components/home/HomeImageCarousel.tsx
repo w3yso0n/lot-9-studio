@@ -1,16 +1,9 @@
 "use client";
 
-import { getProductImageDisplayUrl } from "@/lib/product-image-url";
+import { getResponsiveCloudinaryImage } from "@/lib/product-image-url";
 import { cloudinaryImageAttributes } from "@/lib/product-upload-paths";
 import Link from "next/link";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type PointerEvent,
-} from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
 type CarouselImage = {
   url: string;
@@ -54,11 +47,13 @@ function CarouselSlide({
 }) {
   const label = image.alt?.trim() || title || "Imagen del carrusel";
   const classNames = `${SLIDE_CLASS} ${className ?? ""}`.trim();
-  const src = getProductImageDisplayUrl(image.url, "carousel");
+  const { src, srcSet, sizes } = getResponsiveCloudinaryImage(image.url, "carousel");
 
   const media = (
     <img
       src={src}
+      srcSet={srcSet}
+      sizes={sizes}
       alt={image.isDuplicate ? "" : label}
       loading={eagerLoad ? "eager" : "lazy"}
       decoding="async"
@@ -90,28 +85,10 @@ function CarouselSlide({
   );
 }
 
+/** Carrusel infinito con CSS animation (sin rAF en el hilo principal). */
 export function HomeImageCarousel({ images, title, speed, direction }: Props) {
   const [reducedMotion, setReducedMotion] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const loopWidthRef = useRef(0);
-  const offsetRef = useRef(0);
-  const pausedRef = useRef(false);
-  const dragRef = useRef({
-    active: false,
-    moved: false,
-    pointerId: 0,
-    startX: 0,
-    startOffset: 0,
-  });
-
-  const imageSignature = useMemo(
-    () =>
-      images
-        .map((image) => `${image.url}|${image.link ?? ""}|${image.alt ?? ""}`)
-        .join("~"),
-    [images]
-  );
+  const [paused, setPaused] = useState(false);
 
   const loopImages = useMemo<LoopImage[]>(
     () => [
@@ -120,31 +97,6 @@ export function HomeImageCarousel({ images, title, speed, direction }: Props) {
     ],
     [images]
   );
-
-  const measureLoopWidth = useCallback(() => {
-    const track = trackRef.current;
-    if (!track) return 0;
-    const loopWidth = track.scrollWidth / 2;
-    loopWidthRef.current = loopWidth;
-    return loopWidth;
-  }, []);
-
-  const applyOffset = useCallback(() => {
-    const track = trackRef.current;
-    const loopWidth = loopWidthRef.current;
-    if (!track || loopWidth <= 0) return;
-
-    const normalized = ((offsetRef.current % loopWidth) + loopWidth) % loopWidth;
-    offsetRef.current = normalized;
-    const signedOffset =
-      direction === "right" ? normalized - loopWidth : -normalized;
-    track.style.transform = `translate3d(${signedOffset}px, 0, 0)`;
-  }, [direction]);
-
-  const remeasure = useCallback(() => {
-    measureLoopWidth();
-    applyOffset();
-  }, [applyOffset, measureLoopWidth]);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -155,121 +107,17 @@ export function HomeImageCarousel({ images, title, speed, direction }: Props) {
   }, []);
 
   useEffect(() => {
-    offsetRef.current = 0;
-    remeasure();
-  }, [imageSignature, direction, remeasure]);
-
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track || images.length === 0 || reducedMotion) return;
-
-    let frame = 0;
-    let lastTime = performance.now();
-    let offset = offsetRef.current;
-    const durationMs = clampSpeed(speed) * 1000;
-
     const onVisibility = () => {
-      pausedRef.current = document.visibilityState !== "visible";
-      lastTime = performance.now();
+      setPaused(document.visibilityState !== "visible");
     };
     document.addEventListener("visibilitychange", onVisibility);
-
-    const animate = (time: number) => {
-      const loopWidth = loopWidthRef.current;
-      if (loopWidth > 0) {
-        const delta = Math.min(time - lastTime, 48);
-        if (!dragRef.current.active && !pausedRef.current) {
-          offset = (offset + (delta / durationMs) * loopWidth) % loopWidth;
-          offsetRef.current = offset;
-          applyOffset();
-        } else {
-          offset = offsetRef.current;
-        }
-      }
-      lastTime = time;
-      frame = window.requestAnimationFrame(animate);
-    };
-
-    frame = window.requestAnimationFrame(animate);
-
-    return () => {
-      window.cancelAnimationFrame(frame);
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
-  }, [
-    applyOffset,
-    direction,
-    imageSignature,
-    images.length,
-    reducedMotion,
-    speed,
-  ]);
-
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track || reducedMotion) return;
-
-    const observer = new ResizeObserver(() => {
-      remeasure();
-    });
-    observer.observe(track);
-    return () => observer.disconnect();
-  }, [imageSignature, reducedMotion, remeasure]);
-
-  function setPaused(next: boolean) {
-    pausedRef.current = next;
-  }
-
-  function onPointerDown(event: PointerEvent<HTMLDivElement>) {
-    if (reducedMotion) return;
-    const track = trackRef.current;
-    if (!track) return;
-
-    measureLoopWidth();
-    dragRef.current = {
-      active: true,
-      moved: false,
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startOffset: offsetRef.current,
-    };
-    setPaused(true);
-    event.currentTarget.setPointerCapture(event.pointerId);
-  }
-
-  function onPointerMove(event: PointerEvent<HTMLDivElement>) {
-    const drag = dragRef.current;
-    const loopWidth = loopWidthRef.current;
-    if (!drag.active || drag.pointerId !== event.pointerId || loopWidth <= 0) return;
-
-    const delta = event.clientX - drag.startX;
-    if (Math.abs(delta) > 4) drag.moved = true;
-    offsetRef.current =
-      direction === "right" ? drag.startOffset + delta : drag.startOffset - delta;
-    applyOffset();
-  }
-
-  function endDrag(event: PointerEvent<HTMLDivElement>) {
-    if (dragRef.current.pointerId !== event.pointerId) return;
-    dragRef.current.active = false;
-    setPaused(false);
-    try {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    } catch {
-      // Pointer capture may already be released if the pointer was cancelled.
-    }
-  }
-
-  function onClickCapture(event: PointerEvent<HTMLDivElement>) {
-    if (!dragRef.current.moved) return;
-    event.preventDefault();
-    event.stopPropagation();
-    dragRef.current.moved = false;
-  }
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
 
   if (images.length === 0) return null;
 
   const regionLabel = title.trim() || "Carrusel de imágenes";
+  const durationSec = clampSpeed(speed);
 
   if (reducedMotion) {
     return (
@@ -293,33 +141,32 @@ export function HomeImageCarousel({ images, title, speed, direction }: Props) {
     );
   }
 
+  const trackClass =
+    direction === "right" ? "home-marquee-track home-marquee-track--right" : "home-marquee-track";
+
+  const marqueeStyle = {
+    "--marquee-duration": `${durationSec}s`,
+  } as CSSProperties;
+
   return (
     <div
-      ref={containerRef}
-      className="home-marquee w-full cursor-grab select-none overflow-hidden active:cursor-grabbing"
+      className="home-marquee w-full overflow-hidden"
       data-home-image-carousel
+      data-paused={paused ? "true" : undefined}
       role="region"
       aria-label={regionLabel}
       aria-roledescription="carrusel"
-      style={{ touchAction: "pan-y" }}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={endDrag}
-      onPointerCancel={endDrag}
-      onClickCapture={onClickCapture}
-      onDragStart={(event) => event.preventDefault()}
+      style={marqueeStyle}
       onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => {
-        if (!dragRef.current.active) setPaused(false);
-      }}
+      onMouseLeave={() => setPaused(false)}
       onFocusCapture={() => setPaused(true)}
       onBlurCapture={(event) => {
-        if (!containerRef.current?.contains(event.relatedTarget as Node)) {
+        if (!event.currentTarget.contains(event.relatedTarget as Node)) {
           setPaused(false);
         }
       }}
     >
-      <div ref={trackRef} className="flex w-max gap-4 will-change-transform">
+      <div className={`flex w-max gap-4 ${trackClass}`}>
         {loopImages.map((image, index) => (
           <CarouselSlide
             key={`${image.url}-${image.isDuplicate ? "dup" : "orig"}-${index}`}

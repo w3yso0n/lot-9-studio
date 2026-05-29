@@ -234,9 +234,10 @@
     }
   }
   
-  /* Mejoras de accesibilidad en móvil */
+  /* Touch targets: solo controles explícitos, no todos los enlaces del DOM */
   @media (max-width: 768px) {
-    button, a {
+    button:not(.inline-touch),
+    [role="button"]:not(.inline-touch) {
       min-height: 44px;
       min-width: 44px;
     }
@@ -251,14 +252,48 @@
   display: none;
 }
 
+.home-marquee-track {
+  animation: home-marquee-left var(--marquee-duration, 22s) linear infinite;
+  will-change: transform;
+}
+
+.home-marquee-track--right {
+  animation-name: home-marquee-right;
+}
+
+.home-marquee[data-paused="true"] .home-marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes home-marquee-left {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes home-marquee-right {
+  from {
+    transform: translate3d(-50%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.cv-auto-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 800px;
+}
+
 @keyframes hero-fade-up {
   from {
     opacity: 0;
-    transform: translateY(1rem);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -271,6 +306,56 @@
   .hero-fade-up {
     animation: none;
     opacity: 1;
-    transform: none;
   }
+
+  .home-marquee-track,
+  .home-marquee-track--right {
+    animation: none;
+  }
+
+  .cart-nav-wiggle,
+  .cart-counter-pop {
+    animation: none;
+  }
+}
+
+@keyframes cart-nav-wiggle {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.24) rotate(-16deg);
+  }
+  50% {
+    transform: scale(0.94) rotate(14deg);
+  }
+  75% {
+    transform: scale(1.08) rotate(-6deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.cart-nav-wiggle {
+  animation: cart-nav-wiggle 0.5s ease-out;
+}
+
+@keyframes cart-counter-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.cart-counter-pop {
+  animation: cart-counter-pop 0.35s ease-out;
 }

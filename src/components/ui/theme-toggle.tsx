@@ -1,46 +1,69 @@
 "use client";
 
-import { useTheme } from "@/components/theme-provider";
-import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { FaMoon, FaSun } from "react-icons/fa";
+
+function SunIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      className="h-4 w-4 text-orange-500"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      className="h-4 w-4 text-yellow-300"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
+  );
+}
+
+function readTheme(): "dark" | "light" {
+  if (typeof document === "undefined") return "light";
+  return document.documentElement.classList.contains("dark") ? "dark" : "light";
+}
 
 export function ThemeToggle() {
-  const [mounted, setMounted] = useState(false);
-  const { theme, toggleTheme } = useTheme();
+  const [theme, setTheme] = useState<"dark" | "light">("light");
 
   useEffect(() => {
-    setMounted(true);
+    setTheme(readTheme());
   }, []);
 
-  if (!mounted) {
-    return (
-      <div className="w-8 h-8 rounded-full bg-gray-200" />
-    );
-  }
+  const toggleTheme = () => {
+    const next = readTheme() === "dark" ? "light" : "dark";
+    document.documentElement.classList.toggle("dark", next === "dark");
+    try {
+      localStorage.setItem("theme", next);
+    } catch {
+      // localStorage puede estar bloqueado
+    }
+    setTheme(next);
+  };
 
   return (
-    <motion.button
+    <button
+      type="button"
       onClick={toggleTheme}
-      className="relative p-1.5 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors duration-300"
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.9 }}
-      aria-label="Toggle theme"
+      className="relative rounded-full bg-muted p-1.5 transition-transform duration-200 hover:scale-105 active:scale-95"
+      aria-label="Cambiar tema"
     >
-      <motion.div
-        initial={false}
-        animate={{
-          rotate: theme === "dark" ? 360 : 0,
-        }}
-        transition={{ duration: 0.5, ease: "easeInOut" }}
-        className="flex items-center justify-center"
-      >
-        {theme === "dark" ? (
-          <FaMoon className="w-4 h-4 text-yellow-300" />
-        ) : (
-          <FaSun className="w-4 h-4 text-orange-500" />
-        )}
-      </motion.div>
-    </motion.button>
+      {theme === "dark" ? <MoonIcon /> : <SunIcon />}
+    </button>
   );
 }

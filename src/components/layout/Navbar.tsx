@@ -1,67 +1,94 @@
 "use client";
 
-import { CartNavLink } from "@/components/layout/CartNavLink";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { AnimatePresence, motion } from "framer-motion";
-import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FaBars, FaTimes } from "react-icons/fa";
+
+const CartNavLink = dynamic(
+  () => import("@/components/layout/CartNavLink").then((mod) => ({ default: mod.CartNavLink })),
+  {
+    ssr: false,
+    loading: () => (
+      <Link href="/cart" className="relative block p-1" aria-label="Ver carrito">
+        <svg
+          aria-hidden
+          viewBox="0 0 24 24"
+          className="h-4 w-4 text-foreground sm:h-5 sm:w-5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="9" cy="21" r="1" />
+          <circle cx="20" cy="21" r="1" />
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+        </svg>
+      </Link>
+    ),
+  }
+);
 
 const navLinkClass =
-  "text-foreground/80 hover:text-foreground transition-colors font-medium relative inline-block after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-0 after:bg-foreground after:transition-all after:duration-300 hover:after:w-full";
+  "text-foreground/80 hover:text-foreground transition-colors font-medium relative inline-block after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-0 after:bg-foreground after:transition-[width] after:duration-300 hover:after:w-full";
 
 const mobileRowClass =
   "block border-b border-border py-2 text-foreground/80 transition-colors hover:text-foreground";
+
+function MenuIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      className="h-4 w-4 text-foreground sm:h-5 sm:w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
+      {open ? (
+        <>
+          <path d="M6 6l12 12" />
+          <path d="M18 6 6 18" />
+        </>
+      ) : (
+        <>
+          <path d="M4 7h16" />
+          <path d="M4 12h16" />
+          <path d="M4 17h16" />
+        </>
+      )}
+    </svg>
+  );
+}
 
 const Navbar = () => {
   const pathname = usePathname();
   const isAdminDashboard = pathname.startsWith("/admin/dashboard");
   const [isOpen, setIsOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     setIsOpen(false);
   }, [pathname]);
 
-  // Efecto para detectar scroll
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   return (
-    <nav
-      className={`fixed top-0 left-0 z-50 w-full bg-background/90 backdrop-blur-md shadow-lg transition-all duration-500 dark:bg-card/90 ${
-        isScrolled ? "py-2" : "py-4"
-      }`}
-    >
-      <div className="container mx-auto flex justify-between items-center px-3 sm:px-4">
-        {/* Logo con animación */}
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="flex items-center gap-2 sm:gap-3 min-w-0"
-        >
-          <Link href={isAdminDashboard ? "/admin/dashboard" : "/"} className="text-xl font-bold flex-shrink-0 flex items-center gap-2 sm:gap-3">
-            <Image
+    <nav className="fixed top-0 left-0 z-50 w-full border-b border-border/60 bg-background/95 py-3 shadow-sm">
+      <div className="container mx-auto flex items-center justify-between px-3 sm:px-4">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <Link
+            href={isAdminDashboard ? "/admin/dashboard" : "/"}
+            className="flex shrink-0 items-center gap-2 text-xl font-bold sm:gap-3"
+          >
+            <img
               src="/images/logo.png"
               alt="lot 9 studio"
               width={120}
-              height={60}
-              className={`cursor-pointer transition-all duration-500 ${
-                isScrolled ? 'h-8 sm:h-10 w-auto' : 'h-10 sm:h-12 w-auto'
-              }`}
-              priority
+              height={48}
+              className="h-10 w-auto sm:h-11"
+              fetchPriority="high"
+              decoding="async"
             />
             {isAdminDashboard ? (
               <span className="hidden whitespace-nowrap border-l border-border pl-2 text-xs font-semibold tracking-tight text-foreground sm:inline sm:pl-3 sm:text-sm">
@@ -69,10 +96,9 @@ const Navbar = () => {
               </span>
             ) : null}
           </Link>
-        </motion.div>
+        </div>
 
-        {/* Menú Desktop */}
-        <div className="hidden md:flex space-x-8 ml-8">
+        <div className="ml-8 hidden space-x-8 md:flex">
           {isAdminDashboard ? (
             <Link href="/admin/dashboard" className={navLinkClass}>
               Catálogo
@@ -84,13 +110,7 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* Iconos / acciones */}
-        <motion.div
-          className="flex items-center space-x-3 sm:space-x-4 md:space-x-6"
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-        >
+        <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-6">
           <ThemeToggle />
 
           {isAdminDashboard ? (
@@ -111,101 +131,62 @@ const Navbar = () => {
               </form>
             </>
           ) : (
-            <motion.div whileHover={{ scale: 1.05 }}>
-              <CartNavLink />
-            </motion.div>
+            <CartNavLink />
           )}
 
-          <motion.button
-            className="md:hidden p-1 focus:outline-none"
-            onClick={() => setIsOpen(!isOpen)}
-            aria-label="Toggle menu"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+          <button
+            type="button"
+            className="p-1 md:hidden"
+            onClick={() => setIsOpen((open) => !open)}
+            aria-expanded={isOpen}
+            aria-label={isOpen ? "Cerrar menú" : "Abrir menú"}
           >
-            <motion.div
-              animate={{ rotate: isOpen ? 180 : 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              {isOpen ? (
-                <FaTimes className="h-4 w-4 text-foreground sm:h-5 sm:w-5" />
-              ) : (
-                <FaBars className="h-4 w-4 text-foreground sm:h-5 sm:w-5" />
-              )}
-            </motion.div>
-          </motion.button>
-        </motion.div>
+            <MenuIcon open={isOpen} />
+          </button>
+        </div>
       </div>
 
-      {/* Menú Móvil con animaciones */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div 
-            className="absolute left-0 top-full w-full bg-background/95 backdrop-blur-md shadow-xl md:hidden dark:bg-card/95"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-          >
-            <div className="px-3 sm:px-4 py-3 flex flex-col space-y-3">
-              {isAdminDashboard ? (
-                <>
-                  <motion.div
-                    initial={{ x: -50, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.1 }}
-                  >
-                    <Link
-                      href="/admin/dashboard"
-                      className={mobileRowClass}
-                      onClick={() => setIsOpen(false)}
-                    >
-                      Catálogo
-                    </Link>
-                  </motion.div>
-                  <motion.div
-                    initial={{ x: -50, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.15 }}
-                  >
-                    <Link href="/" className={mobileRowClass} onClick={() => setIsOpen(false)}>
-                      Ver tienda
-                    </Link>
-                  </motion.div>
-                  <motion.div
-                    initial={{ x: -50, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <form action="/api/admin/logout" method="post">
-                      <button
-                        type="submit"
-                        className={`${mobileRowClass} w-full text-left font-medium`}
-                      >
-                        Cerrar sesión
-                      </button>
-                    </form>
-                  </motion.div>
-                </>
-              ) : (
-                <motion.div
-                  initial={{ x: -50, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.1 }}
+      <div
+        className={`overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out md:hidden ${
+          isOpen ? "max-h-64 opacity-100" : "max-h-0 opacity-0"
+        }`}
+        aria-hidden={!isOpen}
+      >
+        <div className="absolute left-0 top-full w-full border-b border-border bg-background shadow-md">
+          <div className="flex flex-col space-y-3 px-3 py-3 sm:px-4">
+            {isAdminDashboard ? (
+              <>
+                <Link
+                  href="/admin/dashboard"
+                  className={mobileRowClass}
+                  onClick={() => setIsOpen(false)}
                 >
-                  <Link
-                    href="/products"
-                    className={mobileRowClass}
-                    onClick={() => setIsOpen(false)}
+                  Catálogo
+                </Link>
+                <Link href="/" className={mobileRowClass} onClick={() => setIsOpen(false)}>
+                  Ver tienda
+                </Link>
+                <form action="/api/admin/logout" method="post">
+                  <button
+                    type="submit"
+                    className={`${mobileRowClass} w-full text-left font-medium`}
                   >
-                    Productos
-                  </Link>
-                </motion.div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                    Cerrar sesión
+                  </button>
+                </form>
+              </>
+            ) : (
+              <Link
+                href="/products"
+                className={mobileRowClass}
+                onClick={() => setIsOpen(false)}
+              >
+                Productos
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
     </nav>
   );
 };

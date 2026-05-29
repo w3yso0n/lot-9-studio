@@ -6,15 +6,16 @@ function formatCsp(directives: Record<string, string[]>): string {
     .join("; ");
 }
 
-/** CSP en modo enforcement (no Report-Only). */
-export function buildContentSecurityPolicy(nonce: string, isDev: boolean): string {
-  const scriptSrc = ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'"];
+/**
+ * CSP estática (sin nonce por request) para permitir ISR y back/forward cache.
+ * Scripts de Next y /theme-init.js quedan cubiertos por 'self'.
+ */
+export function buildContentSecurityPolicy(isDev: boolean): string {
+  const scriptSrc = ["'self'"];
   if (isDev) {
     scriptSrc.push("'unsafe-eval'");
   }
 
-  // Sin nonce en style-src: si hay nonce, el navegador ignora 'unsafe-inline' y bloquea
-  // style={{ ... }} de React, Framer Motion, etc.
   const styleSrc = ["'self'", "'unsafe-inline'"];
 
   const connectSrc = ["'self'"];
@@ -37,5 +38,3 @@ export function buildContentSecurityPolicy(nonce: string, isDev: boolean): strin
     "upgrade-insecure-requests": [],
   });
 }
-
-export const CSP_NONCE_HEADER = "x-nonce";

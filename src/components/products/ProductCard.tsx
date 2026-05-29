@@ -1,10 +1,7 @@
-"use client";
-
 import { ProductImage } from "@/components/products/ProductImage";
 import { Button } from "@/components/ui/button";
 import { ProductPrice } from "@/components/products/ProductPrice";
 import Link from "next/link";
-import { useState } from "react";
 
 interface ProductProps {
   product: {
@@ -36,8 +33,6 @@ export const ProductCard = ({ product, className }: ProductProps) => {
     configuredHoverImage && configuredHoverImage !== mainImage
       ? configuredHoverImage
       : "";
-  const [showHoverImage, setShowHoverImage] = useState(false);
-  const displayImage = showHoverImage && hoverImage ? hoverImage : mainImage;
   const hasImage = Boolean(mainImage?.trim());
   const hasStock =
     product.inStock ??
@@ -57,20 +52,31 @@ export const ProductCard = ({ product, className }: ProductProps) => {
         href={`/products/${product.id}`}
         aria-label={`Ver producto ${product.name}`}
         className="block w-full text-left"
-        onMouseEnter={hoverImage ? () => setShowHoverImage(true) : undefined}
-        onMouseLeave={hoverImage ? () => setShowHoverImage(false) : undefined}
       >
         <div className="relative aspect-[3/4] w-full overflow-hidden bg-muted">
           {hasImage ? (
-            <ProductImage
-              key={displayImage}
-              src={displayImage}
-              displaySize="card"
-              alt={product.name}
-              fill
-              className="object-contain p-5 transition-transform duration-500 group-hover:scale-[1.02] sm:p-6"
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            />
+            <>
+              <ProductImage
+                src={mainImage}
+                displaySize="card"
+                alt={product.name}
+                fill
+                className={`object-contain p-5 transition-opacity duration-500 sm:p-6 motion-safe:hover:scale-[1.02] ${
+                  hoverImage ? "opacity-100 group-hover:opacity-0" : ""
+                }`}
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              />
+              {hoverImage ? (
+                <ProductImage
+                  src={hoverImage}
+                  displaySize="card"
+                  alt={product.name}
+                  fill
+                  className="absolute inset-0 object-contain p-5 opacity-0 transition-opacity duration-500 group-hover:opacity-100 sm:p-6"
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                />
+              ) : null}
+            </>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center px-4 text-center text-sm text-muted-foreground">
               Sin imagen

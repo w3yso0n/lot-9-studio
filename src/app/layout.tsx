@@ -1,10 +1,7 @@
 import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
-import { ThemeProvider } from "@/components/theme-provider";
-import { CSP_NONCE_HEADER } from "@/lib/csp";
 import { getCloudinaryOrigin } from "@/lib/home-lcp";
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 
 import "./globals.css";
 
@@ -15,25 +12,16 @@ export const metadata: Metadata = {
   description: "La mejor ropa acorde a tu estilo",
 };
 
-/** Nonce por request: necesario para que Next aplique CSP a scripts/estilos inline. */
-export const dynamic = "force-dynamic";
-
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const nonce = (await headers()).get(CSP_NONCE_HEADER) ?? undefined;
   const cloudinaryOrigin = getCloudinaryOrigin();
 
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
-        <script
-          nonce={nonce}
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("theme");if(t==="dark"||(!t&&window.matchMedia("(prefers-color-scheme: dark)").matches)){document.documentElement.classList.add("dark")}}catch(e){}})();`,
-          }}
-        />
+        <script src="/theme-init.js" />
         {cloudinaryOrigin ? (
           <>
             <link rel="dns-prefetch" href={cloudinaryOrigin} />
@@ -44,11 +32,9 @@ export default async function RootLayout({
       <body
         className={`${inter.variable} ${poppins.variable} ${inter.className} antialiased`}
       >
-        <ThemeProvider>
-          <Navbar />
-          <main className="min-h-screen pt-20">{children}</main>
-          <Footer />
-        </ThemeProvider>
+        <Navbar />
+        <main className="min-h-screen pt-20">{children}</main>
+        <Footer />
       </body>
     </html>
   );

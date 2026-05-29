@@ -1,4 +1,7 @@
 import type { NextConfig } from "next";
+import path from "node:path";
+
+const modernPolyfillStub = path.join(process.cwd(), "scripts/empty-polyfill.js");
 
 const nextConfig: NextConfig = {
   images: {
@@ -12,7 +15,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     inlineCss: true,
-    optimizePackageImports: ["lucide-react", "framer-motion", "react-icons"],
+    optimizePackageImports: ["lucide-react", "react-icons"],
     serverActions: {
       bodySizeLimit: "50mb",
     },
@@ -24,6 +27,17 @@ const nextConfig: NextConfig = {
    */
   outputFileTracingExcludes: {
     "/*": ["public/images/**/*", "public/video1.mp4"],
+  },
+  webpack(config, { isServer, webpack }) {
+    if (!isServer) {
+      config.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(
+          /[\\/]build[\\/]polyfills[\\/]polyfill-module$/,
+          modernPolyfillStub
+        )
+      );
+    }
+    return config;
   },
 };
 

@@ -2,10 +2,8 @@
 
 import { CartCounter } from "@/components/ui/cart-counter";
 import { useCartStore } from "@/store/cart";
-import { motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { FaShoppingCart } from "react-icons/fa";
 
 export function CartNavLink() {
   const cartBumpKey = useCartStore((s) => s.cartBumpKey);
@@ -22,26 +20,27 @@ export function CartNavLink() {
   return (
     <Link
       href="/cart"
-      className="relative block"
+      className="relative block active:scale-90"
       aria-label="Ver carrito"
       onClick={() => bumpCart()}
     >
-      <motion.span
-        className="relative inline-flex"
-        animate={
-          wiggle
-            ? {
-                scale: [1, 1.24, 0.94, 1.08, 1],
-                rotate: [0, -16, 14, -6, 0],
-              }
-            : { scale: 1, rotate: 0 }
-        }
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        whileTap={{ scale: 0.86 }}
-      >
-        <FaShoppingCart className="h-4 w-4 text-foreground transition-colors hover:text-foreground/80 sm:h-5 sm:w-5" />
+      <span className={`relative inline-flex ${wiggle ? "cart-nav-wiggle" : ""}`}>
+        <svg
+          aria-hidden
+          viewBox="0 0 24 24"
+          className="h-4 w-4 text-foreground transition-colors hover:text-foreground/80 sm:h-5 sm:w-5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="9" cy="21" r="1" />
+          <circle cx="20" cy="21" r="1" />
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+        </svg>
         <CartCounter />
-      </motion.span>
+      </span>
     </Link>
   );
 }

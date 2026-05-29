@@ -1,5 +1,5 @@
 import type { HomeSettings } from "@/lib/home-settings";
-import { getProductImageDisplayUrl } from "@/lib/product-image-url";
+import { getResponsiveCloudinaryImage } from "@/lib/product-image-url";
 import { cloudinaryImageAttributes } from "@/lib/product-upload-paths";
 
 type Props = {
@@ -28,7 +28,10 @@ const HeroBanner = ({ settings }: Props) => {
   const cropY = clamp(Number(settings.heroCropY) || 50, 0, 100);
   const cropZoom = clamp(Number(settings.heroCropZoom) || 1, 1, 3);
   const heroSrc = settings.heroImageUrl?.trim() || "/images/background.png";
-  const heroDisplaySrc = getProductImageDisplayUrl(heroSrc, "hero") || heroSrc;
+  const { src: heroDisplaySrc, srcSet, sizes } = getResponsiveCloudinaryImage(
+    heroSrc,
+    "hero"
+  );
   const cloudinaryAttrs = cloudinaryImageAttributes(heroSrc);
 
   return (
@@ -36,6 +39,8 @@ const HeroBanner = ({ settings }: Props) => {
       {/* img nativo: pinta antes que next/image + menos trabajo en hidratación */}
       <img
         src={heroDisplaySrc}
+        srcSet={srcSet}
+        sizes={sizes ?? "100vw"}
         alt="Moda para hombres"
         fetchPriority="high"
         loading="eager"

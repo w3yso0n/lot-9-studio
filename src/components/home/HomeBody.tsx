@@ -1,10 +1,14 @@
+import { HomeBodySkeleton } from "@/components/home/HomeBodySkeleton";
 import { HomeSectionRenderer } from "@/components/home/HomeSectionRenderer";
-import AllProducts from "@/components/products/AllProducts";
 import type { CatalogProduct } from "@/lib/catalog-product";
 import type { HomeSection } from "@/lib/home-sections";
 import type { HomeSettings } from "@/lib/home-settings";
 import { getStorefrontHomeData } from "@/lib/products-repo";
+import dynamic from "next/dynamic";
 
+const AllProducts = dynamic(() => import("@/components/products/AllProducts"), {
+  loading: () => <HomeBodySkeleton />,
+});
 type Props = {
   homeSettings: HomeSettings;
   homeSections?: HomeSection[];
@@ -44,8 +48,7 @@ export async function HomeBody({
           />
         ))}
       </main>
-    );
-  }
+    );  }
 
   return (
     <main className="flex flex-col items-center">

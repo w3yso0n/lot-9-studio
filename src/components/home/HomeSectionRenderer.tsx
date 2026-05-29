@@ -1,18 +1,18 @@
-"use client";
-
-import { HomeImageCarousel } from "@/components/home/HomeImageCarousel";
-import NewDropsCarousel from "@/components/products/NewDropsCarousel";
+import { HomeImageCarouselLazy } from "@/components/home/HomeImageCarouselLazy";
 import { ProductCard } from "@/components/products/ProductCard";
 import type { CatalogProduct } from "@/lib/catalog-product";
 import type { HomeSection } from "@/lib/home-sections";
 import type { HomeSettings } from "@/lib/home-settings";
 import {
-  getProductImageDisplayUrl,
-  shouldUnoptimizeProductImage,
+  getResponsiveCloudinaryImage,
 } from "@/lib/product-image-url";
 import { cloudinaryImageAttributes } from "@/lib/product-upload-paths";
-import Image from "next/image";
+import dynamic from "next/dynamic";
 import Link from "next/link";
+
+const NewDropsCarousel = dynamic(() => import("@/components/products/NewDropsCarousel"), {
+  loading: () => <div className="h-64 animate-pulse bg-muted" />,
+});
 
 type Props = {
   sections: HomeSection[];
@@ -81,7 +81,7 @@ export function HomeSectionRenderer({
               {section.title ? (
                 <h2 className="mb-5 text-2xl font-semibold">{section.title}</h2>
               ) : null}
-              <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 cv-auto-section">
                 {products.slice(0, limit).map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
@@ -197,15 +197,17 @@ export function HomeSectionRenderer({
           const url = stringValue(section.content.imageUrl);
           if (!url) return null;
           const link = stringValue(section.content.link);
+          const bannerImage = getResponsiveCloudinaryImage(url, "banner");
           const image = (
             <div className="relative aspect-[21/9] overflow-hidden bg-muted">
-              <Image
-                src={getProductImageDisplayUrl(url, "banner")}
+              <img
+                src={bannerImage.src}
+                srcSet={bannerImage.srcSet}
                 alt={section.title || ""}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1152px) 100vw, 1152px"
-                unoptimized={shouldUnoptimizeProductImage(url)}
+                className="absolute inset-0 h-full w-full object-cover"
+                sizes={bannerImage.sizes ?? "(max-width: 1152px) 100vw, 1152px"}
+                loading="lazy"
+                decoding="async"
                 {...cloudinaryImageAttributes(url)}
               />
               {section.title || section.subtitle ? (
@@ -234,7 +236,7 @@ export function HomeSectionRenderer({
               {section.title ? (
                 <h2 className="mb-5 text-2xl font-semibold">{section.title}</h2>
               ) : null}
-              <HomeImageCarousel
+              <HomeImageCarouselLazy
                 images={images}
                 title={section.title}
                 speed={speed}
