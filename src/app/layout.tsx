@@ -1,6 +1,7 @@
 import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
 import { getCloudinaryOrigin } from "@/lib/home-lcp";
+import { THEME_INIT_SCRIPT } from "@/lib/theme-init-script";
 import type { Metadata } from "next";
 
 import "./globals.css";
@@ -21,13 +22,14 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
-        <script src="/theme-init.js" />
         {cloudinaryOrigin ? (
-          <>
-            <link rel="dns-prefetch" href={cloudinaryOrigin} />
-            <link rel="preconnect" href={cloudinaryOrigin} crossOrigin="anonymous" />
-          </>
+          <link rel="preconnect" href={cloudinaryOrigin} crossOrigin="anonymous" />
         ) : null}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: THEME_INIT_SCRIPT,
+          }}
+        />
       </head>
       <body
         className={`${inter.variable} ${poppins.variable} ${inter.className} antialiased`}

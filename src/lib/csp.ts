@@ -10,7 +10,7 @@ function formatCsp(directives: Record<string, string[]>): string {
  * CSP estática (sin nonce por request) para permitir ISR y back/forward cache.
  * Next.js inyecta scripts inline de bootstrap en producción; sin nonce hace falta
  * 'unsafe-inline' (patrón oficial: https://nextjs.org/docs/app/guides/content-security-policy).
- * /theme-init.js sigue cubierto por 'self'.
+ * El script de tema va inline en el layout para no encadenar /theme-init.js en la ruta crítica.
  */
 export function buildContentSecurityPolicy(isDev: boolean): string {
   const scriptSrc = ["'self'", "'unsafe-inline'"];
