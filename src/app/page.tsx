@@ -2,7 +2,7 @@ import HomeView from "@/components/home/HomeView";
 import { DEFAULT_HOME_SETTINGS, type HomeSettings } from "@/lib/home-settings";
 import type { HomeSection } from "@/lib/home-sections";
 import { getHomeSettings } from "@/lib/home-settings-repo";
-import { getHomeSections } from "@/lib/home-sections-repo";
+import { getHomeSections, isHomeBuilderConfigured } from "@/lib/home-sections-repo";
 import { getStorefrontHomeData } from "@/lib/products-repo";
 
 export const revalidate = 60;
@@ -11,6 +11,7 @@ export default async function Home() {
   let products: Awaited<ReturnType<typeof getStorefrontHomeData>>["products"] = [];
   let newDrops: Awaited<ReturnType<typeof getStorefrontHomeData>>["newDrops"] = [];
   let homeSections: HomeSection[] = [];
+  let usesHomeBuilder = false;
   let homeSettings: HomeSettings = DEFAULT_HOME_SETTINGS;
   let dbError: string | null = null;
   try {
@@ -21,11 +22,15 @@ export default async function Home() {
     dbError = e instanceof Error ? e.message : "Error de base de datos.";
   }
   try {
-    homeSettings = await getHomeSettings();
-    homeSections = await getHomeSections();
+    [homeSettings, homeSections, usesHomeBuilder] = await Promise.all([
+      getHomeSettings(),
+      getHomeSections(),
+      isHomeBuilderConfigured(),
+    ]);
   } catch {
     homeSettings = DEFAULT_HOME_SETTINGS;
     homeSections = [];
+    usesHomeBuilder = false;
   }
   return (
     <HomeView
@@ -33,6 +38,7 @@ export default async function Home() {
       newDrops={newDrops}
       homeSettings={homeSettings}
       homeSections={homeSections}
+      usesHomeBuilder={usesHomeBuilder}
       dbError={dbError}
     />
   );

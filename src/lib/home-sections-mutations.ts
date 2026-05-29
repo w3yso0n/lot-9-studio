@@ -1,5 +1,6 @@
 import { getPool } from "@/lib/db";
 import { ensureHomeSchema } from "@/lib/home-schema";
+import { getHomeSectionsForAdmin } from "@/lib/home-sections-repo";
 import type { HomeSection, HomeSectionType } from "@/lib/home-sections";
 
 const SECTION_TYPES = new Set<HomeSectionType>([
@@ -58,7 +59,7 @@ async function syncHeroToSettings(heroSection: HomeSectionInput): Promise<void> 
 
 export async function replaceHomeSections(
   sections: HomeSectionInput[]
-): Promise<void> {
+): Promise<HomeSection[]> {
   await ensureHomeSchema();
   const pool = getPool();
   const client = await pool.connect();
@@ -75,15 +76,18 @@ export async function replaceHomeSections(
       await client.query(`DELETE FROM home_sections WHERE NOT (id = ANY($1::int[]))`, [
         keptIds,
       ]);
+    } else if (sections.length > 0) {
+      await client.query(`DELETE FROM home_sections`);
     } else {
       await client.query(`DELETE FROM home_sections`);
+      await client.query("COMMIT");
+      return [];
     }
 
-    for (let index = 0; index < sections.length; index++) {
-      const section = sections[index];
+    let sortOrder = 0;
+    for (const section of sections) {
       if (!SECTION_TYPES.has(section.type)) continue;
 
-      // Sincronizar hero con home_settings
       if (section.type === "hero") {
         await syncHeroToSettings(section);
       }
@@ -109,7 +113,7 @@ export async function replaceHomeSections(
             section.title.trim() || null,
             section.subtitle.trim() || null,
             JSON.stringify(sanitizeContent(section.content)),
-            index,
+            sortOrder,
             section.isEnabled,
             id,
           ]
@@ -124,14 +128,16 @@ export async function replaceHomeSections(
             section.title.trim() || null,
             section.subtitle.trim() || null,
             JSON.stringify(sanitizeContent(section.content)),
-            index,
+            sortOrder,
             section.isEnabled,
           ]
         );
       }
+      sortOrder += 1;
     }
 
     await client.query("COMMIT");
+    return getHomeSectionsForAdmin();
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;

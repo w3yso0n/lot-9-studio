@@ -2,12 +2,24 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, type PointerEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 
 type CarouselImage = {
   url: string;
   alt?: string;
   link?: string;
+};
+
+type LoopImage = CarouselImage & {
+  isDuplicate: boolean;
 };
 
 type Props = {
@@ -17,10 +29,93 @@ type Props = {
   direction: "left" | "right";
 };
 
+function clampSpeed(value: number): number {
+  return Math.max(14, Math.min(90, value));
+}
+
+function isInteractiveLink(link?: string): boolean {
+  const href = link?.trim();
+  return Boolean(href && href !== "#");
+}
+
+function CarouselTile({
+  image,
+  title,
+  onReady,
+  className,
+}: {
+  image: LoopImage;
+  title: string;
+  onReady?: () => void;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`relative aspect-[4/5] w-[76vw] shrink-0 select-none overflow-hidden bg-muted sm:w-[42vw] lg:w-[28vw] xl:w-[340px] ${className ?? ""}`}
+    >
+      <Image
+        src={image.url}
+        alt={image.isDuplicate ? "" : image.alt?.trim() || title || "Imagen del carrusel"}
+        fill
+        className="pointer-events-none select-none object-cover"
+        draggable={false}
+        sizes="(max-width: 640px) 76vw, (max-width: 1024px) 42vw, (max-width: 1280px) 28vw, 340px"
+        unoptimized
+        onLoad={onReady}
+      />
+    </div>
+  );
+}
+
+function wrapSlide(
+  image: LoopImage,
+  index: number,
+  title: string,
+  onReady: () => void,
+  snapClass?: string
+): ReactNode {
+  const tile = (
+    <CarouselTile
+      image={image}
+      title={title}
+      onReady={onReady}
+      className={snapClass}
+    />
+  );
+  const key = `${image.url}-${image.isDuplicate ? "dup" : "orig"}-${index}`;
+
+  if (!isInteractiveLink(image.link) || image.isDuplicate) {
+    return (
+      <div
+        key={key}
+        className={`shrink-0 ${snapClass ?? ""}`}
+        aria-hidden={image.isDuplicate || undefined}
+      >
+        {tile}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      key={key}
+      href={image.link!.trim()}
+      className={`shrink-0 ${snapClass ?? ""}`}
+      aria-hidden={image.isDuplicate || undefined}
+      tabIndex={image.isDuplicate ? -1 : undefined}
+    >
+      {tile}
+    </Link>
+  );
+}
+
 export function HomeImageCarousel({ images, title, speed, direction }: Props) {
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const loopWidthRef = useRef(0);
   const offsetRef = useRef(0);
+  const pausedRef = useRef(false);
   const dragRef = useRef({
     active: false,
     moved: false,
@@ -29,55 +124,128 @@ export function HomeImageCarousel({ images, title, speed, direction }: Props) {
     startOffset: 0,
   });
 
-  function applyOffset() {
+  const imageSignature = useMemo(
+    () =>
+      images
+        .map((image) => `${image.url}|${image.link ?? ""}|${image.alt ?? ""}`)
+        .join("~"),
+    [images]
+  );
+
+  const loopImages = useMemo<LoopImage[]>(
+    () => [
+      ...images.map((image) => ({ ...image, isDuplicate: false as const })),
+      ...images.map((image) => ({ ...image, isDuplicate: true as const })),
+    ],
+    [images]
+  );
+
+  const measureLoopWidth = useCallback(() => {
+    const track = trackRef.current;
+    if (!track) return 0;
+    const loopWidth = track.scrollWidth / 2;
+    loopWidthRef.current = loopWidth;
+    return loopWidth;
+  }, []);
+
+  const applyOffset = useCallback(() => {
     const track = trackRef.current;
     const loopWidth = loopWidthRef.current;
     if (!track || loopWidth <= 0) return;
 
     const normalized = ((offsetRef.current % loopWidth) + loopWidth) % loopWidth;
     offsetRef.current = normalized;
-    const signedOffset = direction === "right" ? normalized - loopWidth : -normalized;
+    const signedOffset =
+      direction === "right" ? normalized - loopWidth : -normalized;
     track.style.transform = `translate3d(${signedOffset}px, 0, 0)`;
-  }
+  }, [direction]);
+
+  const remeasure = useCallback(() => {
+    measureLoopWidth();
+    applyOffset();
+  }, [applyOffset, measureLoopWidth]);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReducedMotion(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    offsetRef.current = 0;
+    remeasure();
+  }, [imageSignature, direction, remeasure]);
 
   useEffect(() => {
     const track = trackRef.current;
-    if (!track || images.length === 0) return;
+    if (!track || images.length === 0 || reducedMotion) return;
 
     let frame = 0;
     let lastTime = performance.now();
-    let offset = 0;
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const duration = Math.max(14, Math.min(90, speed)) * (prefersReducedMotion ? 2000 : 1000);
+    let offset = offsetRef.current;
+    const durationMs = clampSpeed(speed) * 1000;
+
+    const onVisibility = () => {
+      pausedRef.current = document.visibilityState !== "visible";
+      lastTime = performance.now();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
 
     const animate = (time: number) => {
-      const loopWidth = track.scrollWidth / 2;
-      loopWidthRef.current = loopWidth;
+      const loopWidth = measureLoopWidth();
       if (loopWidth > 0) {
-        const delta = time - lastTime;
-        if (!dragRef.current.active) {
-          offset = (offset + (delta / duration) * loopWidth) % loopWidth;
+        const delta = Math.min(time - lastTime, 48);
+        if (!dragRef.current.active && !pausedRef.current) {
+          offset = (offset + (delta / durationMs) * loopWidth) % loopWidth;
           offsetRef.current = offset;
           applyOffset();
         } else {
           offset = offsetRef.current;
         }
       }
-
       lastTime = time;
       frame = window.requestAnimationFrame(animate);
     };
 
     frame = window.requestAnimationFrame(animate);
 
-    return () => window.cancelAnimationFrame(frame);
-  }, [direction, images.length, speed]);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [
+    applyOffset,
+    direction,
+    imageSignature,
+    images.length,
+    measureLoopWidth,
+    reducedMotion,
+    speed,
+  ]);
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track || reducedMotion) return;
+
+    const observer = new ResizeObserver(() => {
+      remeasure();
+    });
+    observer.observe(track);
+    return () => observer.disconnect();
+  }, [imageSignature, reducedMotion, remeasure]);
+
+  function setPaused(next: boolean) {
+    pausedRef.current = next;
+  }
 
   function onPointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (reducedMotion) return;
     const track = trackRef.current;
     if (!track) return;
 
-    loopWidthRef.current = track.scrollWidth / 2;
+    measureLoopWidth();
     dragRef.current = {
       active: true,
       moved: false,
@@ -85,6 +253,7 @@ export function HomeImageCarousel({ images, title, speed, direction }: Props) {
       startX: event.clientX,
       startOffset: offsetRef.current,
     };
+    setPaused(true);
     event.currentTarget.setPointerCapture(event.pointerId);
   }
 
@@ -103,6 +272,7 @@ export function HomeImageCarousel({ images, title, speed, direction }: Props) {
   function endDrag(event: PointerEvent<HTMLDivElement>) {
     if (dragRef.current.pointerId !== event.pointerId) return;
     dragRef.current.active = false;
+    setPaused(false);
     try {
       event.currentTarget.releasePointerCapture(event.pointerId);
     } catch {
@@ -117,57 +287,62 @@ export function HomeImageCarousel({ images, title, speed, direction }: Props) {
     dragRef.current.moved = false;
   }
 
-  const loopImages = [
-    ...images.map((image) => ({ ...image, isDuplicate: false })),
-    ...images.map((image) => ({ ...image, isDuplicate: true })),
-  ];
+  if (images.length === 0) return null;
+
+  const regionLabel = title.trim() || "Carrusel de imágenes";
+
+  if (reducedMotion) {
+    return (
+      <div
+        className="home-marquee w-full overflow-x-auto overscroll-x-contain"
+        role="region"
+        aria-label={regionLabel}
+      >
+        <div className="flex w-max gap-4 snap-x snap-mandatory px-1 pb-1">
+          {images.map((image, index) =>
+            wrapSlide(
+              { ...image, isDuplicate: false },
+              index,
+              title,
+              remeasure,
+              "snap-center"
+            )
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
+      ref={containerRef}
       className="home-marquee w-full cursor-grab select-none overflow-hidden active:cursor-grabbing"
       data-home-image-carousel
+      role="region"
+      aria-label={regionLabel}
+      aria-roledescription="carrusel"
       style={{ touchAction: "pan-y" }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
-      onPointerLeave={endDrag}
       onClickCapture={onClickCapture}
       onDragStart={(event) => event.preventDefault()}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => {
+        if (!dragRef.current.active) setPaused(false);
+      }}
+      onFocusCapture={() => setPaused(true)}
+      onBlurCapture={(event) => {
+        if (!containerRef.current?.contains(event.relatedTarget as Node)) {
+          setPaused(false);
+        }
+      }}
     >
       <div ref={trackRef} className="flex w-max gap-4 will-change-transform">
-        {loopImages.map((image, index) => {
-          const tile = (
-            <div className="relative aspect-[4/5] w-[76vw] shrink-0 select-none overflow-hidden bg-neutral-100 sm:w-[42vw] lg:w-[28vw] xl:w-[340px]">
-              <Image
-                src={image.url}
-                alt={image.isDuplicate ? "" : image.alt ?? title}
-                fill
-                className="pointer-events-none select-none object-cover"
-                draggable={false}
-                sizes="(max-width: 640px) 76vw, (max-width: 1024px) 42vw, (max-width: 1280px) 28vw, 340px"
-                unoptimized
-              />
-            </div>
-          );
-          const key = `${image.url}-${index}`;
-
-          return image.link ? (
-            <Link
-              key={key}
-              href={image.link}
-              className="shrink-0"
-              aria-hidden={image.isDuplicate}
-              tabIndex={image.isDuplicate ? -1 : undefined}
-            >
-              {tile}
-            </Link>
-          ) : (
-            <div key={key} className="shrink-0" aria-hidden={image.isDuplicate}>
-              {tile}
-            </div>
-          );
-        })}
+        {loopImages.map((image, index) =>
+          wrapSlide(image, index, title, remeasure)
+        )}
       </div>
     </div>
   );

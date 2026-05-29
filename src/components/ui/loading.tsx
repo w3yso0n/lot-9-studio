@@ -78,7 +78,7 @@ export const PageLoader = () => {
 
   return (
     <motion.div
-      className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -104,9 +104,9 @@ export const PageLoader = () => {
       </motion.div>
 
       {/* Barra de progreso */}
-      <div className="w-64 h-1 bg-gray-200 rounded-full overflow-hidden mb-4">
+      <div className="mb-4 h-1 w-64 overflow-hidden rounded-full bg-muted">
         <motion.div
-          className="h-full bg-black rounded-full"
+          className="h-full rounded-full bg-foreground"
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.3 }}
@@ -115,7 +115,7 @@ export const PageLoader = () => {
 
       {/* Texto de carga */}
       <motion.p
-        className="text-gray-600 text-sm"
+        className="text-sm text-muted-foreground"
         animate={{ opacity: [0.5, 1, 0.5] }}
         transition={{ duration: 1.5, repeat: Infinity }}
       >

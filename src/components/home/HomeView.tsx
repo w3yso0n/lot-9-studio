@@ -12,6 +12,8 @@ type Props = {
   newDrops: CatalogProduct[];
   homeSettings: HomeSettings;
   homeSections?: HomeSection[];
+  /** Hay bloques guardados en el constructor (aunque estén desactivados). */
+  usesHomeBuilder?: boolean;
   dbError?: string | null;
 };
 
@@ -20,9 +22,10 @@ export default function HomeView({
   newDrops,
   homeSettings,
   homeSections = [],
+  usesHomeBuilder = false,
   dbError,
 }: Props) {
-  if (homeSections.length > 0) {
+  if (usesHomeBuilder || homeSections.length > 0) {
     return (
       <div className="min-h-screen">
         <main>

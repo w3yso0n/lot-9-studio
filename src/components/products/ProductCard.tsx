@@ -60,7 +60,7 @@ export const ProductCard = ({ product, className }: ProductProps) => {
         onMouseEnter={hoverImage ? () => setShowHoverImage(true) : undefined}
         onMouseLeave={hoverImage ? () => setShowHoverImage(false) : undefined}
       >
-        <div className="relative w-full aspect-[3/4] overflow-hidden bg-neutral-100 dark:bg-zinc-900">
+        <div className="relative aspect-[3/4] w-full overflow-hidden bg-muted">
           {hasImage ? (
             <ProductImage
               key={displayImage}
@@ -90,7 +90,7 @@ export const ProductCard = ({ product, className }: ProductProps) => {
         </div>
 
         <div className="pt-3">
-          <h3 className="text-sm font-semibold leading-snug text-gray-950 transition-colors group-hover:text-gray-600 dark:text-white dark:group-hover:text-gray-300">
+          <h3 className="text-sm font-semibold leading-snug text-foreground transition-colors group-hover:text-muted-foreground">
             {product.name}
           </h3>
 
@@ -120,7 +120,7 @@ export const ProductCard = ({ product, className }: ProductProps) => {
       {hasStock ? (
         <Button
           asChild
-          className="mt-3 h-9 w-full rounded-none bg-black text-[11px] font-semibold uppercase tracking-[0.16em] text-white shadow-none transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+          className="mt-3 h-9 w-full rounded-none bg-foreground text-[11px] font-semibold uppercase tracking-[0.16em] text-background shadow-none transition-colors hover:bg-foreground/90"
         >
           <Link href={`/products/${product.id}`}>Comprar ahora</Link>
         </Button>
@@ -128,7 +128,7 @@ export const ProductCard = ({ product, className }: ProductProps) => {
         <Button
           type="button"
           disabled
-          className="mt-3 h-9 w-full rounded-none border border-zinc-300 bg-transparent text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 shadow-none opacity-100 disabled:pointer-events-none disabled:opacity-100 dark:border-zinc-700 dark:text-zinc-400"
+          className="mt-3 h-9 w-full rounded-none border border-border bg-transparent text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground shadow-none opacity-100 disabled:pointer-events-none disabled:opacity-100"
         >
           Agotado
         </Button>

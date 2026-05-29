@@ -51,7 +51,7 @@ const CartItem = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -100 }}
       transition={{ duration: 0.3 }}
-      className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 border-b dark:border-gray-700 gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group"
+      className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 border-b border-border gap-4 hover:bg-muted/50 transition-colors group"
     >
       {/* Product Info */}
       <div className="flex items-start gap-4 w-full sm:w-auto">
@@ -76,12 +76,12 @@ const CartItem = ({
         </motion.div>
         
         <div className="flex-1">
-          <h3 className="font-semibold text-base sm:text-lg text-gray-900 dark:text-white mb-1">
+          <h3 className="font-semibold text-base sm:text-lg text-foreground mb-1">
             {product.name}
-            {product.color && <span className="text-gray-600 dark:text-gray-400"> - {product.color}</span>}
+            {product.color && <span className="text-muted-foreground"> - {product.color}</span>}
           </h3>
           <p className="text-sm text-muted-foreground mb-2">
-            Talla: <span className="font-medium text-gray-700 dark:text-gray-300">{selectedSize}</span>
+            Talla: <span className="font-medium text-foreground">{selectedSize}</span>
           </p>
           
           {/* Price display */}
@@ -109,12 +109,12 @@ const CartItem = ({
 
       {/* Quantity Controls */}
       <div className="flex items-center justify-between w-full sm:w-auto gap-4">
-        <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700/50 rounded-lg p-1">
+        <div className="flex items-center gap-2 rounded-lg bg-muted p-1">
           <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 hover:bg-gray-200 dark:hover:bg-gray-600"
+              className="h-8 w-8 hover:bg-accent"
               onClick={() => decreaseQuantity(product.id, selectedSize, selectedColor)}
               disabled={quantity <= 1}
             >
@@ -134,7 +134,7 @@ const CartItem = ({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 hover:bg-gray-200 dark:hover:bg-gray-600"
+              className="h-8 w-8 hover:bg-accent"
               onClick={() => increaseQuantity(product.id, selectedSize, selectedColor)}
             >
               <Plus className="h-4 w-4" />

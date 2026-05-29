@@ -18,7 +18,8 @@ export default async function AdminHomeBuilderPage() {
             Constructor Home
           </h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            Agrega, ordena y activa bloques del home sin tocar código.
+            Agrega, ordena y activa bloques del home. Guarda los cambios para aplicar el orden en la
+            tienda.
           </p>
         </div>
         <div className="flex gap-2">

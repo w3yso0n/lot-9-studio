@@ -112,7 +112,7 @@ export function HomeSectionRenderer({
                 <div className="mt-8 text-center">
                   <Link
                     href="/products#catalogo"
-                    className="inline-flex border border-black px-5 py-2 text-xs font-semibold uppercase tracking-[0.16em] hover:bg-black hover:text-white"
+                    className="inline-flex border border-foreground px-5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-foreground transition-colors hover:bg-foreground hover:text-background"
                   >
                     Ver más
                   </Link>
@@ -220,7 +220,7 @@ export function HomeSectionRenderer({
           if (!url) return null;
           const link = stringValue(section.content.link);
           const image = (
-            <div className="relative aspect-[21/9] overflow-hidden bg-neutral-100">
+            <div className="relative aspect-[21/9] overflow-hidden bg-muted">
               <Image src={url} alt={section.title || ""} fill className="object-cover" unoptimized />
               {section.title || section.subtitle ? (
                 <div className="absolute inset-x-6 bottom-6 text-white drop-shadow">
@@ -268,7 +268,9 @@ export function HomeSectionRenderer({
                 <p className="mt-2 text-sm text-muted-foreground">{section.subtitle}</p>
               ) : null}
               {stringValue(section.content.text) ? (
-                <p className="mt-4 text-sm leading-6">{stringValue(section.content.text)}</p>
+                <p className="mt-4 text-sm leading-6 text-foreground">
+                  {stringValue(section.content.text)}
+                </p>
               ) : null}
             </section>
           );

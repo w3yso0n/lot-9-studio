@@ -306,9 +306,7 @@ function rowToNewDropProduct(row: NewDropRow): CatalogProduct {
     price: Number.isFinite(price) ? price : 0,
     oldPrice: parseOldPrice(row.old_price),
     color: row.color,
-    images: cover
-      ? sanitizeProductImagePaths([cover])
-      : prioritizeCoverImage(parseJsonArray(row.images), cover),
+    images: prioritizeCoverImage(parseJsonArray(row.images), cover || null),
     coverImage: cover || null,
     hoverImage: hover || null,
     badge: rowToBadge(row),

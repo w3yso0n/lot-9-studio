@@ -23,7 +23,8 @@ import {
   Trash2,
 } from "lucide-react";
 import Image from "next/image";
-import { useActionState, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
 
 type CarouselImage = { url: string; alt?: string; link?: string };
 type CarouselDirection = "left" | "right";
@@ -43,6 +44,53 @@ const SECTION_TYPES = Object.keys(SECTION_LABELS) as HomeSectionType[];
 
 function makeDraft(section: HomeSection): DraftSection {
   return { ...section, localId: `saved-${section.id}` };
+}
+
+function heroDraftFromSettings(homeSettings: HomeSettings): DraftSection {
+  return {
+    id: -Date.now(),
+    localId: crypto.randomUUID(),
+    type: "hero",
+    title: homeSettings.heroTitle,
+    subtitle: homeSettings.heroSubtitle,
+    content: {
+      imageUrl: homeSettings.heroImageUrl,
+      title: homeSettings.heroTitle,
+      subtitle: homeSettings.heroSubtitle,
+      buttonText: homeSettings.heroButtonText,
+      buttonHref: homeSettings.heroButtonHref,
+      crop: {
+        x: homeSettings.heroCropX,
+        y: homeSettings.heroCropY,
+        zoom: homeSettings.heroCropZoom,
+      },
+    },
+    sortOrder: 0,
+    isEnabled: homeSettings.isHeroEnabled,
+  };
+}
+
+function syncDraftsFromSaved(
+  prev: DraftSection[],
+  saved: HomeSection[]
+): DraftSection[] {
+  return saved.map((section, index) => {
+    const matchedById =
+      section.id > 0 ? prev.find((item) => item.id === section.id) : undefined;
+    const prevAtIndex = prev[index];
+    const localId =
+      matchedById?.localId ?? prevAtIndex?.localId ?? crypto.randomUUID();
+    return { ...section, localId };
+  });
+}
+
+function buildInitialSections(
+  initialSections: HomeSection[],
+  homeSettings: HomeSettings
+): DraftSection[] {
+  const mapped = initialSections.map(makeDraft);
+  if (mapped.length > 0) return mapped;
+  return [heroDraftFromSettings(homeSettings)];
 }
 
 function newSection(type: HomeSectionType, sortOrder = 0): DraftSection {
@@ -150,49 +198,27 @@ type Props = {
 };
 
 export function HomeBuilderForm({ initialSections, homeSettings }: Props) {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(
     saveHomeSectionsAction,
     null as SaveHomeSectionsState
   );
-  const [sections, setSections] = useState<DraftSection[]>(() => {
-    const mapped = initialSections.map(makeDraft);
-    const hasHero = mapped.some((section) => section.type === "hero");
-
-    if (!hasHero) {
-      return [
-        {
-          id: -Date.now(),
-          localId: crypto.randomUUID(),
-          type: "hero",
-          title: homeSettings.heroTitle,
-          subtitle: homeSettings.heroSubtitle,
-          content: {
-            imageUrl: homeSettings.heroImageUrl,
-            title: homeSettings.heroTitle,
-            subtitle: homeSettings.heroSubtitle,
-            buttonText: homeSettings.heroButtonText,
-            buttonHref: homeSettings.heroButtonHref,
-            crop: {
-              x: homeSettings.heroCropX,
-              y: homeSettings.heroCropY,
-              zoom: homeSettings.heroCropZoom,
-            },
-          },
-          sortOrder: 0,
-          isEnabled: true,
-        },
-        ...mapped,
-      ];
-    }
-
-    return mapped;
-  });
+  const [sections, setSections] = useState<DraftSection[]>(() =>
+    buildInitialSections(initialSections, homeSettings)
+  );
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [newBlockType, setNewBlockType] = useState<HomeSectionType>("banner");
   const [uploading, startUpload] = useTransition();
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const saving = pending || uploading;
+  const hasUnsavedBlocks = sections.some((section) => section.id <= 0);
+
+  useEffect(() => {
+    if (!state?.ok || !state.sections) return;
+    setSections((prev) => syncDraftsFromSaved(prev, state.sections!));
+    router.refresh();
+  }, [state, router]);
 
   const serialized = useMemo(
     () =>
@@ -253,6 +279,15 @@ export function HomeBuilderForm({ initialSections, homeSettings }: Props) {
   }
 
   function addBaseStructure() {
+    if (
+      sections.length > 0 &&
+      !window.confirm(
+        "Esto reemplazara todos los bloques actuales por la estructura base (Hero, New Drops, Catalogo y Video). Debes guardar para aplicarlo en la tienda."
+      )
+    ) {
+      return;
+    }
+
     const drafts: DraftSection[] = [
       {
         ...newSection("hero", 0),
@@ -398,6 +433,11 @@ export function HomeBuilderForm({ initialSections, homeSettings }: Props) {
           </div>
           <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
             <span>{sections.length} bloques</span>
+            {hasUnsavedBlocks ? (
+              <span className="text-amber-700">
+                Hay bloques nuevos: guarda para fijar el orden en la tienda.
+              </span>
+            ) : null}
             {state?.ok ? <span className="text-emerald-700">Cambios guardados</span> : null}
             {saving ? <span>Guardando cambios...</span> : null}
           </div>
@@ -411,7 +451,14 @@ export function HomeBuilderForm({ initialSections, homeSettings }: Props) {
       ) : null}
       {state?.ok ? (
         <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-          Cambios guardados. El home publico usara este orden.
+          Cambios guardados. El home publico usara este orden (solo bloques activos).
+        </p>
+      ) : null}
+
+      {initialSections.length === 0 && sections.length > 0 ? (
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Aun no hay bloques guardados en la base de datos. Pulsa Guardar cambios para activar el
+          constructor en la tienda.
         </p>
       ) : null}
 
@@ -441,7 +488,8 @@ export function HomeBuilderForm({ initialSections, homeSettings }: Props) {
       <div className="space-y-3">
         {sections.length === 0 ? (
           <div className="rounded-md border border-dashed bg-white p-8 text-center text-sm text-muted-foreground">
-            Agrega bloques para activar el constructor. Si no hay bloques, el home usa el diseno actual.
+            Agrega bloques para activar el constructor. Si no hay bloques guardados, el home usa el
+            diseno anterior (hero + catalogo fijo).
           </div>
         ) : null}
 
@@ -489,6 +537,11 @@ export function HomeBuilderForm({ initialSections, homeSettings }: Props) {
                         >
                           {section.isEnabled ? "Activo" : "Inactivo"}
                         </span>
+                        {section.id <= 0 ? (
+                          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                            Sin guardar
+                          </span>
+                        ) : null}
                       </div>
                       <h2 className="mt-1 truncate text-base font-semibold">
                         {section.title || SECTION_LABELS[section.type]}

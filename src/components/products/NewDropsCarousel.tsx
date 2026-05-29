@@ -120,8 +120,8 @@ const NewDropsCarousel = ({ newDrops }: Props) => {
                             }
                             className={`relative h-12 w-12 overflow-hidden border transition-colors sm:h-16 sm:w-16 ${
                               currentImageIndex === imgIndex
-                                ? "border-black dark:border-white"
-                                : "border-gray-200 hover:border-gray-400 dark:border-gray-700"
+                                ? "border-foreground"
+                                : "border-border hover:border-muted-foreground"
                             }`}
                           >
                             <ProductImage
@@ -146,7 +146,7 @@ const NewDropsCarousel = ({ newDrops }: Props) => {
           <button
             type="button"
             onClick={prevSlide}
-            className="border border-gray-200 bg-white/90 p-2 transition-colors hover:bg-black hover:text-white dark:border-gray-700 dark:bg-gray-800/90"
+            className="border border-border bg-background/90 p-2 transition-colors hover:bg-foreground hover:text-background"
             aria-label="Anterior"
           >
             <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -159,7 +159,7 @@ const NewDropsCarousel = ({ newDrops }: Props) => {
                 type="button"
                 onClick={() => setCurrentIndex(index)}
                 className={`h-2 w-2 rounded-full transition-colors sm:h-3 sm:w-3 ${
-                  currentIndex === index ? "bg-black dark:bg-white" : "bg-gray-300 dark:bg-gray-600"
+                  currentIndex === index ? "bg-foreground" : "bg-muted-foreground/40"
                 }`}
                 aria-label={`Ir al slide ${index + 1}`}
               />
@@ -169,7 +169,7 @@ const NewDropsCarousel = ({ newDrops }: Props) => {
           <button
             type="button"
             onClick={nextSlide}
-            className="border border-gray-200 bg-white/90 p-2 transition-colors hover:bg-black hover:text-white dark:border-gray-700 dark:bg-gray-800/90"
+            className="border border-border bg-background/90 p-2 transition-colors hover:bg-foreground hover:text-background"
             aria-label="Siguiente"
           >
             <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />

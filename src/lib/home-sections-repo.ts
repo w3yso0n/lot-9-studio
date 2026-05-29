@@ -68,3 +68,19 @@ export const getHomeSections = unstable_cache(
   ["home-sections"],
   { revalidate: 60, tags: ["home-sections"] }
 );
+
+async function fetchHomeBuilderConfigured(): Promise<boolean> {
+  await ensureHomeSchema();
+  const pool = getPool();
+  const { rows } = await pool.query<{ configured: boolean }>(
+    `SELECT EXISTS (SELECT 1 FROM home_sections) AS configured`
+  );
+  return Boolean(rows[0]?.configured);
+}
+
+/** True si el admin ya guardó bloques en el constructor (aunque estén desactivados). */
+export const isHomeBuilderConfigured = unstable_cache(
+  fetchHomeBuilderConfigured,
+  ["home-builder-configured"],
+  { revalidate: 60, tags: ["home-sections"] }
+);

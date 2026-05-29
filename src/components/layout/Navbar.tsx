@@ -1,21 +1,21 @@
 "use client";
 
-import { CartCounter } from "@/components/ui/cart-counter";
+import { CartNavLink } from "@/components/layout/CartNavLink";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FaBars, FaShoppingCart, FaTimes, FaUser } from "react-icons/fa";
+import { FaBars, FaTimes } from "react-icons/fa";
 
 const navLinkClass =
-  "text-gray-700 dark:text-foreground hover:text-black dark:hover:text-white transition-colors font-medium relative group";
+  "text-foreground/80 hover:text-foreground transition-colors font-medium relative group";
 
 function NavLinkUnderline() {
   return (
     <motion.div
-      className="absolute -bottom-1 left-0 w-0 h-0.5 bg-black dark:bg-foreground group-hover:w-full transition-all duration-300"
+      className="absolute -bottom-1 left-0 h-0.5 w-0 bg-foreground transition-all duration-300 group-hover:w-full"
       initial={false}
       whileHover={{ width: "100%" }}
     />
@@ -23,7 +23,7 @@ function NavLinkUnderline() {
 }
 
 const mobileRowClass =
-  "text-gray-700 dark:text-foreground hover:text-black dark:hover:text-white transition-colors py-2 border-b border-gray-100 dark:border-border block";
+  "block border-b border-border py-2 text-foreground/80 transition-colors hover:text-foreground";
 
 const Navbar = () => {
   const pathname = usePathname();
@@ -51,7 +51,7 @@ const Navbar = () => {
 
   return (
     <motion.nav 
-      className={`bg-white/90 dark:bg-card/90 backdrop-blur-md shadow-lg fixed top-0 left-0 w-full z-50 transition-all duration-500 ${
+      className={`fixed top-0 left-0 z-50 w-full bg-background/90 backdrop-blur-md shadow-lg transition-all duration-500 dark:bg-card/90 ${
         isScrolled ? 'py-2' : 'py-4'
       }`}
       initial={{ y: -100 }}
@@ -77,7 +77,7 @@ const Navbar = () => {
               priority
             />
             {isAdminDashboard ? (
-              <span className="hidden sm:inline text-xs sm:text-sm font-semibold tracking-tight text-gray-800 dark:text-foreground whitespace-nowrap border-l border-gray-200 dark:border-border pl-2 sm:pl-3">
+              <span className="hidden whitespace-nowrap border-l border-border pl-2 text-xs font-semibold tracking-tight text-foreground sm:inline sm:pl-3 sm:text-sm">
                 Admin
               </span>
             ) : null}
@@ -128,7 +128,7 @@ const Navbar = () => {
               <form action="/api/admin/logout" method="post" className="hidden md:block">
                 <motion.button
                   type="submit"
-                  className="text-sm font-medium text-gray-700 dark:text-foreground hover:text-black dark:hover:text-white transition-colors underline-offset-4 hover:underline whitespace-nowrap"
+                  className="whitespace-nowrap text-sm font-medium text-foreground/80 transition-colors hover:text-foreground hover:underline hover:underline-offset-4"
                   whileHover={{ y: -1 }}
                 >
                   Cerrar sesión
@@ -136,19 +136,9 @@ const Navbar = () => {
               </form>
             </>
           ) : (
-            <>
-              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                <Link href="/cart" className="relative">
-                  <FaShoppingCart className="w-4 sm:w-5 h-4 sm:h-5 text-gray-700 dark:text-foreground hover:text-black dark:hover:text-white transition-colors" />
-                  <CartCounter />
-                </Link>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                <Link href="/profile">
-                  <FaUser className="w-4 sm:w-5 h-4 sm:h-5 text-gray-700 dark:text-foreground hover:text-black dark:hover:text-white transition-colors" />
-                </Link>
-              </motion.div>
-            </>
+            <motion.div whileHover={{ scale: 1.05 }}>
+              <CartNavLink />
+            </motion.div>
           )}
 
           <motion.button
@@ -163,9 +153,9 @@ const Navbar = () => {
               transition={{ duration: 0.3 }}
             >
               {isOpen ? (
-                <FaTimes className="w-4 sm:w-5 h-4 sm:h-5 text-gray-700 dark:text-foreground" />
+                <FaTimes className="h-4 w-4 text-foreground sm:h-5 sm:w-5" />
               ) : (
-                <FaBars className="w-4 sm:w-5 h-4 sm:h-5 text-gray-700 dark:text-foreground" />
+                <FaBars className="h-4 w-4 text-foreground sm:h-5 sm:w-5" />
               )}
             </motion.div>
           </motion.button>
@@ -176,7 +166,7 @@ const Navbar = () => {
       <AnimatePresence>
         {isOpen && (
           <motion.div 
-            className="md:hidden bg-white/95 dark:bg-card/95 backdrop-blur-md shadow-xl absolute w-full left-0 top-full"
+            className="absolute left-0 top-full w-full bg-background/95 backdrop-blur-md shadow-xl md:hidden dark:bg-card/95"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}

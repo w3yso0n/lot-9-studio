@@ -10,9 +10,11 @@ import {
 } from "@/lib/product-image-url";
 import { cn } from "@/lib/utils";
 import { useCartStore } from "@/store/cart";
+import { AnimatePresence, motion } from "framer-motion";
+import { Check } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { memo, useMemo, useReducer } from "react";
+import { memo, useEffect, useMemo, useReducer, useState } from "react";
 import { ProductPrice } from "@/components/products/ProductPrice";
 
 /** Evita montar decenas de miniaturas a la vez en productos con muchas fotos. */
@@ -125,8 +127,10 @@ const ThumbButton = memo(function ThumbButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "relative shrink-0 w-20 h-20 md:w-24 md:h-24 rounded-lg overflow-hidden border-2 cursor-pointer",
-        selected ? "border-black" : "border-gray-200 hover:border-gray-400"
+        "relative shrink-0 w-20 h-20 md:w-24 md:h-24 rounded-lg overflow-hidden border-2 cursor-pointer bg-muted/40",
+        selected
+          ? "border-foreground"
+          : "border-border hover:border-muted-foreground"
       )}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -161,8 +165,10 @@ const ColorSwatch = memo(function ColorSwatch({
       type="button"
       onClick={onSelect}
       className={cn(
-        "relative block h-16 w-16 shrink-0 overflow-hidden border-2 bg-white",
-        selected ? "border-black" : "border-gray-200 hover:border-gray-500"
+        "relative block h-16 w-16 shrink-0 overflow-hidden border-2 bg-background",
+        selected
+          ? "border-foreground"
+          : "border-border hover:border-muted-foreground"
       )}
       title={label}
       aria-label={label}
@@ -211,6 +217,13 @@ export function ProductDetailClient({ product }: Props) {
     selectedSize: null,
   });
   const addToCart = useCartStore((s) => s.addToCart);
+  const [justAdded, setJustAdded] = useState(false);
+
+  useEffect(() => {
+    if (!justAdded) return;
+    const timer = window.setTimeout(() => setJustAdded(false), 2200);
+    return () => window.clearTimeout(timer);
+  }, [justAdded]);
 
   const safeColorIndex =
     colorOptions.length > 0
@@ -328,7 +341,7 @@ export function ProductDetailClient({ product }: Props) {
         <div className="w-full max-w-2xl mx-auto space-y-6 xl:mx-0 xl:max-w-[420px] xl:self-start xl:sticky xl:top-24">
           <div>
             <h1 className="text-3xl font-bold">{product.name}</h1>
-            <p className="text-gray-500 text-sm mt-1">{activeLabel}</p>
+            <p className="text-sm text-muted-foreground mt-1">{activeLabel}</p>
 
             <div className="mt-2 max-w-[20rem]">
               <ProductPrice price={product.price} oldPrice={product.oldPrice} align="left" />
@@ -358,10 +371,10 @@ export function ProductDetailClient({ product }: Props) {
                   const inner = (
                     <span
                       className={cn(
-                        "relative block h-16 w-16 overflow-hidden border-2 bg-white",
+                        "relative block h-16 w-16 overflow-hidden border-2 bg-background",
                         variant.current
-                          ? "border-black"
-                          : "border-gray-200 hover:border-gray-500"
+                          ? "border-foreground"
+                          : "border-border hover:border-muted-foreground"
                       )}
                       title={variant.color || variant.name}
                     >
@@ -377,7 +390,7 @@ export function ProductDetailClient({ product }: Props) {
                           className="h-full w-full object-contain p-1"
                         />
                       ) : (
-                        <span className="flex h-full items-center justify-center px-1 text-center text-[10px] text-gray-500">
+                        <span className="flex h-full items-center justify-center px-1 text-center text-[10px] text-muted-foreground">
                           {variant.color || "Color"}
                         </span>
                       )}
@@ -413,12 +426,12 @@ export function ProductDetailClient({ product }: Props) {
                       type="button"
                       onClick={() => dispatch({ type: "select-size", size })}
                       className={cn(
-                        "px-4 py-2 border rounded-lg transition-colors",
+                        "rounded-lg border px-4 py-2 transition-colors",
                         state.selectedSize === size
-                          ? "bg-black text-white border-black"
+                          ? "border-foreground bg-foreground text-background"
                           : qty === 0
-                            ? "line-through text-gray-400 border-gray-200"
-                            : "border-gray-200 hover:bg-gray-100"
+                            ? "border-border text-muted-foreground line-through"
+                            : "border-border hover:bg-muted"
                       )}
                     >
                       {size}
@@ -431,7 +444,7 @@ export function ProductDetailClient({ product }: Props) {
 
           <div>
             <h2 className="text-xl font-semibold mb-2">Stock disponible</h2>
-            <p className="text-gray-700">
+            <p className="text-muted-foreground">
               {state.selectedSize
                 ? (activeStock[state.selectedSize] ?? 0) > 0
                   ? `Stock: ${activeStock[state.selectedSize]}`
@@ -440,36 +453,73 @@ export function ProductDetailClient({ product }: Props) {
             </p>
           </div>
 
-          <div>
-            <h2 className="text-xl font-semibold mb-2">Descripción</h2>
-            <p className="text-gray-700">{product.desc || "—"}</p>
-          </div>
+          {product.desc?.trim() ? (
+            <div>
+              <h2 className="text-xl font-semibold mb-2">Descripción</h2>
+              <p className="text-muted-foreground">{product.desc.trim()}</p>
+            </div>
+          ) : null}
 
-          <Button
-            className="w-full sm:w-auto"
-            disabled={!state.selectedSize || isOutOfStock}
-            onClick={() => {
-              if (!state.selectedSize) return;
-              addToCart(
-                {
-                  id: product.id,
-                  name: product.name,
-                  price: product.price,
-                  images: activeImages.length > 0 ? activeImages : product.images,
-                  quantity: 1,
-                  color: activeLabel,
-                },
-                state.selectedSize,
-                activeLabel
-              );
-            }}
+          <motion.div
+            animate={justAdded ? { scale: [1, 1.03, 1] } : { scale: 1 }}
+            transition={{ duration: 0.35 }}
           >
-            {state.selectedSize
-              ? isOutOfStock
-                ? "Agotado"
-                : "Añadir al carrito"
-              : "Selecciona una talla"}
-          </Button>
+            <Button
+              className={cn(
+                "w-full sm:w-auto transition-colors duration-300",
+                justAdded
+                  ? "bg-emerald-600 text-white hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-600"
+                  : "bg-foreground text-background hover:bg-foreground/90 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+              )}
+              disabled={!state.selectedSize || isOutOfStock}
+              onClick={() => {
+                if (!state.selectedSize || isOutOfStock) return;
+                addToCart(
+                  {
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    images: activeImages.length > 0 ? activeImages : product.images,
+                    quantity: 1,
+                    color: activeLabel,
+                  },
+                  state.selectedSize,
+                  activeLabel
+                );
+                setJustAdded(true);
+              }}
+            >
+              <AnimatePresence mode="wait" initial={false}>
+                {justAdded ? (
+                  <motion.span
+                    key="added"
+                    className="inline-flex items-center justify-center gap-2"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Check className="size-4 shrink-0" aria-hidden />
+                    Agregado al carrito
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="idle"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {state.selectedSize
+                      ? isOutOfStock
+                        ? "Agotado"
+                        : "Añadir al carrito"
+                      : "Selecciona una talla"}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </Button>
+          </motion.div>
         </div>
       </div>
     </section>

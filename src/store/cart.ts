@@ -24,6 +24,9 @@ interface CartItem {
 interface CartState {
   cart: CartItem[];
   isOpen: boolean; // Estado del drawer del carrito
+  /** Incrementa para animar el icono del carrito en el navbar. */
+  cartBumpKey: number;
+  bumpCart: () => void;
   addToCart: (product: Product, selectedSize: string, selectedColor?: string) => void;
   removeFromCart: (id: number, selectedSize: string, selectedColor?: string) => void;
   increaseQuantity: (id: number, selectedSize: string, selectedColor?: string) => void;
@@ -47,7 +50,11 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       cart: [],
       isOpen: false,
+      cartBumpKey: 0,
       selectedDiscount: undefined,
+
+      bumpCart: () =>
+        set((state) => ({ cartBumpKey: state.cartBumpKey + 1 })),
 
       // Agregar al carrito
       addToCart: (product, selectedSize, selectedColor) =>
@@ -68,6 +75,7 @@ export const useCartStore = create<CartState>()(
                   ? { ...item, quantity: item.quantity + 1 }
                   : item
               ),
+              cartBumpKey: state.cartBumpKey + 1,
             };
           }
 
@@ -82,6 +90,7 @@ export const useCartStore = create<CartState>()(
                 addedAt: new Date() 
               }
             ],
+            cartBumpKey: state.cartBumpKey + 1,
           };
         }),
 

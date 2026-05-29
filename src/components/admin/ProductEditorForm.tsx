@@ -1358,6 +1358,7 @@ export function ProductEditorForm({
         price={previewPrice}
         images={previewImages}
         coverImage={effectiveCoverImagePath}
+        hoverImage={hoverImagePath}
         variantLabel={variantLabelForSubmit}
         description={description}
         sizes={previewSizes}

@@ -2,6 +2,7 @@
 
 import { verifyAdminSession } from "@/lib/admin-session";
 import { hasCloudinaryConfig, uploadToCloudinary } from "@/lib/cloudinary-server";
+import type { HomeSection } from "@/lib/home-sections";
 import { replaceHomeSections } from "@/lib/home-sections-mutations";
 import type { HomeSectionInput } from "@/lib/home-sections-mutations";
 import { randomUUID } from "node:crypto";
@@ -21,7 +22,9 @@ const VIDEO_MIME_EXT: Record<string, string> = {
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 45 * 1024 * 1024;
 
-export type SaveHomeSectionsState = { ok?: boolean; error?: string } | null;
+export type SaveHomeSectionsState =
+  | { ok?: boolean; error?: string; sections?: HomeSection[] }
+  | null;
 
 async function uploadBuilderFile(
   file: File,
@@ -99,11 +102,12 @@ export async function saveHomeSectionsAction(
     if (!Array.isArray(parsed)) {
       return { error: "Formato inválido de secciones." };
     }
-    await replaceHomeSections(parsed);
+    const sections = await replaceHomeSections(parsed);
     revalidateTag("home-sections");
+    revalidateTag("home-settings");
     revalidatePath("/");
     revalidatePath("/admin/dashboard/home-builder");
-    return { ok: true };
+    return { ok: true, sections };
   } catch (error) {
     console.error("[home-builder save]", error);
     return {

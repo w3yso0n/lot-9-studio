@@ -12,21 +12,20 @@ export const CartCounter = ({ className = "" }: CartCounterProps) => {
   const { getTotalItems } = useCartStore();
   const isMounted = useIsMounted();
   const itemCount = getTotalItems();
-
-  // No mostrar nada hasta que esté montado
   if (!isMounted) {
     return null;
   }
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="popLayout">
       {itemCount > 0 && (
-        <motion.span 
-          className={`absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center ${className}`}
+        <motion.span
+          key={itemCount}
+          className={`absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white ${className}`}
           initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
+          animate={{ scale: [0, 1.25, 1], opacity: 1 }}
           exit={{ scale: 0, opacity: 0 }}
-          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
         >
           {itemCount}
         </motion.span>

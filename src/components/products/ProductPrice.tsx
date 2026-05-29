@@ -34,7 +34,7 @@ export const ProductPrice = ({
   if (!showOldPrice) {
     return (
       <span
-        className={`block ${regularPriceSize} font-semibold text-gray-950 dark:text-white ${
+        className={`block ${regularPriceSize} font-semibold text-foreground ${
           align === "left" ? "text-left" : "text-center"
         } ${className}`}
       >
@@ -47,13 +47,13 @@ export const ProductPrice = ({
     <div
       className={`flex flex-wrap items-baseline gap-x-2 gap-y-1 ${containerAlign} ${className}`}
     >
-      <span className="text-xs font-medium text-gray-500 line-through dark:text-gray-400">
+      <span className="text-xs font-medium text-muted-foreground line-through">
         {oldPriceText}
       </span>
 
       <span
         role="status"
-        className={`${priceSize} font-semibold text-red-700 dark:text-red-400`}
+        className={`${priceSize} font-semibold text-red-600 dark:text-red-400`}
       >
         {priceText}
       </span>

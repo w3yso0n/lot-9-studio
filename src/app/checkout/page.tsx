@@ -10,7 +10,7 @@ export default function CheckoutPage() {
       <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">Checkout</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
         {/* Sección de Información del Cliente */}
-        <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 md:p-8 rounded-lg shadow-md">
+        <div className="rounded-lg border border-border bg-card p-4 shadow-sm sm:p-6 md:p-8">
           <h2 className="text-xl font-semibold mb-4">Información del Cliente</h2>
           <form>
             <div className="space-y-4">
@@ -35,7 +35,7 @@ export default function CheckoutPage() {
         </div>
 
         {/* Sección de Resumen del Pedido */}
-        <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 md:p-8 rounded-lg shadow-md">
+        <div className="rounded-lg border border-border bg-card p-4 shadow-sm sm:p-6 md:p-8">
           <h2 className="text-xl font-semibold mb-4 sm:mb-6">Resumen del Pedido</h2>
           <div className="space-y-4">
             <div className="flex justify-between">

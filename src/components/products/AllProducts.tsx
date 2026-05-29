@@ -35,7 +35,7 @@ const AllProducts = ({ products, newDrops, homeSettings, dbError }: Props) => {
       {homeSettings.isVideoEnabled && homeSettings.featuredVideoUrl ? (
         <section
           id="destacados"
-          className="mt-12 grid items-center gap-6 scroll-mt-24 border-t pt-8 md:grid-cols-[minmax(0,0.8fr)_minmax(320px,1.2fr)] lg:mt-14 lg:pt-10"
+          className="mt-12 grid scroll-mt-24 items-center gap-6 border-t border-border pt-8 md:grid-cols-[minmax(0,0.8fr)_minmax(320px,1.2fr)] lg:mt-14 lg:pt-10"
         >
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">

@@ -19,6 +19,7 @@ export type AdminStorefrontPreviewProps = {
   price: number;
   images: string[];
   coverImage?: string;
+  hoverImage?: string;
   variantLabel: string;
   description: string;
   sizes: string[];
@@ -49,6 +50,7 @@ export function AdminStorefrontPreview({
   price,
   images,
   coverImage = "",
+  hoverImage = "",
   variantLabel,
   description,
   sizes,
@@ -100,6 +102,14 @@ export function AdminStorefrontPreview({
   const activeStock = active?.stockBySize ?? stockBySize;
 
   const catalogCover = coverImage || options[0]?.images[0] || images[0] || "";
+  const configuredCatalogHover = hoverImage || images[1] || "";
+  const catalogHover =
+    configuredCatalogHover && configuredCatalogHover !== catalogCover
+      ? configuredCatalogHover
+      : "";
+  const [showCatalogHover, setShowCatalogHover] = useState(false);
+  const catalogDisplayImage =
+    showCatalogHover && catalogHover ? catalogHover : catalogCover;
   const catalogStock = aggregateStock(options, sizes, stockBySize);
   const catalogHasStock = sizes.some((size) => (catalogStock[size] ?? 0) > 0);
   const activeHasStock = sizes.some((size) => (activeStock[size] ?? 0) > 0);
@@ -125,7 +135,7 @@ export function AdminStorefrontPreview({
           Vista previa
         </p>
         <p className="text-sm text-muted-foreground mt-1">
-          Tarjeta del catálogo y ficha con colores como en la tienda.
+          Tarjeta del catálogo (hover al pasar el cursor) y ficha con colores como en la tienda.
         </p>
       </div>
 
@@ -147,13 +157,22 @@ export function AdminStorefrontPreview({
 
       <Card className="overflow-hidden shadow-lg rounded-xl bg-card border-border/80">
         <CardContent className="p-0 flex flex-col">
-          <div className="relative w-full aspect-[3/4] max-h-[280px] bg-muted">
-            {catalogCover ? (
+          <div
+            className="relative w-full aspect-[3/4] max-h-[280px] bg-muted"
+            onMouseEnter={
+              catalogHover ? () => setShowCatalogHover(true) : undefined
+            }
+            onMouseLeave={
+              catalogHover ? () => setShowCatalogHover(false) : undefined
+            }
+          >
+            {catalogDisplayImage ? (
               <AdminPreviewImage
-                src={catalogCover}
+                key={catalogDisplayImage}
+                src={catalogDisplayImage}
                 alt=""
                 fill
-                className="object-contain p-5"
+                className="object-contain p-5 transition-opacity duration-300"
                 sizes="400px"
               />
             ) : (
@@ -161,6 +180,11 @@ export function AdminStorefrontPreview({
                 Sin imagen
               </div>
             )}
+            {catalogHover ? (
+              <span className="absolute bottom-2 right-2 rounded bg-black/60 px-2 py-0.5 text-[10px] text-white">
+                {showCatalogHover ? "Hover / Tap" : "Pasa el cursor"}
+              </span>
+            ) : null}
             {catalogBadge ? (
               <span
                 className="absolute left-3 top-3 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]"
@@ -195,8 +219,8 @@ export function AdminStorefrontPreview({
                     className={cn(
                       "relative shrink-0 w-14 h-14 rounded-md overflow-hidden border-2",
                       safeImageIndex === index
-                        ? "border-black"
-                        : "border-gray-200"
+                        ? "border-foreground"
+                        : "border-border"
                     )}
                   >
                     <AdminPreviewImage
@@ -262,10 +286,10 @@ export function AdminStorefrontPreview({
                       setImageIndex(0);
                     }}
                     className={cn(
-                      "relative h-12 w-12 shrink-0 overflow-hidden border-2 bg-white rounded-sm",
+                      "relative h-12 w-12 shrink-0 overflow-hidden border-2 rounded-sm bg-background",
                       safeColorIndex === index
-                        ? "border-black"
-                        : "border-gray-200"
+                        ? "border-foreground"
+                        : "border-border"
                     )}
                     title={option.label}
                   >
@@ -312,14 +336,16 @@ export function AdminStorefrontPreview({
             </div>
           ) : null}
 
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1">
-              Descripción
-            </p>
-            <p className="text-sm text-foreground/90 whitespace-pre-wrap line-clamp-4">
-              {description.trim() || "—"}
-            </p>
-          </div>
+          {description.trim() ? (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">
+                Descripción
+              </p>
+              <p className="text-sm text-foreground/90 whitespace-pre-wrap line-clamp-4">
+                {description.trim()}
+              </p>
+            </div>
+          ) : null}
 
           <Button type="button" variant="secondary" className="w-full" disabled>
             Añadir al carrito (vista previa)

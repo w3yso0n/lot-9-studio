@@ -96,7 +96,7 @@ export default function CartPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+            <h1 className="bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-xl font-bold text-transparent sm:text-2xl md:text-3xl">
               Tu Carrito
             </h1>
             <Badge variant="secondary" className="text-sm bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
@@ -176,8 +176,8 @@ export default function CartPage() {
               </Card>
             </motion.div>
           ) : (
-            <Card className="overflow-hidden border-gray-200 dark:border-gray-700 shadow-lg">
-              <CardHeader className="border-b bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 px-4 sm:px-6">
+            <Card className="overflow-hidden border-border shadow-lg">
+              <CardHeader className="border-b border-border bg-muted/40 px-4 sm:px-6">
                 <CardTitle className="flex justify-between items-center text-base sm:text-lg">
                   <span>Productos</span>
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -227,7 +227,7 @@ export default function CartPage() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <Card className="sticky top-8 border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden">
+              <Card className="sticky top-8 overflow-hidden border-border shadow-xl">
                 <CardHeader className="bg-gradient-to-br from-primary/5 via-primary/3 to-transparent dark:from-primary/10 dark:via-primary/5 px-4 sm:px-6">
                   <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                     <div className="w-1 h-6 bg-gradient-to-b from-primary to-primary/50 rounded-full"></div>
@@ -329,7 +329,7 @@ export default function CartPage() {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="flex flex-col gap-3 sm:gap-4 bg-gray-50 dark:bg-gray-800/50 p-4 sm:p-6">
+              <CardFooter className="flex flex-col gap-3 bg-muted/30 p-4 sm:gap-4 sm:p-6">
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
