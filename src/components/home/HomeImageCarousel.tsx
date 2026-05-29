@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { getProductImageDisplayUrl } from "@/lib/product-image-url";
 import Link from "next/link";
 import {
   useCallback,
@@ -9,7 +9,6 @@ import {
   useRef,
   useState,
   type PointerEvent,
-  type ReactNode,
 } from "react";
 
 type CarouselImage = {
@@ -29,6 +28,9 @@ type Props = {
   direction: "left" | "right";
 };
 
+const SLIDE_CLASS =
+  "relative block aspect-[4/5] w-[76vw] max-w-[340px] shrink-0 overflow-hidden bg-muted bg-cover bg-center sm:w-[42vw] lg:w-[28vw] xl:w-[340px]";
+
 function clampSpeed(value: number): number {
   return Math.max(14, Math.min(90, value));
 }
@@ -38,74 +40,51 @@ function isInteractiveLink(link?: string): boolean {
   return Boolean(href && href !== "#");
 }
 
-function CarouselTile({
+function CarouselSlide({
   image,
   title,
-  onReady,
   className,
+  eagerLoad,
 }: {
   image: LoopImage;
   title: string;
-  onReady?: () => void;
   className?: string;
+  eagerLoad?: boolean;
 }) {
-  return (
-    <div
-      className={`relative aspect-[4/5] w-[76vw] shrink-0 select-none overflow-hidden bg-muted sm:w-[42vw] lg:w-[28vw] xl:w-[340px] ${className ?? ""}`}
-    >
-      <Image
-        src={image.url}
-        alt={image.isDuplicate ? "" : image.alt?.trim() || title || "Imagen del carrusel"}
-        fill
-        className="pointer-events-none select-none object-cover"
-        draggable={false}
-        sizes="(max-width: 640px) 76vw, (max-width: 1024px) 42vw, (max-width: 1280px) 28vw, 340px"
-        unoptimized
-        onLoad={onReady}
-      />
-    </div>
-  );
-}
+  const label = image.alt?.trim() || title || "Imagen del carrusel";
+  const classNames = `${SLIDE_CLASS} ${className ?? ""}`.trim();
+  const src = getProductImageDisplayUrl(image.url, "carousel");
 
-function wrapSlide(
-  image: LoopImage,
-  index: number,
-  title: string,
-  onReady: () => void,
-  snapClass?: string
-): ReactNode {
-  const tile = (
-    <CarouselTile
-      image={image}
-      title={title}
-      onReady={onReady}
-      className={snapClass}
+  const media = (
+    <img
+      src={src}
+      alt={image.isDuplicate ? "" : label}
+      loading={eagerLoad ? "eager" : "lazy"}
+      decoding="async"
+      draggable={false}
+      fetchPriority={eagerLoad ? "auto" : "low"}
+      className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover"
+      aria-hidden={image.isDuplicate || undefined}
     />
   );
-  const key = `${image.url}-${image.isDuplicate ? "dup" : "orig"}-${index}`;
 
-  if (!isInteractiveLink(image.link) || image.isDuplicate) {
+  if (isInteractiveLink(image.link) && !image.isDuplicate) {
     return (
-      <div
-        key={key}
-        className={`shrink-0 ${snapClass ?? ""}`}
-        aria-hidden={image.isDuplicate || undefined}
-      >
-        {tile}
-      </div>
+      <Link href={image.link!.trim()} className={classNames} aria-label={label}>
+        {media}
+      </Link>
     );
   }
 
   return (
-    <Link
-      key={key}
-      href={image.link!.trim()}
-      className={`shrink-0 ${snapClass ?? ""}`}
+    <div
+      className={classNames}
+      role={image.isDuplicate ? undefined : "img"}
+      aria-label={image.isDuplicate ? undefined : label}
       aria-hidden={image.isDuplicate || undefined}
-      tabIndex={image.isDuplicate ? -1 : undefined}
     >
-      {tile}
-    </Link>
+      {media}
+    </div>
   );
 }
 
@@ -194,7 +173,7 @@ export function HomeImageCarousel({ images, title, speed, direction }: Props) {
     document.addEventListener("visibilitychange", onVisibility);
 
     const animate = (time: number) => {
-      const loopWidth = measureLoopWidth();
+      const loopWidth = loopWidthRef.current;
       if (loopWidth > 0) {
         const delta = Math.min(time - lastTime, 48);
         if (!dragRef.current.active && !pausedRef.current) {
@@ -220,7 +199,6 @@ export function HomeImageCarousel({ images, title, speed, direction }: Props) {
     direction,
     imageSignature,
     images.length,
-    measureLoopWidth,
     reducedMotion,
     speed,
   ]);
@@ -299,15 +277,15 @@ export function HomeImageCarousel({ images, title, speed, direction }: Props) {
         aria-label={regionLabel}
       >
         <div className="flex w-max gap-4 snap-x snap-mandatory px-1 pb-1">
-          {images.map((image, index) =>
-            wrapSlide(
-              { ...image, isDuplicate: false },
-              index,
-              title,
-              remeasure,
-              "snap-center"
-            )
-          )}
+          {images.map((image, index) => (
+            <CarouselSlide
+              key={`${image.url}-${index}`}
+              image={{ ...image, isDuplicate: false }}
+              title={title}
+              className="snap-center"
+              eagerLoad={index < 2}
+            />
+          ))}
         </div>
       </div>
     );
@@ -340,9 +318,14 @@ export function HomeImageCarousel({ images, title, speed, direction }: Props) {
       }}
     >
       <div ref={trackRef} className="flex w-max gap-4 will-change-transform">
-        {loopImages.map((image, index) =>
-          wrapSlide(image, index, title, remeasure)
-        )}
+        {loopImages.map((image, index) => (
+          <CarouselSlide
+            key={`${image.url}-${image.isDuplicate ? "dup" : "orig"}-${index}`}
+            image={image}
+            title={title}
+            eagerLoad={!image.isDuplicate && index < 2}
+          />
+        ))}
       </div>
     </div>
   );

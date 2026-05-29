@@ -126,6 +126,7 @@ const NewDropsCarousel = ({ newDrops }: Props) => {
                           >
                             <ProductImage
                               src={img}
+                              displaySize="swatch"
                               alt={`${product.name} - Imagen ${imgIndex + 1}`}
                               fill
                               className="bg-neutral-100 object-contain p-1 dark:bg-zinc-900"

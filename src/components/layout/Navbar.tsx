@@ -10,17 +10,7 @@ import { useEffect, useState } from "react";
 import { FaBars, FaTimes } from "react-icons/fa";
 
 const navLinkClass =
-  "text-foreground/80 hover:text-foreground transition-colors font-medium relative group";
-
-function NavLinkUnderline() {
-  return (
-    <motion.div
-      className="absolute -bottom-1 left-0 h-0.5 w-0 bg-foreground transition-all duration-300 group-hover:w-full"
-      initial={false}
-      whileHover={{ width: "100%" }}
-    />
-  );
-}
+  "text-foreground/80 hover:text-foreground transition-colors font-medium relative inline-block after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-0 after:bg-foreground after:transition-all after:duration-300 hover:after:w-full";
 
 const mobileRowClass =
   "block border-b border-border py-2 text-foreground/80 transition-colors hover:text-foreground";
@@ -50,13 +40,10 @@ const Navbar = () => {
   }, []);
 
   return (
-    <motion.nav 
+    <nav
       className={`fixed top-0 left-0 z-50 w-full bg-background/90 backdrop-blur-md shadow-lg transition-all duration-500 dark:bg-card/90 ${
-        isScrolled ? 'py-2' : 'py-4'
+        isScrolled ? "py-2" : "py-4"
       }`}
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
     >
       <div className="container mx-auto flex justify-between items-center px-3 sm:px-4">
         {/* Logo con animación */}
@@ -85,28 +72,17 @@ const Navbar = () => {
         </motion.div>
 
         {/* Menú Desktop */}
-        <motion.div
-          className="hidden md:flex space-x-8 ml-8"
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
+        <div className="hidden md:flex space-x-8 ml-8">
           {isAdminDashboard ? (
-            <motion.div whileHover={{ y: -2 }}>
-              <Link href="/admin/dashboard" className={`${navLinkClass} inline-block`}>
-                Catálogo
-                <NavLinkUnderline />
-              </Link>
-            </motion.div>
+            <Link href="/admin/dashboard" className={navLinkClass}>
+              Catálogo
+            </Link>
           ) : (
-            <motion.div whileHover={{ y: -2 }}>
-              <Link href="/products" className={`${navLinkClass} inline-block`}>
-                Productos
-                <NavLinkUnderline />
-              </Link>
-            </motion.div>
+            <Link href="/products" className={navLinkClass}>
+              Productos
+            </Link>
           )}
-        </motion.div>
+        </div>
 
         {/* Iconos / acciones */}
         <motion.div
@@ -119,20 +95,19 @@ const Navbar = () => {
 
           {isAdminDashboard ? (
             <>
-              <motion.div className="hidden md:block" whileHover={{ y: -2 }}>
-                <Link href="/" className={`${navLinkClass} text-sm whitespace-nowrap inline-block`}>
-                  Ver tienda
-                  <NavLinkUnderline />
-                </Link>
-              </motion.div>
+              <Link
+                href="/"
+                className={`${navLinkClass} hidden text-sm whitespace-nowrap md:inline-block`}
+              >
+                Ver tienda
+              </Link>
               <form action="/api/admin/logout" method="post" className="hidden md:block">
-                <motion.button
+                <button
                   type="submit"
                   className="whitespace-nowrap text-sm font-medium text-foreground/80 transition-colors hover:text-foreground hover:underline hover:underline-offset-4"
-                  whileHover={{ y: -1 }}
                 >
                   Cerrar sesión
-                </motion.button>
+                </button>
               </form>
             </>
           ) : (
@@ -231,7 +206,7 @@ const Navbar = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.nav>
+    </nav>
   );
 };
 

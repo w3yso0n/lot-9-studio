@@ -65,6 +65,7 @@ export const ProductCard = ({ product, className }: ProductProps) => {
             <ProductImage
               key={displayImage}
               src={displayImage}
+              displaySize="card"
               alt={product.name}
               fill
               className="object-contain p-5 transition-transform duration-500 group-hover:scale-[1.02] sm:p-6"

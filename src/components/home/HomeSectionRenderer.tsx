@@ -1,12 +1,15 @@
 "use client";
 
-import HeroBanner from "@/components/banners/HeroBanner";
 import { HomeImageCarousel } from "@/components/home/HomeImageCarousel";
 import NewDropsCarousel from "@/components/products/NewDropsCarousel";
 import { ProductCard } from "@/components/products/ProductCard";
 import type { CatalogProduct } from "@/lib/catalog-product";
 import type { HomeSection } from "@/lib/home-sections";
 import type { HomeSettings } from "@/lib/home-settings";
+import {
+  getProductImageDisplayUrl,
+  shouldUnoptimizeProductImage,
+} from "@/lib/product-image-url";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -48,27 +51,6 @@ function imagesValue(value: unknown): Array<{ url: string; alt?: string; link?: 
   );
 }
 
-function sectionHeroSettings(
-  section: HomeSection,
-  fallback: HomeSettings
-): HomeSettings {
-  const crop = section.content.crop as Record<string, unknown> | undefined;
-  return {
-    ...fallback,
-    heroTitle: stringValue(section.content.title) || section.title || fallback.heroTitle,
-    heroSubtitle:
-      stringValue(section.content.subtitle) || section.subtitle || fallback.heroSubtitle,
-    heroButtonText:
-      stringValue(section.content.buttonText) || fallback.heroButtonText,
-    heroButtonHref:
-      stringValue(section.content.buttonHref) || fallback.heroButtonHref,
-    heroImageUrl: stringValue(section.content.imageUrl) || fallback.heroImageUrl,
-    heroCropX: numberValue(crop?.x, fallback.heroCropX),
-    heroCropY: numberValue(crop?.y, fallback.heroCropY),
-    heroCropZoom: numberValue(crop?.zoom, fallback.heroCropZoom),
-  };
-}
-
 export function HomeSectionRenderer({
   sections,
   products,
@@ -79,12 +61,7 @@ export function HomeSectionRenderer({
     <>
       {sections.map((section) => {
         if (section.type === "hero") {
-          return (
-            <HeroBanner
-              key={section.id}
-              settings={sectionHeroSettings(section, homeSettings)}
-            />
-          );
+          return null;
         }
 
         if (section.type === "new_drops") {
@@ -221,7 +198,14 @@ export function HomeSectionRenderer({
           const link = stringValue(section.content.link);
           const image = (
             <div className="relative aspect-[21/9] overflow-hidden bg-muted">
-              <Image src={url} alt={section.title || ""} fill className="object-cover" unoptimized />
+              <Image
+                src={getProductImageDisplayUrl(url, "banner")}
+                alt={section.title || ""}
+                fill
+                className="object-cover"
+                sizes="(max-width: 1152px) 100vw, 1152px"
+                unoptimized={shouldUnoptimizeProductImage(url)}
+              />
               {section.title || section.subtitle ? (
                 <div className="absolute inset-x-6 bottom-6 text-white drop-shadow">
                   {section.title ? <h2 className="text-3xl font-semibold">{section.title}</h2> : null}

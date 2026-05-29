@@ -44,20 +44,14 @@ export const ProductPrice = ({
   }
 
   return (
-    <div
-      className={`flex flex-wrap items-baseline gap-x-2 gap-y-1 ${containerAlign} ${className}`}
+    <p
+      className={`m-0 flex flex-wrap items-baseline gap-x-2 gap-y-1 ${containerAlign} ${className}`}
     >
-      <span className="text-xs font-medium text-muted-foreground line-through">
-        {oldPriceText}
-      </span>
-
-      <span
-        role="status"
-        className={`${priceSize} font-semibold text-red-600 dark:text-red-400`}
-      >
+      <del className="text-xs font-medium text-muted-foreground">{oldPriceText}</del>
+      <span className={`${priceSize} font-semibold text-red-600 dark:text-red-400`}>
         {priceText}
       </span>
-    </div>
+    </p>
   );
 };
 
